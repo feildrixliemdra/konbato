@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -20,11 +20,33 @@ import JSZip from 'jszip';
 
 interface ProcessedFile {
   name: string;
+  outputName: string;
   originalSize: number;
   compressedSize: number;
   originalUrl: string;
   compressedUrl: string;
   ratio: number;
+}
+
+interface ImageWorkerResult {
+  buffer?: ArrayBuffer;
+  bitmap?: ImageBitmap;
+  mimeType: string;
+  width: number;
+  height: number;
+}
+
+const extensionByMimeType: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+function getOutputFileName(fileName: string, mimeType: string) {
+  const baseName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+  const extension = extensionByMimeType[mimeType] || fileName.split('.').pop()?.toLowerCase() || 'jpg';
+
+  return `optimized_${baseName}.${extension}`;
 }
 
 export default function ImageCompressPage() {
@@ -96,7 +118,7 @@ export default function ImageCompressPage() {
           height: resizeHeight ? parseInt(resizeHeight, 10) : undefined,
         };
 
-        const result: any = await postTask('COMPRESS', payload, (p) => {
+        const result = await postTask<typeof payload, ImageWorkerResult>('COMPRESS', payload, (p) => {
           // Adjust worker internal progress to overall progress
           const workerWeight = 1 / files.length;
           const currentBase = (i / files.length) * 100;
@@ -123,12 +145,16 @@ export default function ImageCompressPage() {
           });
           result.bitmap.close();
         } else {
+          if (!result.buffer) {
+            throw new Error('Image compression worker returned no output buffer');
+          }
           outBlob = new Blob([result.buffer], { type: result.mimeType });
         }
         const compressedUrl = URL.createObjectURL(outBlob);
 
         compressedResults.push({
           name: file.name,
+          outputName: getOutputFileName(file.name, result.mimeType),
           originalSize: file.size,
           compressedSize: outBlob.size,
           originalUrl,
@@ -155,7 +181,7 @@ export default function ImageCompressPage() {
       const item = results[0];
       const link = document.createElement('a');
       link.href = item.compressedUrl;
-      link.download = `optimized_${item.name}`;
+      link.download = item.outputName;
       link.click();
       return;
     }
@@ -164,7 +190,7 @@ export default function ImageCompressPage() {
     for (const item of results) {
       const response = await fetch(item.compressedUrl);
       const blob = await response.blob();
-      zip.file(`optimized_${item.name}`, blob);
+      zip.file(item.outputName, blob);
     }
 
     const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -363,7 +389,7 @@ export default function ImageCompressPage() {
                       asChild
                       className="text-xs font-semibold"
                     >
-                      <a href={item.compressedUrl} download={`optimized_${item.name}`}>
+                      <a href={item.compressedUrl} download={item.outputName}>
                         Download
                       </a>
                     </Button>

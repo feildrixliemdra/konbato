@@ -96,6 +96,26 @@ const tools = [
     href: '/tools/pdf-rotate',
     badge: 'Phase 2',
   },
+  {
+    title: 'PDF to Image',
+    description: 'Convert PDF pages into PNG or JPEG images locally.',
+    category: 'PDF',
+    icon: Image01Icon,
+    color: 'text-sky-500',
+    bg: 'bg-sky-500/10',
+    href: '/tools/pdf-to-image',
+    badge: 'Phase 2',
+  },
+  {
+    title: 'Image to PDF',
+    description: 'Compile multiple images (PNG/JPEG) into a single PDF document.',
+    category: 'PDF',
+    icon: File01Icon,
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-500/10',
+    href: '/tools/image-to-pdf',
+    badge: 'Phase 2',
+  },
   // Video Category (Phase 3)
   {
     title: 'Compress Video',
