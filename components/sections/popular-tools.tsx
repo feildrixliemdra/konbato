@@ -7,9 +7,9 @@ import {
   SplitIcon,
   Video01Icon,
   ArrowShrink01Icon,
-  ImageFlipHorizontalIcon,
   StarIcon,
   ArrowRight01Icon,
+  ColorsIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { motion } from 'framer-motion';
@@ -17,13 +17,13 @@ import Link from 'next/link';
 
 const popularTools = [
   {
-    title: 'JPG to PNG',
+    title: 'Image Converter',
     description: 'Convert images instantly',
     icon: Image01Icon,
     color: 'text-blue-600',
     bg: 'bg-blue-500/10',
     borderGradient: 'from-blue-500/50 to-blue-600/50',
-    href: '/tools/jpg-to-png',
+    href: '/tools/image-convert',
   },
   {
     title: 'PDF Merge',
@@ -62,31 +62,21 @@ const popularTools = [
     href: '/tools/image-compress',
   },
   {
-    title: 'WEBP to JPG',
-    description: 'Universal format',
-    icon: ImageFlipHorizontalIcon,
-    color: 'text-pink-600',
-    bg: 'bg-pink-500/10',
-    borderGradient: 'from-pink-500/50 to-pink-600/50',
-    href: '/tools/webp-to-jpg',
+    title: 'Remove Background',
+    description: 'Remove background from images',
+    icon: ColorsIcon,
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-500/10',
+    borderGradient: 'from-indigo-500/50 to-indigo-600/50',
+    href: '/tools/image-remove-bg',
   },
 ];
 
 export function PopularTools() {
   return (
-    <section className="relative overflow-hidden bg-muted/20 py-24 md:py-32">
+    <section className="relative overflow-hidden bg-muted/20 py-12 md:py-24">
       <div className="container relative z-10">
         <div className="mb-16 flex flex-col items-center text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary backdrop-blur-sm"
-          >
-            <HugeiconsIcon icon={StarIcon} className="h-3.5 w-3.5" />
-            Most Popular
-          </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

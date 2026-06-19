@@ -43,7 +43,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className="container py-24 md:py-32">
+    <section className="container py-12 md:py-24">
       <div className="text-center mb-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -51,10 +51,6 @@ export function HowItWorks() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-semibold text-primary mb-6">
-            <HugeiconsIcon icon={SparklesIcon} className="h-3.5 w-3.5" />
-            SIMPLE PROCESS
-          </div>
           <h2 className="text-4xl font-bold font-manrope sm:text-5xl mb-4">
             How It Works
           </h2>

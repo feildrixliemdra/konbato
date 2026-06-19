@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import {
   Shield01Icon,
   LockKeyIcon,
-  WifiOffIcon,
+  Rocket01Icon,
   CheckmarkCircle01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -26,11 +26,11 @@ const features = [
     highlight: '100% Private',
   },
   {
-    title: 'Works Offline',
+    title: 'Fast Processing',
     description:
-      'Once loaded, the app works without an internet connection. No tracking, no telemetry.',
-    icon: WifiOffIcon,
-    highlight: 'Offline Ready',
+      'Files are processed directly in your browser. No server queues or upload delays.',
+    icon: Rocket01Icon,
+    highlight: 'Fast Process',
   },
 ];
 
@@ -42,7 +42,7 @@ const trustBadges = [
 
 export function PrivacySecurity() {
   return (
-    <section className="container py-24 md:py-32">
+    <section className="container py-12 md:py-24">
       <div className="relative rounded-3xl bg-gradient-to-br from-primary/5 via-background to-green-500/5 overflow-hidden border border-primary/10">
         {/* Animated Grid Background */}
         <div

@@ -10,7 +10,7 @@ const formats = {
 
 export function SupportedFormats() {
   return (
-    <section className="container py-16 border-t whitespace-nowrap overflow-hidden">
+    <section className="container py-10 md:py-16 border-t whitespace-nowrap overflow-hidden">
       <div className="flex w-full justify-center gap-12 text-sm font-medium text-muted-foreground">
         <div className="flex gap-4 items-center">
           <span className="text-foreground">Supported Formats:</span>

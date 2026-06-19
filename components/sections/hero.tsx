@@ -10,33 +10,18 @@ import {
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-const features = ['No file uploads', 'Lightning fast', 'Privacy guaranteed'];
+const features = ['No server file uploads', 'Lightning fast', 'Privacy guaranteed'];
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pt-24 pb-32 md:pt-40 md:pb-40">
+    <section className="relative overflow-hidden pt-16 pb-20 md:pt-36 md:pb-36">
       <div className="container relative z-10">
         <div className="mx-auto max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-8"
-          >
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-              </span>
-              100% Client-side & Secure
-            </div>
-          </motion.div>
-
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-6 text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl font-manrope"
+            className="mb-6 text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl font-manrope"
           >
             <span className="block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
               Convert & Edit Files
@@ -52,7 +37,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="mb-8 max-w-2xl text-lg text-muted-foreground sm:text-xl font-dm-sans leading-relaxed"
           >
-            Convert images, PDFs, and videos without uploading your files.
+            Convert images, PDFs, and videos securely in your browser.
             Privacy-first, fast, and free. No server processing, no data leaks.
           </motion.p>
 

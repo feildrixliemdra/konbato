@@ -68,7 +68,7 @@ const useCases = [
 
 export function UseCases() {
   return (
-    <section className="container py-24 md:py-32">
+    <section className="container py-12 md:py-24">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}

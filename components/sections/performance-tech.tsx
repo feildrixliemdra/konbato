@@ -45,7 +45,7 @@ const convert = async (file) => {
 
 export function PerformanceTech() {
   return (
-    <section className="container py-24 md:py-32">
+    <section className="container py-12 md:py-24">
       <div className="relative rounded-3xl bg-gradient-to-br from-primary/5 via-background to-accent/5 overflow-hidden border border-primary/10">
         {/* Animated Grid Background */}
         <div

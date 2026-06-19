@@ -13,7 +13,7 @@ const categories = [
   {
     title: 'Image Tools',
     icon: <HugeiconsIcon icon={Image01Icon} />,
-    items: ['JPG to PNG', 'PNG to WEBP', 'Compress Image'],
+    items: ['Image Converter', 'Compress Image', 'Remove Background'],
     color: 'bg-blue-500/10 text-blue-500',
   },
   {
@@ -32,7 +32,7 @@ const categories = [
 
 export function ToolCategories() {
   return (
-    <section id="tools" className="container py-24">
+    <section id="tools" className="container py-12 md:py-24">
       <div className="mb-12 text-center">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-outfit">
           Everything You Need

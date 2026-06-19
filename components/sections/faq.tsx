@@ -36,7 +36,7 @@ const faqs = [
 
 export function FAQ() {
   return (
-    <section className="container max-w-3xl py-24">
+    <section className="container max-w-3xl py-12 md:py-24">
       <div className="text-center mb-12">
         <h2 className="text-3xl font-bold font-outfit">
           Frequently Asked Questions
