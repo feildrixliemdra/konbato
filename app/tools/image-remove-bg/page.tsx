@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -236,10 +237,13 @@ export default function ImageRemoveBgPage() {
             >
               {/* Underneath: Transparent Cutout Image */}
               <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-muted/5 flex items-center justify-center">
-                <img
+                <Image
                   src={cutoutUrl}
                   alt="Cutout background removed"
-                  className="max-w-full max-h-full object-contain pointer-events-none"
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-contain pointer-events-none"
                 />
               </div>
 
@@ -248,10 +252,13 @@ export default function ImageRemoveBgPage() {
                 className="absolute inset-0 bg-background/5 flex items-center justify-center overflow-hidden pointer-events-none"
                 style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
               >
-                <img
+                <Image
                   src={originalUrl}
                   alt="Original image"
-                  className="max-w-full max-h-full object-contain pointer-events-none"
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-contain pointer-events-none"
                 />
               </div>
 

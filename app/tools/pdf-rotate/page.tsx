@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
 import { useWorker } from '@/lib/hooks/useWorker';
-import { getPdfPageCount, renderPdfPageToDataUrl } from '@/lib/pdf-utils';
+import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -81,12 +82,19 @@ export default function PDFRotatePage() {
       const newPagesList: PDFPageItem[] = [];
       const renderPagesCount = Math.min(pageCount, 30);
       
+      const thumbnails = await renderPdfPagesToDataUrls(
+        buffer,
+        Array.from({ length: renderPagesCount }, (_, index) => index + 1),
+        0.35,
+        (current, total) => {
+          setProgressMessage(`Rendering thumbnail page ${current}/${total}...`);
+        }
+      );
+
       for (let p = 0; p < renderPagesCount; p++) {
-        setProgressMessage(`Rendering thumbnail page ${p + 1}/${renderPagesCount}...`);
-        const thumbnail = await renderPdfPageToDataUrl(buffer, p + 1);
         newPagesList.push({
           pageIndex: p,
-          thumbnailUrl: thumbnail,
+          thumbnailUrl: thumbnails[p],
           rotation: 0,
         });
       }
@@ -248,11 +256,13 @@ export default function PDFRotatePage() {
                           style={{ transform: `rotate(${item.rotation}deg)` }}
                         >
                           {item.thumbnailUrl ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
+                            <Image
                               src={item.thumbnailUrl}
                               alt={`Page ${item.pageIndex + 1}`}
-                              className="max-w-full max-h-full object-contain shadow-[0_1px_3px_rgba(0,0,0,0.05)] rounded pointer-events-none"
+                              fill
+                              unoptimized
+                              sizes="(min-width: 768px) 12rem, 50vw"
+                              className="object-contain p-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)] rounded pointer-events-none"
                             />
                           ) : (
                             <div className="text-[10px] text-muted-foreground font-dm-sans">

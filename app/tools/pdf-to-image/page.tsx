@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -344,12 +345,14 @@ export default function PDFToImagePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {results.map((item) => (
                 <Card key={item.pageIndex} className="p-4 border-border/60 bg-background/50 flex flex-col gap-3 justify-between">
-                  <div className="aspect-[3/4] bg-muted/40 rounded-lg overflow-hidden border border-border/40 flex items-center justify-center p-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                  <div className="relative aspect-[3/4] bg-muted/40 rounded-lg overflow-hidden border border-border/40">
+                    <Image
                       src={item.url}
                       alt={`Page ${item.pageIndex + 1}`}
-                      className="max-w-full max-h-full object-contain shadow-sm rounded"
+                      fill
+                      unoptimized
+                      sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-contain p-2 shadow-sm rounded"
                     />
                   </div>
 

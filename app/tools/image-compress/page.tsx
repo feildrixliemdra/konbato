@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -358,10 +359,13 @@ export default function ImageCompressPage() {
                   <div className="flex items-center gap-3 min-w-0">
                     {/* Preview Thumbnail */}
                     <div className="size-12 shrink-0 rounded-lg overflow-hidden bg-muted border border-border/40 relative">
-                      <img
+                      <Image
                         src={item.compressedUrl}
                         alt="Compressed preview"
-                        className="w-full h-full object-cover"
+                        fill
+                        unoptimized
+                        sizes="48px"
+                        className="object-cover"
                       />
                     </div>
                     <div className="flex flex-col min-w-0">

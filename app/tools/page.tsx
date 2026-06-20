@@ -240,7 +240,7 @@ export default function ToolsPage() {
                   transition={{ duration: 0.2 }}
                   className="group"
                 >
-                  <Link href={tool.href} className="block h-full">
+                  <Link href={tool.href} aria-label={`Open ${tool.title}`} className="block h-full">
                     <Card className="relative h-full overflow-hidden border border-border/60 bg-background/50 p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-border-hover hover:shadow-xl hover:shadow-primary/5">
                       <div className="flex items-start justify-between mb-4">
                         <div

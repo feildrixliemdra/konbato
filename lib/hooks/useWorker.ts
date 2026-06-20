@@ -17,6 +17,13 @@ interface WorkerStatusPayload {
   progress?: number;
 }
 
+function toWorkerError(message: string, event?: ErrorEvent | MessageEvent) {
+  if (event && 'message' in event && event.message) {
+    return new Error(event.message);
+  }
+  return new Error(message);
+}
+
 export function useWorker(createWorker: () => Worker | null) {
   const callbacksRef = useRef<
     Map<
@@ -32,6 +39,7 @@ export function useWorker(createWorker: () => Worker | null) {
 
   // Initialize worker client-side
   useEffect(() => {
+    const callbacks = callbacksRef.current;
     const activeWorker = createWorker();
     if (!activeWorker) return;
 
@@ -39,27 +47,40 @@ export function useWorker(createWorker: () => Worker | null) {
 
     activeWorker.onmessage = (event: MessageEvent<WorkerMessage>) => {
       const { id, type, payload } = event.data;
-      const callbacks = callbacksRef.current.get(id);
+      const activeCallbacks = callbacks.get(id);
       const status = payload as WorkerStatusPayload;
 
-      if (!callbacks) return;
+      if (!activeCallbacks) return;
 
       if (type === 'SUCCESS') {
-        callbacks.onSuccess(payload);
-        callbacksRef.current.delete(id);
+        activeCallbacks.onSuccess(payload);
+        callbacks.delete(id);
       } else if (type === 'ERROR') {
-        callbacks.onError(new Error(status.message || 'Worker processing failed'));
-        callbacksRef.current.delete(id);
+        activeCallbacks.onError(new Error(status.message || 'Worker processing failed'));
+        callbacks.delete(id);
       } else if (type === 'PROGRESS') {
-        if (callbacks.onProgress && typeof status.progress === 'number') {
-          callbacks.onProgress(status.progress, status.message);
+        if (activeCallbacks.onProgress && typeof status.progress === 'number') {
+          activeCallbacks.onProgress(status.progress, status.message);
         }
       }
     };
 
+    activeWorker.onerror = (event) => {
+      callbacks.forEach((pending) => {
+        pending.onError(toWorkerError('Worker failed to load or crashed', event));
+      });
+      callbacks.clear();
+    };
+
+    activeWorker.onmessageerror = (event) => {
+      callbacks.forEach((pending) => {
+        pending.onError(toWorkerError('Worker sent an unreadable message', event));
+      });
+      callbacks.clear();
+    };
+
     return () => {
       // Reject any pending promises before terminating
-      const callbacks = callbacksRef.current;
       callbacks.forEach((pending) => {
         pending.onError(new Error('Worker was terminated during cleanup'));
       });

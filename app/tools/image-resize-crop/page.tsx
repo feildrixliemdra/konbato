@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import NextImage from 'next/image';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -346,10 +347,12 @@ export default function ImageResizeCropPage() {
                   onPointerUp={handleCropPointerUp}
                   onPointerCancel={handleCropPointerUp}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <NextImage
                     src={sourceUrl}
                     alt="Live crop preview"
+                    width={sourceSize.width || 1}
+                    height={sourceSize.height || 1}
+                    unoptimized
                     className="absolute max-w-none select-none object-fill"
                     style={cropImageStyle}
                     draggable={false}
@@ -464,8 +467,14 @@ export default function ImageResizeCropPage() {
                 </p>
               </div>
               <div className="w-full rounded-xl border border-border/50 bg-muted/20 p-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={result.url} alt="Processed preview" className="mx-auto max-h-72 object-contain rounded-lg" />
+                <NextImage
+                  src={result.url}
+                  alt="Processed preview"
+                  width={result.width}
+                  height={result.height}
+                  unoptimized
+                  className="mx-auto max-h-72 w-auto object-contain rounded-lg"
+                />
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full">
                 <Button variant="outline" onClick={reset} className="flex-1 text-xs font-semibold py-5">Start Over</Button>

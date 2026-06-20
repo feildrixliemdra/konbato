@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import NextImage from 'next/image';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -118,11 +119,13 @@ function SortableImage({ id, item, onDelete }: SortableImageProps) {
 
       {/* Thumbnail content */}
       <div className="flex-1 min-h-0 relative flex items-center justify-center p-2 bg-muted/5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <NextImage
           src={item.url}
           alt={item.name}
-          className="max-w-full max-h-full object-contain shadow-sm rounded pointer-events-none"
+          fill
+          unoptimized
+          sizes="(min-width: 640px) 12rem, 50vw"
+          className="object-contain p-2 shadow-sm rounded pointer-events-none"
         />
       </div>
 

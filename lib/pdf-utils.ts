@@ -21,9 +21,12 @@ export async function getPdfPageCount(buffer: ArrayBuffer): Promise<number> {
   const pdfjsLib = await getPdfjsLib();
   const loadingTask = pdfjsLib.getDocument({ data: buffer.slice(0) });
   const pdf = await loadingTask.promise;
-  const numPages = pdf.numPages;
-  await pdf.cleanup();
-  return numPages;
+  try {
+    return pdf.numPages;
+  } finally {
+    await pdf.cleanup();
+    await loadingTask.destroy();
+  }
 }
 
 /**
@@ -34,32 +37,57 @@ export async function renderPdfPageToDataUrl(
   pageNum: number,
   scale = 0.35
 ): Promise<string> {
+  const [dataUrl] = await renderPdfPagesToDataUrls(buffer, [pageNum], scale);
+  return dataUrl;
+}
+
+/**
+ * Renders multiple PDF pages after opening the document once.
+ */
+export async function renderPdfPagesToDataUrls(
+  buffer: ArrayBuffer,
+  pageNumbers: number[],
+  scale = 0.35,
+  onProgress?: (currentPage: number, totalPages: number) => void
+): Promise<string[]> {
   const pdfjsLib = await getPdfjsLib();
   const loadingTask = pdfjsLib.getDocument({ data: buffer.slice(0) });
   const pdf = await loadingTask.promise;
-  
+
   try {
-    const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale });
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      throw new Error('Failed to get 2D canvas context');
+    const dataUrls: string[] = [];
+
+    for (let index = 0; index < pageNumbers.length; index++) {
+      const pageNum = pageNumbers[index];
+      onProgress?.(index + 1, pageNumbers.length);
+
+      const page = await pdf.getPage(pageNum);
+      try {
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('Failed to get 2D canvas context');
+        }
+
+        await page.render({
+          canvas,
+          canvasContext: ctx,
+          viewport,
+        }).promise;
+
+        dataUrls.push(canvas.toDataURL('image/jpeg', 0.8));
+      } finally {
+        page.cleanup();
+      }
     }
-    
-    await page.render({
-      canvas: canvas,
-      canvasContext: ctx,
-      viewport: viewport,
-    }).promise;
-    
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    return dataUrl;
+
+    return dataUrls;
   } finally {
     await pdf.cleanup();
+    await loadingTask.destroy();
   }
 }

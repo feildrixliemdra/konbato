@@ -82,8 +82,9 @@ async function expectNoHorizontalOverflow(page: Page) {
     .toBe(true);
 }
 
-async function uploadFile(page: Page, filePath: string) {
+async function uploadFile(page: Page, filePath: string, readyText: string | RegExp = 'Selected Files (1)') {
   await page.locator('input[type="file"]').first().setInputFiles(filePath);
+  await expect(page.getByText(readyText).first()).toBeVisible({ timeout: 30000 });
 }
 
 async function expectDownloadLink(page: Page, name: string | RegExp = /Download/) {
@@ -146,7 +147,7 @@ test.describe('Tools app coverage', () => {
     }
 
     // Verify navigation by clicking the Image Compress card
-    await page.locator('main a[href="/tools/image-compress"]').click();
+    await page.getByRole('link', { name: /Open Image Compress/ }).click();
     await expect(page).toHaveURL('/tools/image-compress');
     await expect(page.getByRole('heading', { name: 'Image Compress', exact: true })).toBeVisible();
   });
@@ -156,11 +157,13 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/image-convert');
 
     await expect(page.getByRole('heading', { name: 'Image Converter', exact: true })).toBeVisible();
+    await expect(page.getByText('Upload images to convert (JPG, PNG, WEBP, GIF, TIFF)')).toBeVisible();
 
     // Upload multiple legacy converter inputs; default target format is PNG.
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles([TEST_IMAGES.jpg, TEST_IMAGES.webp]);
 
+    await expect(page.getByText('Selected Files (2)')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Convert Images' })).toBeEnabled();
 
     // Click convert
@@ -196,7 +199,7 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/image-resize-crop');
 
     await expect(page.getByRole('heading', { name: 'Image Resize & Crop', exact: true })).toBeVisible();
-    await uploadFile(page, TEST_IMAGES.png);
+    await uploadFile(page, TEST_IMAGES.png, 'Source:');
 
     await expect(page.getByText('Source:')).toBeVisible();
     await page.getByLabel('Target width').fill('1');
@@ -228,7 +231,7 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/pdf-merge');
 
     await expect(page.getByRole('heading', { name: 'Merge PDF', exact: true })).toBeVisible();
-    await uploadFile(page, TEST_FILES.pdf);
+    await uploadFile(page, TEST_FILES.pdf, 'Light Table Collation');
 
     await expect(page.getByText('Light Table Collation')).toBeVisible({ timeout: 30000 });
     await expect(page.getByText('test-document.pdf').first()).toBeVisible();
@@ -245,7 +248,7 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/pdf-split');
 
     await expect(page.getByRole('heading', { name: 'Split PDF', exact: true })).toBeVisible();
-    await uploadFile(page, TEST_FILES.pdf);
+    await uploadFile(page, TEST_FILES.pdf, 'Select Pages to Keep');
 
     await expect(page.getByText('Select Pages to Keep')).toBeVisible({ timeout: 30000 });
     await expect(page.getByText('Total Pages:')).toBeVisible();
@@ -261,7 +264,7 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/pdf-compress');
 
     await expect(page.getByRole('heading', { name: 'Compress PDF', exact: true })).toBeVisible();
-    await uploadFile(page, TEST_FILES.pdf);
+    await uploadFile(page, TEST_FILES.pdf, 'Document Details');
 
     await expect(page.getByText('Document Details')).toBeVisible({ timeout: 30000 });
     await page.getByRole('button', { name: 'Deep (Rasterize)' }).click();
@@ -278,7 +281,7 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/pdf-rotate');
 
     await expect(page.getByRole('heading', { name: 'Rotate PDF', exact: true })).toBeVisible();
-    await uploadFile(page, TEST_FILES.pdf);
+    await uploadFile(page, TEST_FILES.pdf, 'Workspace pages');
 
     await expect(page.getByText('Workspace pages')).toBeVisible({ timeout: 30000 });
     await expect(page.getByRole('button', { name: /Rotate All 90/ })).toBeEnabled();
@@ -294,10 +297,10 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/pdf-metadata-remove');
 
     await expect(page.getByRole('heading', { name: 'PDF Metadata Remover', exact: true })).toBeVisible();
-    await uploadFile(page, TEST_FILES.pdf);
+    await uploadFile(page, TEST_FILES.pdf, 'File Details');
 
     await expect(page.getByText('File Details')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByText('test-document.pdf')).toBeVisible();
+    await expect(page.getByText('test-document.pdf', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Remove Metadata' }).click();
 
     await expect(page.getByRole('heading', { name: 'Metadata Removed' })).toBeVisible({ timeout: 60000 });
@@ -310,7 +313,7 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/pdf-reorder');
 
     await expect(page.getByRole('heading', { name: 'PDF Page Reorder', exact: true })).toBeVisible();
-    await uploadFile(page, TEST_FILES.pdf);
+    await uploadFile(page, TEST_FILES.pdf, 'Page reorder workspace');
 
     await expect(page.getByText('Page reorder workspace')).toBeVisible({ timeout: 30000 });
     await expect(page.getByRole('button', { name: 'Export Reordered PDF' })).toBeEnabled();
@@ -326,7 +329,7 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/pdf-to-image');
 
     await expect(page.getByRole('heading', { name: 'PDF to Image', exact: true })).toBeVisible();
-    await uploadFile(page, TEST_FILES.pdf);
+    await uploadFile(page, TEST_FILES.pdf, 'Document details');
 
     await expect(page.getByText('Document details')).toBeVisible({ timeout: 30000 });
     await expect(page.getByRole('button', { name: 'Convert PDF Pages' })).toBeEnabled();
@@ -342,7 +345,7 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/image-to-pdf');
 
     await expect(page.getByRole('heading', { name: 'Image to PDF', exact: true })).toBeVisible();
-    await uploadFile(page, TEST_IMAGES.png);
+    await uploadFile(page, TEST_IMAGES.png, 'Images collation');
 
     await expect(page.getByText('Images collation')).toBeVisible({ timeout: 30000 });
     await expect(page.getByText('test-pixel.png')).toBeVisible();

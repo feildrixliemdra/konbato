@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -285,10 +286,13 @@ export default function ImageConvertPage() {
                 <Card key={idx} className="p-4 border-border/60 bg-background/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="size-12 shrink-0 rounded-lg overflow-hidden bg-muted border border-border/40 relative">
-                      <img
+                      <Image
                         src={item.convertedUrl}
                         alt="Converted preview"
-                        className="w-full h-full object-cover"
+                        fill
+                        unoptimized
+                        sizes="48px"
+                        className="object-cover"
                       />
                     </div>
                     <div className="flex flex-col min-w-0">

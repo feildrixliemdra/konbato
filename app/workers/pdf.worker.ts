@@ -42,6 +42,52 @@ const PDF_METADATA_LABELS: Record<string, string> = {
   'info:Trapped': 'Trapped flag',
 };
 
+const rawPdfMetadataFields = [
+  { key: 'info:Title', label: 'Title', token: 'Title' },
+  { key: 'info:Author', label: 'Author', token: 'Author' },
+  { key: 'info:Subject', label: 'Subject', token: 'Subject' },
+  { key: 'info:Keywords', label: 'Keywords', token: 'Keywords' },
+  { key: 'info:Creator', label: 'Creator', token: 'Creator' },
+  { key: 'info:Producer', label: 'Producer', token: 'Producer' },
+  { key: 'info:CreationDate', label: 'Creation date', token: 'CreationDate' },
+  { key: 'info:ModDate', label: 'Modified date', token: 'ModDate' },
+  { key: 'info:Trapped', label: 'Trapped flag', token: 'Trapped' },
+];
+
+const pdfInfoDecoder = new TextDecoder('latin1', { fatal: false });
+
+function decodePdfString(value: string) {
+  return value
+    .replace(/\\([nrtbf()\\])/g, (_, escaped: string) => {
+      if (escaped === 'n') return '\n';
+      if (escaped === 'r') return '\r';
+      if (escaped === 't') return '\t';
+      if (escaped === 'b') return '\b';
+      if (escaped === 'f') return '\f';
+      return escaped;
+    })
+    .replace(/\\([0-7]{1,3})/g, (_, octal: string) => String.fromCharCode(parseInt(octal, 8)))
+    .trim();
+}
+
+function readRawPdfMetadata(buffer: ArrayBuffer) {
+  const source = pdfInfoDecoder.decode(new Uint8Array(buffer));
+
+  return rawPdfMetadataFields.flatMap(({ key, label, token }) => {
+    const literalMatch = source.match(new RegExp(`/${token}\\s*\\(([^)]*)\\)`));
+    if (literalMatch?.[1]) {
+      return [{ key, label, value: decodePdfString(literalMatch[1]) }];
+    }
+
+    const nameMatch = source.match(new RegExp(`/${token}\\s*/([^\\s<>\\[\\]()/]+)`));
+    if (nameMatch?.[1]) {
+      return [{ key, label, value: nameMatch[1].trim() }];
+    }
+
+    return [];
+  });
+}
+
 function scrubPdfMetadata(doc: any) {
   PDF_METADATA_KEYS.forEach((key) => {
     try {
@@ -201,16 +247,11 @@ self.onmessage = async (e: MessageEvent) => {
 
     } else if (type === 'READ_PDF_METADATA') {
       const { buffer } = payload;
-      const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf');
-      try {
-        self.postMessage({
-          id,
-          type: 'SUCCESS',
-          payload: { metadata: readPdfMetadata(doc) }
-        });
-      } finally {
-        safeDestroy(doc);
-      }
+      self.postMessage({
+        id,
+        type: 'SUCCESS',
+        payload: { metadata: readRawPdfMetadata(buffer) }
+      });
 
     } else if (type === 'STRIP_PDF_METADATA') {
       const { buffer } = payload;
@@ -252,23 +293,27 @@ self.onmessage = async (e: MessageEvent) => {
             payload: { progress: 10 + pagePct, message: `Rasterizing page ${i + 1} of ${numPages}...` } 
           });
           
-          const page = doc.loadPage(i);
-          const bounds = page.getBounds();
-          const width = bounds[2] - bounds[0];
-          const height = bounds[3] - bounds[1];
-          
-          // Render page to Pixmap (scale, colorspace, alpha, ignore-annotations)
-          const pixmap = page.toPixmap((mupdf as any).Matrix.scale(scale, scale), (mupdf as any).ColorSpace.DeviceRGB, false, true);
-          const pngBytes = pixmap.asPNG();
-          
-          // Compress PNG output to low-quality JPEG
-          const jpegBuffer = await pngToJpeg(pngBytes, quality);
-          
-          // Insert page with compressed image
-          insertPageWithImage(outDoc, i, jpegBuffer, width, height);
-          
-          safeDestroy(page);
-          safeDestroy(pixmap);
+          let page;
+          let pixmap;
+          try {
+            page = doc.loadPage(i);
+            const bounds = page.getBounds();
+            const width = bounds[2] - bounds[0];
+            const height = bounds[3] - bounds[1];
+
+            // Render page to Pixmap (scale, colorspace, alpha, ignore-annotations)
+            pixmap = page.toPixmap((mupdf as any).Matrix.scale(scale, scale), (mupdf as any).ColorSpace.DeviceRGB, false, true);
+            const pngBytes = pixmap.asPNG();
+
+            // Compress PNG output to low-quality JPEG
+            const jpegBuffer = await pngToJpeg(pngBytes, quality);
+
+            // Insert page with compressed image
+            insertPageWithImage(outDoc, i, jpegBuffer, width, height);
+          } finally {
+            safeDestroy(page);
+            safeDestroy(pixmap);
+          }
         }
         
         self.postMessage({ id, type: 'PROGRESS', payload: { progress: 90, message: 'Compressing and optimizing document objects...' } });
@@ -302,24 +347,28 @@ self.onmessage = async (e: MessageEvent) => {
             payload: { progress: 10 + pagePct, message: `Converting page ${i + 1} of ${numPages}...` } 
           });
           
-          const page = doc.loadPage(i);
-          const pixmap = page.toPixmap((mupdf as any).Matrix.scale(scale, scale), (mupdf as any).ColorSpace.DeviceRGB, false, true);
-          let imgBytes = pixmap.asPNG();
-          
-          if (isJpeg) {
-            const jpegBuffer = await pngToJpeg(imgBytes, quality);
-            imgBytes = new Uint8Array(jpegBuffer);
+          let page;
+          let pixmap;
+          try {
+            page = doc.loadPage(i);
+            pixmap = page.toPixmap((mupdf as any).Matrix.scale(scale, scale), (mupdf as any).ColorSpace.DeviceRGB, false, true);
+            let imgBytes = pixmap.asPNG();
+
+            if (isJpeg) {
+              const jpegBuffer = await pngToJpeg(imgBytes, quality);
+              imgBytes = new Uint8Array(jpegBuffer);
+            }
+
+            // Slice the Uint8Array buffer to prevent keeping references
+            const singleBuffer = imgBytes.buffer.slice(imgBytes.byteOffset, imgBytes.byteOffset + imgBytes.byteLength);
+            results.push({
+              pageIndex: i,
+              buffer: singleBuffer
+            });
+          } finally {
+            safeDestroy(page);
+            safeDestroy(pixmap);
           }
-          
-          // Slice the Uint8Array buffer to prevent keeping references
-          const singleBuffer = imgBytes.buffer.slice(imgBytes.byteOffset, imgBytes.byteOffset + imgBytes.byteLength);
-          results.push({
-            pageIndex: i,
-            buffer: singleBuffer
-          });
-          
-          safeDestroy(page);
-          safeDestroy(pixmap);
         }
         
         const transferBuffers = results.map(r => r.buffer);

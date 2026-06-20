@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import JSZip from 'jszip';
 import { SiteHeader } from '@/components/site-header';
@@ -347,9 +348,15 @@ export default function ImageMetadataRemovePage() {
               {results.map((result) => (
                 <Card key={result.name} className="p-4 border-border/60 bg-background/50 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="size-14 shrink-0 overflow-hidden rounded-lg border border-border/40 bg-muted">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={result.url} alt={`${result.name} preview`} className="h-full w-full object-cover" />
+                    <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-border/40 bg-muted">
+                      <Image
+                        src={result.url}
+                        alt={`${result.name} preview`}
+                        fill
+                        unoptimized
+                        sizes="48px"
+                        className="object-cover"
+                      />
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-xs font-bold font-manrope">{result.name}</p>

@@ -41,12 +41,56 @@ interface MetadataEntry {
   value: string;
 }
 
+const pdfMetadataFields = [
+  { key: 'info:Title', label: 'Title', token: 'Title' },
+  { key: 'info:Author', label: 'Author', token: 'Author' },
+  { key: 'info:Subject', label: 'Subject', token: 'Subject' },
+  { key: 'info:Keywords', label: 'Keywords', token: 'Keywords' },
+  { key: 'info:Creator', label: 'Creator', token: 'Creator' },
+  { key: 'info:Producer', label: 'Producer', token: 'Producer' },
+  { key: 'info:CreationDate', label: 'Creation date', token: 'CreationDate' },
+  { key: 'info:ModDate', label: 'Modified date', token: 'ModDate' },
+  { key: 'info:Trapped', label: 'Trapped flag', token: 'Trapped' },
+];
+
 function formatSize(bytes: number) {
   if (bytes === 0) return '0 B';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const index = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
   return `${parseFloat((bytes / Math.pow(k, index)).toFixed(2))} ${sizes[index]}`;
+}
+
+function decodePdfString(value: string) {
+  return value
+    .replace(/\\([nrtbf()\\])/g, (_, escaped: string) => {
+      if (escaped === 'n') return '\n';
+      if (escaped === 'r') return '\r';
+      if (escaped === 't') return '\t';
+      if (escaped === 'b') return '\b';
+      if (escaped === 'f') return '\f';
+      return escaped;
+    })
+    .replace(/\\([0-7]{1,3})/g, (_, octal: string) => String.fromCharCode(parseInt(octal, 8)))
+    .trim();
+}
+
+function inspectPdfMetadata(buffer: ArrayBuffer): MetadataEntry[] {
+  const source = new TextDecoder('latin1', { fatal: false }).decode(new Uint8Array(buffer));
+
+  return pdfMetadataFields.flatMap(({ key, label, token }) => {
+    const literalMatch = source.match(new RegExp(`/${token}\\s*\\(([^)]*)\\)`));
+    if (literalMatch?.[1]) {
+      return [{ key, label, value: decodePdfString(literalMatch[1]) }];
+    }
+
+    const nameMatch = source.match(new RegExp(`/${token}\\s*/([^\\s<>\\[\\]()/]+)`));
+    if (nameMatch?.[1]) {
+      return [{ key, label, value: nameMatch[1].trim() }];
+    }
+
+    return [];
+  });
 }
 
 export default function PDFMetadataRemovePage() {
@@ -88,11 +132,7 @@ export default function PDFMetadataRemovePage() {
     });
 
     try {
-      const response = await postTask<{ buffer: ArrayBuffer }, { metadata: MetadataEntry[] }>(
-        'READ_PDF_METADATA',
-        { buffer: buffer.slice(0) }
-      );
-      setMetadata(response.metadata);
+      setMetadata(inspectPdfMetadata(buffer));
     } catch (err) {
       console.error(err);
       setProgressMessage('Could not inspect PDF metadata.');
@@ -239,7 +279,7 @@ export default function PDFMetadataRemovePage() {
                 Export
               </h3>
               <p className="text-xs text-muted-foreground font-dm-sans leading-relaxed">
-                The PDF is saved again with common info fields cleared and internal objects compacted.
+                The PDF is saved again with common info fields cleared while preserving the document structure.
               </p>
               <Button
                 onClick={handleRemoveMetadata}

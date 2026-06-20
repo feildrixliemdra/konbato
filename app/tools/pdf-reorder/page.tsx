@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
 import { useWorker } from '@/lib/hooks/useWorker';
-import { getPdfPageCount, renderPdfPageToDataUrl } from '@/lib/pdf-utils';
+import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -106,13 +107,15 @@ function SortablePage({ item }: SortablePageProps) {
         </span>
       </div>
 
-      <div className="flex h-[calc(100%-2rem)] items-center justify-center bg-muted/5 p-2.5">
+      <div className="relative flex h-[calc(100%-2rem)] items-center justify-center bg-muted/5 p-2.5">
         {item.thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={item.thumbnailUrl}
             alt={`Page ${item.pageIndex + 1} preview`}
-            className="max-h-full max-w-full rounded object-contain shadow-[0_1px_3px_rgba(0,0,0,0.05)] pointer-events-none"
+            fill
+            unoptimized
+            sizes="(min-width: 768px) 12rem, 50vw"
+            className="rounded object-contain p-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)] pointer-events-none"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center rounded border border-dashed border-border/60 bg-muted/20 text-[10px] text-muted-foreground font-dm-sans">
@@ -172,14 +175,22 @@ export default function PDFReorderPage() {
       const nextPages: PDFPageItem[] = [];
       const previewCount = Math.min(pageCount, 30);
 
+      const thumbnails = await renderPdfPagesToDataUrls(
+        buffer,
+        Array.from({ length: previewCount }, (_, index) => index + 1),
+        0.35,
+        (current, total) => {
+          setProgressMessage(`Rendering page thumbnail ${current} of ${total}...`);
+          setProgress(Math.round(10 + (current / total) * 80));
+        }
+      );
+
       for (let index = 0; index < previewCount; index++) {
-        setProgressMessage(`Rendering page thumbnail ${index + 1} of ${previewCount}...`);
         nextPages.push({
           id: `page-${index}`,
           pageIndex: index,
-          thumbnailUrl: await renderPdfPageToDataUrl(buffer, index + 1),
+          thumbnailUrl: thumbnails[index],
         });
-        setProgress(Math.round(10 + ((index + 1) / previewCount) * 80));
       }
 
       for (let index = previewCount; index < pageCount; index++) {

@@ -251,6 +251,8 @@ self.onmessage = async (e: MessageEvent) => {
       }
       
       ctx.drawImage(bitmap, 0, 0);
+      const bitmapWidth = bitmap.width;
+      const bitmapHeight = bitmap.height;
       bitmap.close();
       
       self.postMessage({ id, type: 'PROGRESS', payload: { progress: 80, message: 'Generating output...' } });
@@ -268,8 +270,8 @@ self.onmessage = async (e: MessageEvent) => {
           payload: {
             buffer: outBuffer,
             mimeType: targetMimeType,
-            width: bitmap.width,
-            height: bitmap.height
+            width: bitmapWidth,
+            height: bitmapHeight
           }
         }, [outBuffer]);
       } else {
@@ -280,8 +282,8 @@ self.onmessage = async (e: MessageEvent) => {
           payload: {
             bitmap: outBitmap,
             mimeType: targetMimeType,
-            width: bitmap.width,
-            height: bitmap.height
+            width: bitmapWidth,
+            height: bitmapHeight
           }
         }, [outBitmap]);
       }

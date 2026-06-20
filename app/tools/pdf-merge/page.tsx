@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
 import { useWorker } from '@/lib/hooks/useWorker';
-import { getPdfPageCount, renderPdfPageToDataUrl } from '@/lib/pdf-utils';
+import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -142,11 +143,13 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
           style={{ transform: `rotate(${item.rotation}deg)` }}
         >
           {item.thumbnailUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={item.thumbnailUrl}
               alt={`Page ${item.pageIndex + 1} of ${item.fileName}`}
-              className="max-w-full max-h-full object-contain shadow-[0_1px_3px_rgba(0,0,0,0.05)] rounded pointer-events-none"
+              fill
+              unoptimized
+              sizes="(min-width: 640px) 10rem, 50vw"
+              className="object-contain p-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)] rounded pointer-events-none"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center rounded border border-dashed border-border/60 bg-muted/20 text-[10px] text-muted-foreground font-dm-sans">
@@ -245,15 +248,22 @@ export default function PDFMergePage() {
 
         // Limit initial thumbnail generation to first 30 pages to prevent browser lockup
         const renderPagesCount = Math.min(pageCount, 30);
+        const thumbnails = await renderPdfPagesToDataUrls(
+          buffer,
+          Array.from({ length: renderPagesCount }, (_, index) => index + 1),
+          0.35,
+          (current, total) => {
+            setProgressMessage(`Rendering thumbnail for ${file.name} (page ${current}/${total})...`);
+          }
+        );
+
         for (let p = 0; p < renderPagesCount; p++) {
-          setProgressMessage(`Rendering thumbnail for ${file.name} (page ${p + 1}/${renderPagesCount})...`);
-          const thumbnail = await renderPdfPageToDataUrl(buffer, p + 1);
           newPagesList.push({
             id: `${fileId}-${p}`,
             fileId,
             fileName: file.name,
             pageIndex: p,
-            thumbnailUrl: thumbnail,
+            thumbnailUrl: thumbnails[p],
             rotation: 0,
           });
         }
