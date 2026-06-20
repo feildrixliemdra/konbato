@@ -37,7 +37,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="mb-8 max-w-2xl text-lg text-muted-foreground sm:text-xl font-dm-sans leading-relaxed"
           >
-            Convert images, PDFs, and videos securely in your browser.
+            Convert images and PDFs securely in your browser.
             Privacy-first, fast, and free. No server processing, no data leaks.
           </motion.p>
 
@@ -47,7 +47,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="mb-10 flex flex-wrap gap-4"
           >
-            {features.map((feature, index) => (
+            {features.map((feature) => (
               <div
                 key={feature}
                 className="flex items-center gap-2 text-sm font-medium text-foreground/80"
@@ -69,12 +69,15 @@ export function Hero() {
             <Button
               size="lg"
               className="group h-14 px-8 text-base font-semibold shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02]"
+              asChild
             >
-              Start Converting
-              <HugeiconsIcon
-                icon={Upload01Icon}
-                className="ml-2 h-5 w-5 transition-transform group-hover:translate-y-[-2px]"
-              />
+              <Link href="/tools">
+                Start Converting
+                <HugeiconsIcon
+                  icon={Upload01Icon}
+                  className="ml-2 h-5 w-5 transition-transform group-hover:translate-y-[-2px]"
+                />
+              </Link>
             </Button>
             <Button
               size="lg"
@@ -82,7 +85,7 @@ export function Hero() {
               className="h-14 px-8 text-base font-semibold bg-background/50 backdrop-blur-sm border-border/60 hover:border-primary/30 hover:bg-background/80 transition-all"
               asChild
             >
-              <Link href="#tools" className="group">
+              <Link href="/tools" className="group">
                 View All Tools
                 <HugeiconsIcon
                   icon={ArrowRight01Icon}

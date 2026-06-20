@@ -20,8 +20,10 @@ import {
   ColorsIcon,
   Layers01Icon,
   SplitIcon,
-  VideoReplayIcon,
-  Video01Icon,
+  RotateClockwiseIcon,
+  ImageCropIcon,
+  Shield01Icon,
+  ArrangeIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,7 +54,7 @@ export function SiteHeader() {
                   Tools
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="grid gap-6 p-6 w-[560px] md:grid-cols-3">
+                  <div className="grid gap-6 p-6 w-[520px] md:grid-cols-2">
                     {/* Image Tools */}
                     <div className="flex flex-col gap-3">
                       <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase font-manrope">
@@ -75,6 +77,24 @@ export function SiteHeader() {
                           >
                             <HugeiconsIcon icon={ArrowShrink01Icon} className="text-emerald-500 group-hover/link:scale-105" />
                             Image Compress
+                          </Link>
+                        </NavigationMenuLink>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href="/tools/image-resize-crop"
+                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans group/link"
+                          >
+                            <HugeiconsIcon icon={ImageCropIcon} className="text-cyan-500 group-hover/link:scale-105" />
+                            Resize & Crop
+                          </Link>
+                        </NavigationMenuLink>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href="/tools/image-metadata-remove"
+                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans group/link"
+                          >
+                            <HugeiconsIcon icon={Shield01Icon} className="text-teal-500 group-hover/link:scale-105" />
+                            Remove Metadata
                           </Link>
                         </NavigationMenuLink>
                         <NavigationMenuLink asChild>
@@ -127,44 +147,26 @@ export function SiteHeader() {
                             href="/tools/pdf-rotate"
                             className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans group/link"
                           >
-                            <HugeiconsIcon icon={VideoReplayIcon} className="text-rose-500 group-hover/link:scale-105" />
+                            <HugeiconsIcon icon={RotateClockwiseIcon} className="text-rose-500 group-hover/link:scale-105" />
                             Rotate PDF
                           </Link>
                         </NavigationMenuLink>
-                      </div>
-                    </div>
-
-                    {/* Video Tools */}
-                    <div className="flex flex-col gap-3">
-                      <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase font-manrope">
-                        Video Tools
-                      </h4>
-                      <div className="flex flex-col gap-1">
                         <NavigationMenuLink asChild>
                           <Link
-                            href="/tools/video-compress"
+                            href="/tools/pdf-reorder"
                             className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans group/link"
                           >
-                            <HugeiconsIcon icon={Video01Icon} className="text-purple-500 group-hover/link:scale-105" />
-                            Compress Video
+                            <HugeiconsIcon icon={ArrangeIcon} className="text-red-500 group-hover/link:scale-105" />
+                            Reorder PDF
                           </Link>
                         </NavigationMenuLink>
                         <NavigationMenuLink asChild>
                           <Link
-                            href="/tools/video-trim"
+                            href="/tools/pdf-metadata-remove"
                             className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans group/link"
                           >
-                            <HugeiconsIcon icon={SplitIcon} className="text-violet-500 group-hover/link:scale-105" />
-                            Trim Video
-                          </Link>
-                        </NavigationMenuLink>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/tools/video-convert"
-                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans group/link"
-                          >
-                            <HugeiconsIcon icon={VideoReplayIcon} className="text-fuchsia-500 group-hover/link:scale-105" />
-                            Convert Video
+                            <HugeiconsIcon icon={Shield01Icon} className="text-slate-500 group-hover/link:scale-105" />
+                            Remove Metadata
                           </Link>
                         </NavigationMenuLink>
                       </div>
@@ -264,6 +266,26 @@ export function SiteHeader() {
                     Image Compress
                   </Link>
                   <Link
+                    href="/tools/image-resize-crop"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-500">
+                      <HugeiconsIcon icon={ImageCropIcon} className="size-4" />
+                    </div>
+                    Image Resize & Crop
+                  </Link>
+                  <Link
+                    href="/tools/image-metadata-remove"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-500/10 text-teal-500">
+                      <HugeiconsIcon icon={Shield01Icon} className="size-4" />
+                    </div>
+                    Image Metadata Remover
+                  </Link>
+                  <Link
                     href="/tools/image-remove-bg"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans"
@@ -318,52 +340,32 @@ export function SiteHeader() {
                     className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans"
                   >
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500">
-                      <HugeiconsIcon icon={VideoReplayIcon} className="size-4" />
+                      <HugeiconsIcon icon={RotateClockwiseIcon} className="size-4" />
                     </div>
                     Rotate PDF
                   </Link>
-                </div>
-              </div>
-
-              {/* Video Tools */}
-              <div className="flex flex-col gap-2">
-                <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase font-manrope px-2">
-                  Video Tools
-                </h4>
-                <div className="grid grid-cols-1 gap-1">
                   <Link
-                    href="/tools/video-compress"
+                    href="/tools/pdf-reorder"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans"
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500">
-                      <HugeiconsIcon icon={Video01Icon} className="size-4" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
+                      <HugeiconsIcon icon={ArrangeIcon} className="size-4" />
                     </div>
-                    Compress Video
+                    PDF Page Reorder
                   </Link>
                   <Link
-                    href="/tools/video-trim"
+                    href="/tools/pdf-metadata-remove"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans"
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500">
-                      <HugeiconsIcon icon={SplitIcon} className="size-4" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-500/10 text-slate-500">
+                      <HugeiconsIcon icon={Shield01Icon} className="size-4" />
                     </div>
-                    Trim Video
-                  </Link>
-                  <Link
-                    href="/tools/video-convert"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-fuchsia-500/10 text-fuchsia-500">
-                      <HugeiconsIcon icon={VideoReplayIcon} className="size-4" />
-                    </div>
-                    Convert Video
+                    PDF Metadata Remover
                   </Link>
                 </div>
               </div>
-
               {/* View All Tools Button */}
               <div className="pt-4 border-t border-border/40">
                 <Button

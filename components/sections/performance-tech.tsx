@@ -16,9 +16,9 @@ const technologies = [
     icon: Rocket01Icon,
   },
   {
-    name: 'FFmpeg.wasm',
+    name: 'MuPDF WASM',
     color: 'from-purple-500 to-purple-600',
-    description: 'Video processing power',
+    description: 'PDF editing engine',
     icon: CodeIcon,
   },
   {

@@ -30,6 +30,10 @@ interface CompressedResult {
   blobUrl: string;
 }
 
+interface PDFWorkerResult {
+  buffer: ArrayBuffer;
+}
+
 export default function PDFCompressPage() {
   const createWorker = useCallback(() => {
     if (typeof window === 'undefined') return null;
@@ -83,7 +87,7 @@ export default function PDFCompressPage() {
 
       setProgressMessage(isDeep ? 'Rasterizing and compressing pages...' : 'Scrubbing metadata and structures...');
       
-      const response: any = await postTask(type, payload, (pct, msg) => {
+      const response = await postTask<typeof payload, PDFWorkerResult>(type, payload, (pct, msg) => {
         setProgress(pct);
         if (msg) setProgressMessage(msg);
       });

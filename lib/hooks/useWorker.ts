@@ -1,15 +1,20 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
-export interface WorkerMessage<T = any> {
+export interface WorkerMessage<T = unknown> {
   id: string;
   type: 'PROGRESS' | 'SUCCESS' | 'ERROR';
   payload: T;
 }
 
-export interface WorkerRequest<T = any> {
+export interface WorkerRequest<T = unknown> {
   id: string;
   type: string;
   payload: T;
+}
+
+interface WorkerStatusPayload {
+  message?: string;
+  progress?: number;
 }
 
 export function useWorker(createWorker: () => Worker | null) {
@@ -17,7 +22,7 @@ export function useWorker(createWorker: () => Worker | null) {
     Map<
       string,
       {
-        onSuccess: (data: any) => void;
+        onSuccess: (data: unknown) => void;
         onError: (error: Error) => void;
         onProgress?: (progress: number, message?: string) => void;
       }
@@ -35,6 +40,7 @@ export function useWorker(createWorker: () => Worker | null) {
     activeWorker.onmessage = (event: MessageEvent<WorkerMessage>) => {
       const { id, type, payload } = event.data;
       const callbacks = callbacksRef.current.get(id);
+      const status = payload as WorkerStatusPayload;
 
       if (!callbacks) return;
 
@@ -42,21 +48,22 @@ export function useWorker(createWorker: () => Worker | null) {
         callbacks.onSuccess(payload);
         callbacksRef.current.delete(id);
       } else if (type === 'ERROR') {
-        callbacks.onError(new Error(payload?.message || 'Worker processing failed'));
+        callbacks.onError(new Error(status.message || 'Worker processing failed'));
         callbacksRef.current.delete(id);
       } else if (type === 'PROGRESS') {
-        if (callbacks.onProgress) {
-          callbacks.onProgress(payload.progress, payload.message);
+        if (callbacks.onProgress && typeof status.progress === 'number') {
+          callbacks.onProgress(status.progress, status.message);
         }
       }
     };
 
     return () => {
       // Reject any pending promises before terminating
-      callbacksRef.current.forEach((callbacks) => {
-        callbacks.onError(new Error('Worker was terminated during cleanup'));
+      const callbacks = callbacksRef.current;
+      callbacks.forEach((pending) => {
+        pending.onError(new Error('Worker was terminated during cleanup'));
       });
-      callbacksRef.current.clear();
+      callbacks.clear();
 
       activeWorker.terminate();
       workerRef.current = null;
@@ -64,7 +71,7 @@ export function useWorker(createWorker: () => Worker | null) {
   }, [createWorker]);
 
   const postTask = useCallback(
-    <Req = any, Res = any>(
+    <Req = unknown, Res = unknown>(
       type: string,
       payload: Req,
       onProgress?: (progress: number, message?: string) => void
@@ -77,7 +84,7 @@ export function useWorker(createWorker: () => Worker | null) {
 
         const id = Math.random().toString(36).substring(2, 9);
         callbacksRef.current.set(id, {
-          onSuccess: resolve,
+          onSuccess: (data) => resolve(data as Res),
           onError: reject,
           onProgress,
         });

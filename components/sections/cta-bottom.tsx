@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 export function CTABottom() {
   return (
@@ -31,12 +32,15 @@ export function CTABottom() {
           <Button
             size="lg"
             className="group h-14 px-10 text-base font-semibold shadow-xl shadow-primary/30 transition-all hover:shadow-2xl hover:shadow-primary/40 hover:scale-105"
+            asChild
           >
-            Get Started Now
-            <HugeiconsIcon
-              icon={ArrowRight01Icon}
-              className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1"
-            />
+            <Link href="/tools">
+              Get Started Now
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1"
+              />
+            </Link>
           </Button>
         </motion.div>
       </div>

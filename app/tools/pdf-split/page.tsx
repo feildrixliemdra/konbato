@@ -31,6 +31,10 @@ interface PDFPageItem {
   thumbnailUrl: string;
 }
 
+interface PDFWorkerResult {
+  buffer: ArrayBuffer;
+}
+
 // Helpers for Range Parsing and Generation
 function parseRangeString(rangeStr: string, totalPages: number): number[] {
   const result: number[] = [];
@@ -222,7 +226,7 @@ export default function PDFSplitPage() {
         })),
       };
 
-      const result: any = await postTask('MERGE_SPLIT_ROTATE', payload, (pct, msg) => {
+      const result = await postTask<typeof payload, PDFWorkerResult>('MERGE_SPLIT_ROTATE', payload, (pct, msg) => {
         setProgress(pct);
         if (msg) setProgressMessage(msg);
       });

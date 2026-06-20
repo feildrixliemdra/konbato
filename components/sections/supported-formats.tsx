@@ -1,11 +1,8 @@
 'use client';
 
-import { motion } from 'framer-motion';
-
 const formats = {
   Images: ['JPG', 'PNG', 'WEBP', 'AVIF', 'GIF', 'TIFF'],
   Documents: ['PDF', 'TXT', 'MD'],
-  Video: ['MP4', 'WEBM', 'MOV', 'AVI', 'MKV'],
 };
 
 export function SupportedFormats() {
@@ -31,7 +28,7 @@ export function SupportedFormats() {
           </div>
         ))}
         {/* Simple marquee effect or just static list depending on width */}
-        <div className="md:hidden text-xs">JPG, PNG, PDF, MP4, and more...</div>
+        <div className="md:hidden text-xs">JPG, PNG, WEBP, TIFF, and PDF</div>
       </div>
     </section>
   );

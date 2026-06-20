@@ -5,7 +5,6 @@ import {
   Upload01Icon,
   CpuIcon,
   Download01Icon,
-  SparklesIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 
@@ -24,7 +23,7 @@ const steps = [
     title: 'Process',
     description:
       'Files are converted instantly in your browser using WebAssembly.',
-    detail: 'Powered by FFmpeg.wasm and Web Workers for maximum performance.',
+    detail: 'Powered by WebAssembly, Canvas, and Web Workers for maximum performance.',
     icon: CpuIcon,
     metric: '< 2 sec',
     color: 'from-primary to-purple-500',

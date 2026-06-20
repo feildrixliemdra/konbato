@@ -5,7 +5,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Konbato - Convert & Edit Files Securely in Your Browser',
   description:
-    'Convert images, PDFs, and videos without uploading. 100% client-side processing. Privacy-first, fast, and free.',
+    'Convert images and PDFs without uploading. 100% client-side processing. Privacy-first, fast, and free.',
 };
 
 const manrope = Manrope({

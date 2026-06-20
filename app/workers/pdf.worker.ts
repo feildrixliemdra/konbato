@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 // @ts-ignore
 import * as mupdf from 'mupdf';
 
@@ -15,6 +16,52 @@ function safeDestroy(obj: any) {
 function copyPdfBuffer(outBuffer: any): ArrayBuffer {
   const outArray = outBuffer.asUint8Array();
   return outArray.buffer.slice(outArray.byteOffset, outArray.byteOffset + outArray.byteLength);
+}
+
+const PDF_METADATA_KEYS = [
+  'info:Title',
+  'info:Author',
+  'info:Subject',
+  'info:Keywords',
+  'info:Creator',
+  'info:Producer',
+  'info:CreationDate',
+  'info:ModDate',
+  'info:Trapped',
+];
+
+const PDF_METADATA_LABELS: Record<string, string> = {
+  'info:Title': 'Title',
+  'info:Author': 'Author',
+  'info:Subject': 'Subject',
+  'info:Keywords': 'Keywords',
+  'info:Creator': 'Creator',
+  'info:Producer': 'Producer',
+  'info:CreationDate': 'Creation date',
+  'info:ModDate': 'Modified date',
+  'info:Trapped': 'Trapped flag',
+};
+
+function scrubPdfMetadata(doc: any) {
+  PDF_METADATA_KEYS.forEach((key) => {
+    try {
+      doc.setMetaData(key, '');
+    } catch (err) {
+      // Some documents expose read-only or absent metadata keys.
+    }
+  });
+}
+
+function readPdfMetadata(doc: any) {
+  return PDF_METADATA_KEYS.flatMap((key) => {
+    try {
+      const value = doc.getMetaData(key);
+      const normalized = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+      return normalized ? [{ key, label: PDF_METADATA_LABELS[key] || key, value: normalized }] : [];
+    } catch (err) {
+      return [];
+    }
+  });
 }
 
 // Convert a PNG Uint8Array to JPEG ArrayBuffer using OffscreenCanvas
@@ -138,20 +185,43 @@ self.onmessage = async (e: MessageEvent) => {
       try {
         self.postMessage({ id, type: 'PROGRESS', payload: { progress: 50, message: 'Stripping document metadata...' } });
         
-        const metadataKeys = [
-          'info:Title', 'info:Author', 'info:Subject', 'info:Keywords', 
-          'info:Creator', 'info:Producer', 'info:CreationDate', 'info:ModDate', 'info:Trapped'
-        ];
-        
-        metadataKeys.forEach((key) => {
-          try {
-            doc.setMetaData(key, '');
-          } catch (err) {
-            // Ignore keys that cannot be set or modified
-          }
-        });
+        scrubPdfMetadata(doc);
 
         self.postMessage({ id, type: 'PROGRESS', payload: { progress: 80, message: 'Optimizing and deduplicating objects...' } });
+        const outBuffer = doc.saveToBuffer('compress,compress-images,garbage=2');
+        const transferBuffer = copyPdfBuffer(outBuffer);
+        (self as any).postMessage({
+          id,
+          type: 'SUCCESS',
+          payload: { buffer: transferBuffer }
+        }, [transferBuffer]);
+      } finally {
+        safeDestroy(doc);
+      }
+
+    } else if (type === 'READ_PDF_METADATA') {
+      const { buffer } = payload;
+      const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf');
+      try {
+        self.postMessage({
+          id,
+          type: 'SUCCESS',
+          payload: { metadata: readPdfMetadata(doc) }
+        });
+      } finally {
+        safeDestroy(doc);
+      }
+
+    } else if (type === 'STRIP_PDF_METADATA') {
+      const { buffer } = payload;
+      self.postMessage({ id, type: 'PROGRESS', payload: { progress: 20, message: 'Reading PDF metadata...' } });
+
+      const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf');
+      try {
+        self.postMessage({ id, type: 'PROGRESS', payload: { progress: 55, message: 'Removing common document info fields...' } });
+        scrubPdfMetadata(doc);
+
+        self.postMessage({ id, type: 'PROGRESS', payload: { progress: 85, message: 'Saving privacy-scrubbed PDF...' } });
         const outBuffer = doc.saveToBuffer('compress,compress-images,garbage=2');
         const transferBuffer = copyPdfBuffer(outBuffer);
         (self as any).postMessage({

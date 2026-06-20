@@ -5,11 +5,10 @@ import {
   Image01Icon,
   Layers01Icon,
   SplitIcon,
-  Video01Icon,
   ArrowShrink01Icon,
-  StarIcon,
   ArrowRight01Icon,
   ColorsIcon,
+  ImageCropIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { motion } from 'framer-motion';
@@ -44,13 +43,13 @@ const popularTools = [
     href: '/tools/pdf-split',
   },
   {
-    title: 'Video Compress',
-    description: 'Reduce file size',
-    icon: Video01Icon,
-    color: 'text-purple-600',
-    bg: 'bg-purple-500/10',
-    borderGradient: 'from-purple-500/50 to-purple-600/50',
-    href: '/tools/video-compress',
+    title: 'Resize & Crop',
+    description: 'Crop and resize images',
+    icon: ImageCropIcon,
+    color: 'text-cyan-600',
+    bg: 'bg-cyan-500/10',
+    borderGradient: 'from-cyan-500/50 to-cyan-600/50',
+    href: '/tools/image-resize-crop',
   },
   {
     title: 'Image Compress',

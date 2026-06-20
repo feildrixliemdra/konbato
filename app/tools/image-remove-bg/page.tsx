@@ -12,7 +12,6 @@ import {
   ColorsIcon,
   Download01Icon,
   ArrowLeft01Icon,
-  Tick01Icon,
 } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
 
@@ -119,9 +118,9 @@ export default function ImageRemoveBgPage() {
       // Save cache flag
       localStorage.setItem('konbato_bg_model_downloaded', 'true');
       setIsModelDownloaded(true);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setProgressMessage(err?.message || 'Processing failed. Your device might lack required WebGL/WASM support.');
+      setProgressMessage(err instanceof Error ? err.message : 'Processing failed. Your device might lack required WebGL/WASM support.');
     } finally {
       setIsProcessing(false);
     }

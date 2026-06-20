@@ -4,22 +4,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
-import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Image01Icon,
   File01Icon,
-  VideoReplayIcon,
+  RotateClockwiseIcon,
   SearchIcon,
   ArrowRight01Icon,
   Layers01Icon,
   SplitIcon,
-  Video01Icon,
   ArrowShrink01Icon,
-  ImageFlipHorizontalIcon,
   ColorsIcon,
+  ImageCropIcon,
+  Shield01Icon,
+  ArrangeIcon,
 } from '@hugeicons/core-free-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -44,6 +43,26 @@ const tools = [
     bg: 'bg-blue-500/10',
     href: '/tools/image-convert',
     badge: 'Phase 1',
+  },
+  {
+    title: 'Image Resize & Crop',
+    description: 'Crop by preset or numeric bounds, then resize into PNG, JPG, or WebP.',
+    category: 'Image',
+    icon: ImageCropIcon,
+    color: 'text-cyan-500',
+    bg: 'bg-cyan-500/10',
+    href: '/tools/image-resize-crop',
+    badge: 'Phase 1',
+  },
+  {
+    title: 'Image Metadata Remover',
+    description: 'Re-encode images to scrub common embedded metadata locally.',
+    category: 'Image',
+    icon: Shield01Icon,
+    color: 'text-teal-500',
+    bg: 'bg-teal-500/10',
+    href: '/tools/image-metadata-remove',
+    badge: 'Privacy',
   },
   {
     title: 'Remove Background',
@@ -90,10 +109,30 @@ const tools = [
     title: 'Rotate PDF',
     description: 'Rotate specific pages in your PDF files by 90-degree steps.',
     category: 'PDF',
-    icon: VideoReplayIcon,
+    icon: RotateClockwiseIcon,
     color: 'text-rose-500',
     bg: 'bg-rose-500/10',
     href: '/tools/pdf-rotate',
+    badge: 'Phase 2',
+  },
+  {
+    title: 'PDF Metadata Remover',
+    description: 'Clear common PDF info fields and save a privacy-scrubbed copy.',
+    category: 'PDF',
+    icon: Shield01Icon,
+    color: 'text-slate-500',
+    bg: 'bg-slate-500/10',
+    href: '/tools/pdf-metadata-remove',
+    badge: 'Privacy',
+  },
+  {
+    title: 'PDF Page Reorder',
+    description: 'Drag pages into a new sequence and export a reordered PDF.',
+    category: 'PDF',
+    icon: ArrangeIcon,
+    color: 'text-red-500',
+    bg: 'bg-red-500/10',
+    href: '/tools/pdf-reorder',
     badge: 'Phase 2',
   },
   {
@@ -116,44 +155,12 @@ const tools = [
     href: '/tools/image-to-pdf',
     badge: 'Phase 2',
   },
-  // Video Category (Phase 3)
-  {
-    title: 'Compress Video',
-    description: 'Reduce video size client-side using FFmpeg WebAssembly compiler.',
-    category: 'Video',
-    icon: Video01Icon,
-    color: 'text-purple-500',
-    bg: 'bg-purple-500/10',
-    href: '/tools/video-compress',
-    badge: 'Phase 3',
-  },
-  {
-    title: 'Trim Video',
-    description: 'Slice sections from your video files using a timeline selector.',
-    category: 'Video',
-    icon: SplitIcon,
-    color: 'text-violet-500',
-    bg: 'bg-violet-500/10',
-    href: '/tools/video-trim',
-    badge: 'Phase 3',
-  },
-  {
-    title: 'Convert Video',
-    description: 'Transcode between MP4, WebM, MOV, and AVI containers offline.',
-    category: 'Video',
-    icon: VideoReplayIcon,
-    color: 'text-fuchsia-500',
-    bg: 'bg-fuchsia-500/10',
-    href: '/tools/video-convert',
-    badge: 'Phase 3',
-  },
 ];
 
 const categories = [
   { name: 'All', icon: null },
   { name: 'Image', icon: Image01Icon },
   { name: 'PDF', icon: File01Icon },
-  { name: 'Video', icon: VideoReplayIcon },
 ];
 
 export default function ToolsPage() {

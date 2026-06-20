@@ -1,5 +1,16 @@
 import type { NextConfig } from "next";
 
+interface WebpackWarning {
+  module?: {
+    resource?: string;
+  };
+  message?: string;
+}
+
+interface ReplacementResource {
+  request: string;
+}
+
 const nextConfig: NextConfig = {
   webpack: (config, { isServer, webpack }) => {
     // Enable async WebAssembly and top-level await for mupdf WASM workers
@@ -16,7 +27,7 @@ const nextConfig: NextConfig = {
     // statically traces the import chain: page → pdf.worker.ts → mupdf.js.
     config.ignoreWarnings = [
       ...(config.ignoreWarnings ?? []),
-      (warning: any) =>
+      (warning: WebpackWarning) =>
         warning.module?.resource?.includes('mupdf') &&
         warning.message?.includes('topLevelAwait'),
     ];
@@ -35,7 +46,7 @@ const nextConfig: NextConfig = {
       config.plugins.push(
         new webpack.NormalModuleReplacementPlugin(
           /^node:/,
-          (resource: any) => {
+          (resource: ReplacementResource) => {
             resource.request = resource.request.replace(/^node:/, '');
           }
         )

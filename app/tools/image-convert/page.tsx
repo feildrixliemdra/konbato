@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -24,6 +24,14 @@ interface ProcessedFile {
   originalSize: number;
   convertedUrl: string;
   targetFormat: string;
+}
+
+interface ImageWorkerResult {
+  buffer?: ArrayBuffer;
+  bitmap?: ImageBitmap;
+  mimeType: string;
+  width: number;
+  height: number;
 }
 
 export default function ImageConvertPage() {
@@ -84,7 +92,7 @@ export default function ImageConvertPage() {
           targetMimeType: targetFormat,
         };
 
-        const result: any = await postTask('CONVERT', payload, (p) => {
+        const result = await postTask<typeof payload, ImageWorkerResult>('CONVERT', payload, (p) => {
           const workerWeight = 1 / files.length;
           const currentBase = (i / files.length) * 100;
           setProgress(Math.round(currentBase + p * workerWeight));
@@ -110,8 +118,10 @@ export default function ImageConvertPage() {
             );
           });
           result.bitmap.close();
-        } else {
+        } else if (result.buffer) {
           outBlob = new Blob([result.buffer], { type: targetFormat });
+        } else {
+          throw new Error('Image worker returned no output buffer.');
         }
         const convertedUrl = URL.createObjectURL(outBlob);
 

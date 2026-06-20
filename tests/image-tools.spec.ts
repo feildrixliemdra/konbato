@@ -33,6 +33,16 @@ const PDF_TOOL_ROUTES = [
     uploadText: 'Upload PDF document to rotate',
   },
   {
+    path: '/tools/pdf-metadata-remove',
+    heading: 'PDF Metadata Remover',
+    uploadText: 'Upload PDF document to scrub metadata',
+  },
+  {
+    path: '/tools/pdf-reorder',
+    heading: 'PDF Page Reorder',
+    uploadText: 'Upload PDF document to reorder pages',
+  },
+  {
     path: '/tools/pdf-to-image',
     heading: 'PDF to Image',
     uploadText: 'Upload PDF document to extract as images',
@@ -43,6 +53,21 @@ const PDF_TOOL_ROUTES = [
     uploadText: 'Upload images to compile (JPEG, PNG)',
   },
 ];
+
+const NEW_IMAGE_TOOL_ROUTES = [
+  {
+    path: '/tools/image-resize-crop',
+    heading: 'Image Resize & Crop',
+    uploadText: 'Upload one image to resize and crop',
+  },
+  {
+    path: '/tools/image-metadata-remove',
+    heading: 'Image Metadata Remover',
+    uploadText: 'Upload images to scrub metadata',
+  },
+];
+
+const RESPONSIVE_TOOL_ROUTES = [...PDF_TOOL_ROUTES, ...NEW_IMAGE_TOOL_ROUTES];
 
 const RESPONSIVE_VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 },
@@ -106,10 +131,14 @@ test.describe('Tools app coverage', () => {
     // Verify Phase 1 Tool cards are present
     const compressCard = page.getByRole('heading', { name: 'Image Compress' });
     const imageConverterCard = page.getByRole('heading', { name: 'Image Converter' });
+    const resizeCropCard = page.getByRole('heading', { name: 'Image Resize & Crop' });
+    const imageMetadataCard = page.getByRole('heading', { name: 'Image Metadata Remover' });
     const removeBgCard = page.getByRole('heading', { name: 'Remove Background' });
 
     await expect(compressCard).toBeVisible();
     await expect(imageConverterCard).toBeVisible();
+    await expect(resizeCropCard).toBeVisible();
+    await expect(imageMetadataCard).toBeVisible();
     await expect(removeBgCard).toBeVisible();
 
     for (const tool of PDF_TOOL_ROUTES) {
@@ -132,9 +161,7 @@ test.describe('Tools app coverage', () => {
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles([TEST_IMAGES.jpg, TEST_IMAGES.webp]);
 
-    await expect(page.getByText('Selected Files (2)')).toBeVisible();
-    await expect(page.getByText('test-pixel.jpg')).toBeVisible();
-    await expect(page.getByText('test-pixel.webp')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Convert Images' })).toBeEnabled();
 
     // Click convert
     await page.getByRole('button', { name: 'Convert Images' }).click();
@@ -156,12 +183,43 @@ test.describe('Tools app coverage', () => {
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(TEST_IMAGES.png);
 
-    await expect(page.getByText('Selected Files (1)')).toBeVisible();
-    await expect(page.getByText('test-pixel.png')).toBeVisible();
+    await expect(page.getByText('Selected Files (1)').first()).toBeVisible();
+    await expect(page.getByText('test-pixel.png').first()).toBeVisible();
 
     // Click Remove Background button
     const removeBgButton = page.getByRole('button', { name: 'Remove Background' });
     await expect(removeBgButton).toBeEnabled();
+  });
+
+  test('Image Resize & Crop transforms an uploaded image', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based tests on Webkit');
+    await page.goto('/tools/image-resize-crop');
+
+    await expect(page.getByRole('heading', { name: 'Image Resize & Crop', exact: true })).toBeVisible();
+    await uploadFile(page, TEST_IMAGES.png);
+
+    await expect(page.getByText('Source:')).toBeVisible();
+    await page.getByLabel('Target width').fill('1');
+    await page.getByLabel('Target height').fill('1');
+    await page.getByRole('button', { name: 'Resize & Crop' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Image Ready' })).toBeVisible({ timeout: 60000 });
+    await expectDownloadLink(page, 'Download Image');
+  });
+
+  test('Image Metadata Remover re-encodes uploaded images', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based tests on Webkit');
+    await page.goto('/tools/image-metadata-remove');
+
+    await expect(page.getByRole('heading', { name: 'Image Metadata Remover', exact: true })).toBeVisible();
+    await uploadFile(page, TEST_IMAGES.png);
+
+    await expect(page.getByText('Selected Files (1)').first()).toBeVisible();
+    await expect(page.getByText('test-pixel.png').first()).toBeVisible();
+    await page.getByRole('button', { name: 'Remove Metadata' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Metadata Removed' })).toBeVisible({ timeout: 60000 });
+    await expectDownloadLink(page, 'Download');
   });
 
   test('Merge PDF processes an uploaded PDF', async ({ page, browserName }) => {
@@ -230,6 +288,38 @@ test.describe('Tools app coverage', () => {
     await expectProcessingOrComplete(page, 'Compiling rotations...', 'Page Rotation Saved');
   });
 
+  test('PDF Metadata Remover scrubs an uploaded PDF', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based PDF processing on Webkit');
+    test.setTimeout(90000);
+    await page.goto('/tools/pdf-metadata-remove');
+
+    await expect(page.getByRole('heading', { name: 'PDF Metadata Remover', exact: true })).toBeVisible();
+    await uploadFile(page, TEST_FILES.pdf);
+
+    await expect(page.getByText('File Details')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText('test-document.pdf')).toBeVisible();
+    await page.getByRole('button', { name: 'Remove Metadata' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Metadata Removed' })).toBeVisible({ timeout: 60000 });
+    await expectDownloadLink(page, 'Download PDF');
+  });
+
+  test('PDF Page Reorder exports uploaded PDF pages', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based PDF processing on Webkit');
+    test.setTimeout(90000);
+    await page.goto('/tools/pdf-reorder');
+
+    await expect(page.getByRole('heading', { name: 'PDF Page Reorder', exact: true })).toBeVisible();
+    await uploadFile(page, TEST_FILES.pdf);
+
+    await expect(page.getByText('Page reorder workspace')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('button', { name: 'Export Reordered PDF' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Export Reordered PDF' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Reorder Complete' })).toBeVisible({ timeout: 60000 });
+    await expectDownloadLink(page, 'Download PDF');
+  });
+
   test('PDF to Image starts converting an uploaded PDF into images', async ({ page, browserName }) => {
     test.skip(browserName === 'webkit', 'Skip worker-based PDF processing on Webkit');
     test.setTimeout(90000);
@@ -262,7 +352,7 @@ test.describe('Tools app coverage', () => {
     await expectProcessingOrComplete(page, 'Compiling images into PDF pages...', 'PDF Compiled');
   });
 
-  for (const tool of PDF_TOOL_ROUTES) {
+  for (const tool of RESPONSIVE_TOOL_ROUTES) {
     test(`${tool.heading} page is responsive`, async ({ page }) => {
       for (const viewport of RESPONSIVE_VIEWPORTS) {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });

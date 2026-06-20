@@ -14,7 +14,6 @@ import {
   Image01Icon,
   Download01Icon,
   ArrowLeft01Icon,
-  Tick01Icon,
 } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
 import JSZip from 'jszip';
@@ -29,6 +28,13 @@ interface ConvertedImage {
   pageIndex: number;
   url: string;
   fileName: string;
+}
+
+interface PDFImageResult {
+  images: {
+    pageIndex: number;
+    buffer: ArrayBuffer;
+  }[];
 }
 
 export default function PDFToImagePage() {
@@ -92,12 +98,12 @@ export default function PDFToImagePage() {
 
       setProgressMessage('Initializing page conversion...');
       
-      const response: any = await postTask('PDF_TO_IMAGE', payload, (pct, msg) => {
+      const response = await postTask<typeof payload, PDFImageResult>('PDF_TO_IMAGE', payload, (pct, msg) => {
         setProgress(pct);
         if (msg) setProgressMessage(msg);
       });
 
-      const converted: ConvertedImage[] = response.images.map((img: any) => {
+      const converted: ConvertedImage[] = response.images.map((img) => {
         const blob = new Blob([img.buffer], { type: format });
         const url = URL.createObjectURL(blob);
         return {

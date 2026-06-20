@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  VideoReplayIcon,
+  RotateClockwiseIcon,
   Download01Icon,
   ArrowLeft01Icon,
   Tick01Icon,
@@ -30,6 +30,10 @@ interface PDFPageItem {
   pageIndex: number; // 0-based
   thumbnailUrl: string;
   rotation: number; // 0, 90, 180, 270
+}
+
+interface PdfWorkerBufferResult {
+  buffer: ArrayBuffer;
 }
 
 export default function PDFRotatePage() {
@@ -147,7 +151,7 @@ export default function PDFRotatePage() {
         })),
       };
 
-      const result: any = await postTask('MERGE_SPLIT_ROTATE', payload, (pct, msg) => {
+      const result = await postTask<typeof payload, PdfWorkerBufferResult>('MERGE_SPLIT_ROTATE', payload, (pct, msg) => {
         setProgress(pct);
         if (msg) setProgressMessage(msg);
       });
@@ -187,7 +191,7 @@ export default function PDFRotatePage() {
         <div className="mb-8 flex flex-col gap-2">
           <div className="flex items-center gap-3">
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
-              <HugeiconsIcon icon={VideoReplayIcon} className="size-5" />
+              <HugeiconsIcon icon={RotateClockwiseIcon} className="size-5" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold font-manrope">Rotate PDF</h1>
           </div>

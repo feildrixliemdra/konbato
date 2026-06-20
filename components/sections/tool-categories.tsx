@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/card';
 import {
   Image01Icon,
   File01Icon,
-  VideoReplayIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { motion } from 'framer-motion';
@@ -13,20 +12,14 @@ const categories = [
   {
     title: 'Image Tools',
     icon: <HugeiconsIcon icon={Image01Icon} />,
-    items: ['Image Converter', 'Compress Image', 'Remove Background'],
+    items: ['Image Converter', 'Compress Image', 'Resize & Crop', 'Remove Metadata', 'Remove Background'],
     color: 'bg-blue-500/10 text-blue-500',
   },
   {
     title: 'PDF Tools',
     icon: <HugeiconsIcon icon={File01Icon} />,
-    items: ['Merge PDF', 'Split PDF', 'Compress PDF'],
+    items: ['Merge PDF', 'Split PDF', 'Reorder PDF', 'Remove Metadata', 'Compress PDF'],
     color: 'bg-red-500/10 text-red-500',
-  },
-  {
-    title: 'Video Tools',
-    icon: <HugeiconsIcon icon={VideoReplayIcon} />,
-    items: ['Convert Video', 'Compress Video', 'Trim Video'],
-    color: 'bg-purple-500/10 text-purple-500',
   },
 ];
 
@@ -41,7 +34,7 @@ export function ToolCategories() {
           Powerful tools for your everyday file tasks.
         </p>
       </div>
-      <div className="grid gap-8 md:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-2">
         {categories.map((category, index) => (
           <motion.div
             key={category.title}
