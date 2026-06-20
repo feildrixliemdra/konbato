@@ -85,8 +85,8 @@ export function Hero() {
               className="h-14 px-8 text-base font-semibold bg-background/50 backdrop-blur-sm border-border/60 hover:border-primary/30 hover:bg-background/80 transition-all"
               asChild
             >
-              <Link href="/tools" className="group">
-                View All Tools
+              <Link href="#how-it-works" className="group">
+                How It Works
                 <HugeiconsIcon
                   icon={ArrowRight01Icon}
                   className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1"
