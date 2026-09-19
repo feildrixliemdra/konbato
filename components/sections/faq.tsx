@@ -20,12 +20,12 @@ const faqs = [
   {
     question: 'Is there a file size limit?',
     answer:
-      'Since processing happens on your device, the limit depends on your browser and available memory (RAM). Generally, files up to 2GB work fine.',
+      'Because processing happens on your device, the practical limit depends on your browser and available memory (RAM). Most files under a few hundred megabytes process comfortably. Very large files may be slow or run out of memory, so we warn you before starting when a file looks risky for your device.',
   },
   {
     question: 'Does it work offline?',
     answer:
-      'We are working on full offline support (PWA). Currently, you need an internet connection to load the page initially.',
+      'Not yet. The page needs to load once over the network, after which your files never leave the device. Full offline support is planned.',
   },
   {
     question: 'Is it safe for confidential documents?',
@@ -38,17 +38,17 @@ export function FAQ() {
   return (
     <section className="container max-w-3xl py-12 md:py-24">
       <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold font-outfit">
+        <h2 className="text-3xl font-bold font-manrope">
           Frequently Asked Questions
         </h2>
       </div>
       <Accordion type="single" collapsible className="w-full">
         {faqs.map((faq, index) => (
           <AccordionItem key={index} value={`item-${index}`}>
-            <AccordionTrigger className="text-left font-outfit text-lg">
+            <AccordionTrigger className="text-left font-manrope text-lg">
               {faq.question}
             </AccordionTrigger>
-            <AccordionContent className="text-muted-foreground font-jakarta text-base">
+            <AccordionContent className="text-muted-foreground font-dm-sans text-base">
               {faq.answer}
             </AccordionContent>
           </AccordionItem>

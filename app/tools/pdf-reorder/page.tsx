@@ -1,25 +1,21 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
-import { useWorker } from '@/lib/hooks/useWorker';
-import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
+import { ToolPageShell } from '@/components/tools/tool-page-shell';
+import { ProcessingOverlay } from '@/components/tools/processing-overlay';
+import { TaskErrorBanner } from '@/components/tools/task-error-banner';
+import { SuccessCard } from '@/components/tools/success-card';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useWorker } from '@/lib/hooks/useWorker';
+import { useToolTask } from '@/lib/hooks/useToolTask';
+import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
+import { formatSize } from '@/lib/format';
 import { HugeiconsIcon } from '@hugeicons/react';
-import {
-  ArrangeIcon,
-  ArrowLeft01Icon,
-  Download01Icon,
-  Drag01Icon,
-  File01Icon,
-  Tick01Icon,
-} from '@hugeicons/core-free-icons';
-import { motion } from 'framer-motion';
+import { Download01Icon, Drag01Icon, File01Icon } from '@hugeicons/core-free-icons';
+import { ACCENTS, requireTool } from '@/lib/tools';
 import {
   closestCenter,
   DndContext,
@@ -37,6 +33,8 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+
+const tool = requireTool('pdf-reorder');
 
 interface PDFFile {
   name: string;
@@ -57,14 +55,6 @@ interface PDFWorkerResult {
 
 interface SortablePageProps {
   item: PDFPageItem;
-}
-
-function formatSize(bytes: number) {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB'];
-  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
-  return `${parseFloat((bytes / Math.pow(k, index)).toFixed(2))} ${sizes[index]}`;
 }
 
 function SortablePage({ item }: SortablePageProps) {
@@ -90,7 +80,7 @@ function SortablePage({ item }: SortablePageProps) {
       className={`group relative aspect-[3/4] overflow-hidden rounded-xl border bg-background shadow-sm transition-all duration-200 select-none ${
         isDragging
           ? 'border-red-500 ring-2 ring-red-500/10 shadow-lg scale-105'
-          : 'border-border/60 hover:border-border-hover'
+          : 'border-border/60'
       }`}
     >
       <div className="flex h-8 items-center justify-between border-b border-border/40 bg-muted/20 px-2">
@@ -98,9 +88,9 @@ function SortablePage({ item }: SortablePageProps) {
           {...attributes}
           {...listeners}
           className="cursor-grab rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-foreground/80 active:cursor-grabbing"
-          title="Drag to reorder"
+          aria-label="Drag to reorder"
         >
-          <HugeiconsIcon icon={Drag01Icon} className="size-3.5" />
+          <HugeiconsIcon icon={Drag01Icon} className="size-3.5" aria-hidden />
         </div>
         <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
           Page {item.pageIndex + 1}
@@ -133,12 +123,10 @@ export default function PDFReorderPage() {
     return new Worker(new URL('../../workers/pdf.worker.ts', import.meta.url), { type: 'module' });
   }, []);
   const { postTask } = useWorker(createWorker);
+  const task = useToolTask();
 
   const [file, setFile] = useState<PDFFile | null>(null);
   const [pages, setPages] = useState<PDFPageItem[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
   const [resultUrl, setResultUrl] = useState('');
   const [resultName, setResultName] = useState('reordered_document.pdf');
 
@@ -164,58 +152,65 @@ export default function PDFReorderPage() {
 
     setResultUrl('');
     setResultName('reordered_document.pdf');
-    setIsProcessing(true);
-    setProgress(10);
-    setProgressMessage('Reading PDF pages...');
 
-    try {
-      const targetFile = selectedFiles[0];
-      const buffer = await targetFile.arrayBuffer();
-      const pageCount = await getPdfPageCount(buffer);
-      const nextPages: PDFPageItem[] = [];
-      const previewCount = Math.min(pageCount, 30);
+    const outcome = await task.runTask(
+      async (report) => {
+        report(10, 'Reading PDF pages…');
 
-      const thumbnails = await renderPdfPagesToDataUrls(
-        buffer,
-        Array.from({ length: previewCount }, (_, index) => index + 1),
-        0.35,
-        (current, total) => {
-          setProgressMessage(`Rendering page thumbnail ${current} of ${total}...`);
-          setProgress(Math.round(10 + (current / total) * 80));
+        const targetFile = selectedFiles[0];
+        const buffer = await targetFile.arrayBuffer();
+        const pageCount = await getPdfPageCount(buffer);
+        const nextPages: PDFPageItem[] = [];
+        const previewCount = Math.min(pageCount, 30);
+
+        const thumbnails = await renderPdfPagesToDataUrls(
+          buffer,
+          Array.from({ length: previewCount }, (_, index) => index + 1),
+          0.35,
+          (current, total) => {
+            report(
+              Math.round(10 + (current / total) * 80),
+              `Rendering page thumbnail ${current} of ${total}…`
+            );
+          }
+        );
+
+        for (let index = 0; index < previewCount; index++) {
+          nextPages.push({
+            id: `page-${index}`,
+            pageIndex: index,
+            thumbnailUrl: thumbnails[index],
+          });
         }
-      );
 
-      for (let index = 0; index < previewCount; index++) {
-        nextPages.push({
-          id: `page-${index}`,
-          pageIndex: index,
-          thumbnailUrl: thumbnails[index],
-        });
+        for (let index = previewCount; index < pageCount; index++) {
+          nextPages.push({
+            id: `page-${index}`,
+            pageIndex: index,
+            thumbnailUrl: '',
+          });
+        }
+
+        return {
+          name: targetFile.name,
+          size: targetFile.size,
+          buffer,
+          pageCount,
+          nextPages,
+        };
+      },
+      {
+        initialMessage: 'Reading PDF pages…',
+        errorMessage:
+          'Could not read this PDF. The file may be corrupted or password-protected.',
       }
+    );
 
-      for (let index = previewCount; index < pageCount; index++) {
-        nextPages.push({
-          id: `page-${index}`,
-          pageIndex: index,
-          thumbnailUrl: '',
-        });
-      }
+    if (!outcome.ok) return;
+    const { name, size, buffer, pageCount, nextPages } = outcome.value;
 
-      setFile({
-        name: targetFile.name,
-        size: targetFile.size,
-        buffer,
-        pageCount,
-      });
-      setPages(nextPages);
-      setProgress(100);
-      setProgressMessage('');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('Failed to parse uploaded PDF.');
-    } finally {
-      setIsProcessing(false);
-    }
+    setFile({ name, size, buffer, pageCount });
+    setPages(nextPages);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -232,45 +227,41 @@ export default function PDFReorderPage() {
   const handleExport = async () => {
     if (!file || pages.length === 0) return;
 
-    setIsProcessing(true);
-    setProgress(0);
-    setResultUrl('');
-    setProgressMessage('Exporting reordered PDF...');
+    const url = await task.runTask(
+      async (report) => {
+        report(0, 'Exporting reordered PDF…');
+        const response = await postTask<
+          {
+            files: { name: string; buffer: ArrayBuffer }[];
+            pages: { fileIndex: number; pageIndex: number; rotation: number }[];
+          },
+          PDFWorkerResult
+        >(
+          'MERGE_SPLIT_ROTATE',
+          {
+            files: [{ name: file.name, buffer: file.buffer.slice(0) }],
+            pages: pages.map((page) => ({
+              fileIndex: 0,
+              pageIndex: page.pageIndex,
+              rotation: 0,
+            })),
+          },
+          (pct, msg) => {
+            report(pct, msg);
+          }
+        );
 
-    try {
-      const response = await postTask<
-        {
-          files: { name: string; buffer: ArrayBuffer }[];
-          pages: { fileIndex: number; pageIndex: number; rotation: number }[];
-        },
-        PDFWorkerResult
-      >(
-        'MERGE_SPLIT_ROTATE',
-        {
-          files: [{ name: file.name, buffer: file.buffer.slice(0) }],
-          pages: pages.map((page) => ({
-            fileIndex: 0,
-            pageIndex: page.pageIndex,
-            rotation: 0,
-          })),
-        },
-        (pct, msg) => {
-          setProgress(pct);
-          if (msg) setProgressMessage(msg);
-        }
-      );
+        const blob = new Blob([response.buffer], { type: 'application/pdf' });
+        setResultName(`reordered_${file.name}`);
+        return URL.createObjectURL(blob);
+      },
+      {
+        initialMessage: 'Exporting reordered PDF…',
+        errorMessage: 'PDF reorder failed. Please try again.',
+      }
+    );
 
-      const blob = new Blob([response.buffer], { type: 'application/pdf' });
-      setResultUrl(URL.createObjectURL(blob));
-      setResultName(`reordered_${file.name}`);
-      setProgress(100);
-      setProgressMessage('Reorder complete.');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('PDF reorder failed.');
-    } finally {
-      setIsProcessing(false);
-    }
+    if (url.ok) setResultUrl(url.value);
   };
 
   const clearWorkspace = () => {
@@ -278,47 +269,38 @@ export default function PDFReorderPage() {
     setPages([]);
     setResultUrl('');
     setResultName('reordered_document.pdf');
-    setProgressMessage('');
+    task.reset();
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans selection:bg-red-500/20 bg-background">
-      <SiteHeader />
-
-      <main className="flex-1 container py-8 md:py-12 max-w-6xl">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-3.5" />
-          Back to Tools
-        </Link>
-
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20">
-              <HugeiconsIcon icon={ArrangeIcon} className="size-5" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-manrope">PDF Page Reorder</h1>
-          </div>
-          <p className="text-muted-foreground text-xs sm:text-sm font-dm-sans max-w-2xl">
-            Drag PDF pages into a new sequence and export a reordered file entirely in your browser.
-          </p>
-        </div>
-
-        {!file ? (
+    <ToolPageShell
+      title={tool.title}
+      description={tool.description}
+      icon={tool.icon}
+      accent={tool.accent}
+      width="wide"
+    >
+      {!file ? (
+        <div className="flex flex-col gap-6">
+          <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <FileUploadZone
             accept="application/pdf"
             multiple={false}
             onFilesSelected={handleFilesSelected}
             description="Upload PDF document to reorder pages"
           />
-        ) : !resultUrl ? (
+        </div>
+      ) : !resultUrl ? (
+        <div className="flex flex-col gap-6">
+          <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <div className="grid gap-6 lg:grid-cols-4">
             <div className="lg:col-span-3 flex flex-col gap-4">
               <div className="flex flex-col gap-2 border-b border-border/40 pb-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="font-bold text-sm font-manrope flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-red-500" />
+                  <span
+                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                    aria-hidden
+                  />
                   Page reorder workspace
                 </h3>
                 <span className="text-xs text-muted-foreground font-dm-sans">
@@ -345,11 +327,13 @@ export default function PDFReorderPage() {
               </h3>
               <div className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/20 p-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
-                  <HugeiconsIcon icon={File01Icon} className="size-4" />
+                  <HugeiconsIcon icon={File01Icon} className="size-4" aria-hidden />
                 </div>
                 <div className="min-w-0 text-xs font-dm-sans">
                   <p className="truncate font-bold text-foreground">{file.name}</p>
-                  <p className="text-muted-foreground">{file.pageCount} pages - {formatSize(file.size)}</p>
+                  <p className="text-muted-foreground">
+                    {file.pageCount} pages - {formatSize(file.size)}
+                  </p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground font-dm-sans leading-relaxed">
@@ -357,60 +341,56 @@ export default function PDFReorderPage() {
               </p>
               <Button
                 onClick={handleExport}
-                disabled={isProcessing || pages.length === 0}
-                className="w-full font-semibold font-manrope bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/15"
+                disabled={task.isProcessing || pages.length === 0}
+                className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
               >
                 Export Reordered PDF
               </Button>
-              <Button variant="ghost" onClick={clearWorkspace} disabled={isProcessing} className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <Button
+                variant="ghost"
+                onClick={clearWorkspace}
+                disabled={task.isProcessing}
+                className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
+              >
                 Change File
               </Button>
             </Card>
           </div>
-        ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-xl mx-auto">
-            <Card className="p-8 border-border/60 bg-background/50 backdrop-blur-sm flex flex-col items-center gap-6 text-center shadow-xl">
-              <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                <HugeiconsIcon icon={Tick01Icon} className="size-7" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="font-bold text-2xl font-manrope">Reorder Complete</h3>
-                <p className="text-sm text-muted-foreground font-dm-sans">
-                  Exported {pages.length} page{pages.length > 1 ? 's' : ''} using your selected order.
-                </p>
-              </div>
-              <div className="flex w-full flex-col gap-3 sm:flex-row">
-                <Button variant="outline" onClick={clearWorkspace} className="flex-1 font-semibold text-xs py-5">
-                  Start Over
-                </Button>
-                <Button asChild className="flex-1 font-semibold text-xs py-5 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/15">
-                  <a href={resultUrl} download={resultName}>
-                    <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" />
-                    Download PDF
-                  </a>
-                </Button>
-              </div>
-            </Card>
-          </motion.div>
-        )}
+        </div>
+      ) : (
+        <SuccessCard
+          title="Reorder Complete"
+          description={`Exported ${pages.length} page${pages.length > 1 ? 's' : ''} using your selected order.`}
+          actions={
+            <>
+              <Button
+                variant="outline"
+                onClick={clearWorkspace}
+                className="flex-1 font-semibold text-xs py-5"
+              >
+                Start Over
+              </Button>
+              <Button
+                asChild
+                className={`flex-1 font-semibold text-xs py-5 ${ACCENTS[tool.accent].button}`}
+              >
+                <a href={resultUrl} download={resultName}>
+                  <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" aria-hidden />
+                  Download PDF
+                </a>
+              </Button>
+            </>
+          }
+        />
+      )}
 
-        {isProcessing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <Card className="p-6 max-w-sm w-full mx-4 border-border/60 flex flex-col items-center gap-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500" />
-              <div className="flex flex-col gap-1 w-full">
-                <span className="text-sm font-semibold font-manrope">{progressMessage}</span>
-                <span className="text-xs text-muted-foreground font-dm-sans">{progress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-red-500 transition-all duration-300" style={{ width: `${progress}%` }} />
-              </div>
-            </Card>
-          </div>
-        )}
-      </main>
-
-      <SiteFooter />
-    </div>
+      {task.isProcessing && (
+        <ProcessingOverlay
+          accent={tool.accent}
+          message={task.message}
+          progress={task.progress}
+        />
+      )}
+    </ToolPageShell>
   );
 }

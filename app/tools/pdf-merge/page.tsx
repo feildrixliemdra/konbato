@@ -1,26 +1,25 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
-import { useWorker } from '@/lib/hooks/useWorker';
-import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
+import { ToolPageShell } from '@/components/tools/tool-page-shell';
+import { ProcessingOverlay } from '@/components/tools/processing-overlay';
+import { TaskErrorBanner } from '@/components/tools/task-error-banner';
+import { SuccessCard } from '@/components/tools/success-card';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useWorker } from '@/lib/hooks/useWorker';
+import { useToolTask } from '@/lib/hooks/useToolTask';
+import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  Layers01Icon,
+  Drag01Icon,
   Download01Icon,
-  ArrowLeft01Icon,
-  Tick01Icon,
   Delete02Icon,
   RotateRightIcon,
-  Drag01Icon,
 } from '@hugeicons/core-free-icons';
-import { motion } from 'framer-motion';
+import { ACCENTS, requireTool } from '@/lib/tools';
 import {
   DndContext,
   closestCenter,
@@ -38,6 +37,8 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+
+const tool = requireTool('pdf-merge');
 
 interface PDFFile {
   id: string;
@@ -108,7 +109,7 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
       className={`group relative aspect-[3/4] bg-background border rounded-xl overflow-hidden shadow-sm flex flex-col ${
         isDragging
           ? 'border-red-500 ring-2 ring-red-500/10 shadow-lg scale-105'
-          : 'border-border/60 hover:border-border-hover'
+          : 'border-border/60'
       } transition-all duration-200 select-none`}
     >
       {/* Top Bar with drag handle and delete */}
@@ -117,22 +118,23 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
           {...attributes}
           {...listeners}
           className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground/80 p-0.5"
-          title="Drag to reorder"
+          aria-label="Drag to reorder"
         >
-          <HugeiconsIcon icon={Drag01Icon} className="size-3.5" />
+          <HugeiconsIcon icon={Drag01Icon} className="size-3.5" aria-hidden />
         </div>
         <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
           p. {item.pageIndex + 1}
         </span>
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             onDelete(id);
           }}
           className="text-muted-foreground/60 hover:text-rose-500 hover:bg-rose-500/10 p-0.5 rounded transition-all"
-          title="Remove page"
+          aria-label="Remove page"
         >
-          <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+          <HugeiconsIcon icon={Delete02Icon} className="size-3.5" aria-hidden />
         </button>
       </div>
 
@@ -159,7 +161,7 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
         </div>
 
         {/* Rotate button overlay */}
-        <div className="absolute inset-0 bg-background/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center backdrop-blur-[1px]">
+        <div className="absolute inset-0 bg-background/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 flex items-center justify-center backdrop-blur-[1px]">
           <Button
             size="icon"
             variant="secondary"
@@ -168,16 +170,19 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
               onRotate(id);
             }}
             className="size-8 rounded-lg shadow-sm border border-border/40"
-            title="Rotate 90° clockwise"
+            aria-label="Rotate 90° clockwise"
           >
-            <HugeiconsIcon icon={RotateRightIcon} className="size-4" />
+            <HugeiconsIcon icon={RotateRightIcon} className="size-4" aria-hidden />
           </Button>
         </div>
       </div>
 
       {/* Footer Info */}
       <div className="h-6 px-2 bg-muted/10 flex items-center border-t border-border/20 truncate">
-        <span className="text-[9px] text-muted-foreground truncate font-dm-sans w-full" title={item.fileName}>
+        <span
+          className="text-[9px] text-muted-foreground truncate font-dm-sans w-full"
+          title={item.fileName}
+        >
           {item.fileName}
         </span>
       </div>
@@ -191,12 +196,10 @@ export default function PDFMergePage() {
     return new Worker(new URL('../../workers/pdf.worker.ts', import.meta.url), { type: 'module' });
   }, []);
   const { postTask } = useWorker(createWorker);
+  const task = useToolTask();
 
   const [files, setFiles] = useState<PDFFile[]>([]);
   const [pages, setPages] = useState<PDFPageItem[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
   const [mergedBlobUrl, setMergedBlobUrl] = useState<string>('');
   const [mergedFileName, setMergedFileName] = useState<string>('collated_document.pdf');
 
@@ -224,73 +227,75 @@ export default function PDFMergePage() {
     setMergedBlobUrl('');
     setMergedFileName('collated_document.pdf');
 
-    setIsProcessing(true);
-    setProgress(10);
-    setProgressMessage('Reading document structures...');
+    const outcome = await task.runTask(
+      async (report) => {
+        report(10, 'Reading document structures…');
 
-    try {
-      const newFiles: PDFFile[] = [];
-      const newPagesList: PDFPageItem[] = [];
+        const newFiles: PDFFile[] = [];
+        const newPagesList: PDFPageItem[] = [];
 
-      for (let fIdx = 0; fIdx < selectedFiles.length; fIdx++) {
-        const file = selectedFiles[fIdx];
-        const buffer = await file.arrayBuffer();
-        const pageCount = await getPdfPageCount(buffer);
-        const fileId = `${Date.now()}-${fIdx}`;
+        for (let fIdx = 0; fIdx < selectedFiles.length; fIdx++) {
+          const file = selectedFiles[fIdx];
+          const buffer = await file.arrayBuffer();
+          const pageCount = await getPdfPageCount(buffer);
+          const fileId = `${Date.now()}-${fIdx}`;
 
-        newFiles.push({
-          id: fileId,
-          name: file.name,
-          size: file.size,
-          buffer,
-          pageCount,
-        });
+          newFiles.push({
+            id: fileId,
+            name: file.name,
+            size: file.size,
+            buffer,
+            pageCount,
+          });
 
-        // Limit initial thumbnail generation to first 30 pages to prevent browser lockup
-        const renderPagesCount = Math.min(pageCount, 30);
-        const thumbnails = await renderPdfPagesToDataUrls(
-          buffer,
-          Array.from({ length: renderPagesCount }, (_, index) => index + 1),
-          0.35,
-          (current, total) => {
-            setProgressMessage(`Rendering thumbnail for ${file.name} (page ${current}/${total})...`);
+          // Limit initial thumbnail generation to first 30 pages to prevent browser lockup
+          const renderPagesCount = Math.min(pageCount, 30);
+          const thumbnails = await renderPdfPagesToDataUrls(
+            buffer,
+            Array.from({ length: renderPagesCount }, (_, index) => index + 1),
+            0.35,
+            (current, total) => {
+              report(10, `Rendering thumbnail for ${file.name} (page ${current}/${total})…`);
+            }
+          );
+
+          for (let p = 0; p < renderPagesCount; p++) {
+            newPagesList.push({
+              id: `${fileId}-${p}`,
+              fileId,
+              fileName: file.name,
+              pageIndex: p,
+              thumbnailUrl: thumbnails[p],
+              rotation: 0,
+            });
           }
-        );
 
-        for (let p = 0; p < renderPagesCount; p++) {
-          newPagesList.push({
-            id: `${fileId}-${p}`,
-            fileId,
-            fileName: file.name,
-            pageIndex: p,
-            thumbnailUrl: thumbnails[p],
-            rotation: 0,
-          });
+          // Add placeholders if page count exceeds 30
+          for (let p = renderPagesCount; p < pageCount; p++) {
+            newPagesList.push({
+              id: `${fileId}-${p}`,
+              fileId,
+              fileName: file.name,
+              pageIndex: p,
+              thumbnailUrl: '', // Will use a placeholder on the card
+              rotation: 0,
+            });
+          }
         }
 
-        // Add placeholders if page count exceeds 30
-        for (let p = renderPagesCount; p < pageCount; p++) {
-          newPagesList.push({
-            id: `${fileId}-${p}`,
-            fileId,
-            fileName: file.name,
-            pageIndex: p,
-            thumbnailUrl: '', // Will use a placeholder on the card
-            rotation: 0,
-          });
-        }
+        return { newFiles, newPagesList };
+      },
+      {
+        initialMessage: 'Reading document structures…',
+        errorMessage:
+          'Could not read the uploaded PDF. A file may be corrupted or password-protected.',
       }
+    );
 
-      setFiles((prev) => [...prev, ...newFiles]);
-      setPages((prev) => [...prev, ...newPagesList]);
-      setProgress(100);
-      setProgressMessage('');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('Failed to parse uploaded PDF documents.');
-    } finally {
-      setIsProcessing(false);
-    }
+    if (!outcome.ok) return;
+
+    setFiles((prev) => [...prev, ...outcome.value.newFiles]);
+    setPages((prev) => [...prev, ...outcome.value.newPagesList]);
   };
 
   const handleRotate = (pageId: string) => {
@@ -316,56 +321,55 @@ export default function PDFMergePage() {
 
   const handleMerge = async () => {
     if (pages.length === 0) return;
-    setIsProcessing(true);
-    setProgress(0);
-    setProgressMessage('Preparing collation pipeline...');
 
-    try {
-      // Find all unique files actually used in the current pages collation sequence
-      const activeFileIds = Array.from(new Set(pages.map((p) => p.fileId)));
-      const activeFiles = files.filter((f) => activeFileIds.includes(f.id));
+    const url = await task.runTask(
+      async (report) => {
+        // Find all unique files actually used in the current pages collation sequence
+        const activeFileIds = Array.from(new Set(pages.map((p) => p.fileId)));
+        const activeFiles = files.filter((f) => activeFileIds.includes(f.id));
 
-      // Map pages sequence to relative indexes
-      const pagesPayload = pages.map((p) => {
-        const fileIdx = activeFiles.findIndex((f) => f.id === p.fileId);
-        return {
-          fileIndex: fileIdx,
-          pageIndex: p.pageIndex,
-          rotation: p.rotation,
-        };
-      });
+        // Map pages sequence to relative indexes
+        const pagesPayload = pages.map((p) => {
+          const fileIdx = activeFiles.findIndex((f) => f.id === p.fileId);
+          return {
+            fileIndex: fileIdx,
+            pageIndex: p.pageIndex,
+            rotation: p.rotation,
+          };
+        });
 
-      // Prepare file buffers
-      const filesPayload = activeFiles.map((f) => ({
-        name: f.name,
-        buffer: f.buffer.slice(0), // Transferable buffer copy
-      }));
+        // Prepare file buffers
+        const filesPayload = activeFiles.map((f) => ({
+          name: f.name,
+          buffer: f.buffer.slice(0), // Transferable buffer copy
+        }));
 
-      setProgressMessage('Merging and rotating pages in Web Worker...');
-      const result = await postTask<
-        { files: { name: string; buffer: ArrayBuffer }[]; pages: { fileIndex: number; pageIndex: number; rotation: number }[] },
-        PDFWorkerResult
-      >(
-        'MERGE_SPLIT_ROTATE',
-        { files: filesPayload, pages: pagesPayload },
-        (pct, msg) => {
-          setProgress(pct);
-          if (msg) setProgressMessage(msg);
-        }
-      );
+        report(0, 'Merging and rotating pages in Web Worker…');
+        const result = await postTask<
+          {
+            files: { name: string; buffer: ArrayBuffer }[];
+            pages: { fileIndex: number; pageIndex: number; rotation: number }[];
+          },
+          PDFWorkerResult
+        >(
+          'MERGE_SPLIT_ROTATE',
+          { files: filesPayload, pages: pagesPayload },
+          (pct, msg) => {
+            report(pct, msg);
+          }
+        );
 
-      const blob = new Blob([result.buffer], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      setMergedBlobUrl(url);
-      setMergedFileName(`collated_document_${createDownloadId()}.pdf`);
-      setProgress(100);
-      setProgressMessage('Merge completed!');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('PDF merging failed.');
-    } finally {
-      setIsProcessing(false);
-    }
+        const blob = new Blob([result.buffer], { type: 'application/pdf' });
+        setMergedFileName(`collated_document_${createDownloadId()}.pdf`);
+        return URL.createObjectURL(blob);
+      },
+      {
+        initialMessage: 'Preparing collation pipeline…',
+        errorMessage: 'PDF merging failed. Please try again.',
+      }
+    );
+
+    if (url.ok) setMergedBlobUrl(url.value);
   };
 
   const clearWorkspace = () => {
@@ -373,47 +377,39 @@ export default function PDFMergePage() {
     setPages([]);
     setMergedBlobUrl('');
     setMergedFileName('collated_document.pdf');
+    task.reset();
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans selection:bg-red-500/20 bg-background">
-      <SiteHeader />
-
-      <main className="flex-1 container py-8 md:py-12 max-w-6xl">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-3.5" />
-          Back to Tools
-        </Link>
-
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20">
-              <HugeiconsIcon icon={Layers01Icon} className="size-5" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-manrope">Merge PDF</h1>
-          </div>
-          <p className="text-muted-foreground text-xs sm:text-sm font-dm-sans max-w-xl">
-            Arrange, rotate, and combine multiple PDF pages into a single organized document. All actions occur entirely in browser memory.
-          </p>
-        </div>
-
-        {pages.length === 0 ? (
+    <ToolPageShell
+      title={tool.title}
+      description={tool.description}
+      icon={tool.icon}
+      accent={tool.accent}
+      width="wide"
+    >
+      {pages.length === 0 ? (
+        <div className="flex flex-col gap-6">
+          <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <FileUploadZone
             accept="application/pdf"
             multiple={true}
             onFilesSelected={handleFilesSelected}
             description="Upload PDF documents to collate (multiple allowed)"
           />
-        ) : !mergedBlobUrl ? (
+        </div>
+      ) : !mergedBlobUrl ? (
+        <div className="flex flex-col gap-6">
+          <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <div className="grid gap-6 lg:grid-cols-4">
             {/* Light Table Collation Workspace (Grid) */}
             <div className="lg:col-span-3 flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-border/40 pb-3">
                 <h3 className="font-bold text-sm font-manrope flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-red-500" />
+                  <span
+                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                    aria-hidden
+                  />
                   Light Table Collation
                 </h3>
                 <span className="text-xs text-muted-foreground font-dm-sans">
@@ -504,15 +500,15 @@ export default function PDFMergePage() {
                 <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
                   <Button
                     onClick={handleMerge}
-                    disabled={pages.length === 0 || isProcessing}
-                    className="w-full font-semibold font-manrope bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/15"
+                    disabled={pages.length === 0 || task.isProcessing}
+                    className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                   >
-                    Collate & Merge
+                    Collate &amp; Merge
                   </Button>
                   <Button
                     variant="ghost"
                     onClick={clearWorkspace}
-                    disabled={isProcessing}
+                    disabled={task.isProcessing}
                     className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
                     Reset Workspace
@@ -521,67 +517,41 @@ export default function PDFMergePage() {
               </Card>
             </div>
           </div>
-        ) : (
-          /* Output Success State */
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="max-w-2xl mx-auto flex flex-col gap-6"
-          >
-            <div className="border border-border/60 bg-background/50 backdrop-blur-sm p-8 rounded-2xl flex flex-col items-center gap-6 text-center shadow-xl">
-              <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                <HugeiconsIcon icon={Tick01Icon} className="size-7" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="font-bold text-2xl font-manrope">Collation Complete</h3>
-                <p className="text-sm text-muted-foreground font-dm-sans leading-relaxed">
-                  Collocated and merged {pages.length} pages into a secure, optimized PDF file. 
-                  Zero network uploads occurred during compilation.
-                </p>
-              </div>
+        </div>
+      ) : (
+        <SuccessCard
+          title="Collation Complete"
+          description={`Collocated and merged ${pages.length} pages into a secure, optimized PDF file. Zero network uploads occurred during compilation.`}
+          actions={
+            <>
+              <Button
+                variant="outline"
+                onClick={clearWorkspace}
+                className="flex-1 font-semibold text-xs py-5"
+              >
+                Start Over
+              </Button>
+              <Button
+                asChild
+                className={`flex-1 font-semibold text-xs py-5 ${ACCENTS[tool.accent].button}`}
+              >
+                <a href={mergedBlobUrl} download={mergedFileName}>
+                  <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" aria-hidden />
+                  Download PDF
+                </a>
+              </Button>
+            </>
+          }
+        />
+      )}
 
-              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
-                <Button
-                  variant="outline"
-                  onClick={clearWorkspace}
-                  className="flex-1 font-semibold text-xs py-5"
-                >
-                  Start Over
-                </Button>
-                <Button
-                  asChild
-                  className="flex-1 font-semibold text-xs py-5 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/15"
-                >
-                  <a href={mergedBlobUrl} download={mergedFileName}>
-                    <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" />
-                    Download PDF
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {isProcessing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <Card className="p-6 max-w-sm w-full mx-4 border-border/60 flex flex-col items-center gap-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500" />
-              <div className="flex flex-col gap-1 w-full">
-                <span className="text-sm font-semibold font-manrope">{progressMessage}</span>
-                <span className="text-xs text-muted-foreground font-dm-sans">{progress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-red-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </Card>
-          </div>
-        )}
-      </main>
-
-      <SiteFooter />
-    </div>
+      {task.isProcessing && (
+        <ProcessingOverlay
+          accent={tool.accent}
+          message={task.message}
+          progress={task.progress}
+        />
+      )}
+    </ToolPageShell>
   );
 }

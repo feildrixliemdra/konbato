@@ -65,11 +65,24 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /* Build and serve the production bundle before starting the tests.
+   *
+   * Running against the dev server made this suite unreliable: Next compiles
+   * routes on demand, so a slow compile deferred App Router navigations past
+   * the assertion timeout, and HMR full-reloads triggered by the suite's own
+   * artifact writes invalidated worker chunk URLs mid-test. A production build
+   * has every route prerendered, so none of that happens.
+   *
+   * Set PW_DEV_SERVER=1 to fall back to `pnpm run dev` for quicker iteration.
+   */
   webServer: {
-    command: 'pnpm run dev',
+    command: process.env.PW_DEV_SERVER ? 'pnpm run dev' : 'pnpm run build && pnpm run start',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    // Never adopt an arbitrary process on :3000 — a stray dev server would
+    // silently redefine what the suite is testing. Playwright reuses the server
+    // it started itself.
+    reuseExistingServer: false,
+    timeout: 180_000,
     stdout: 'ignore',
     stderr: 'pipe',
   },

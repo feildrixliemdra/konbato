@@ -1,24 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
-import { useWorker } from '@/lib/hooks/useWorker';
-import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
+import { ToolPageShell } from '@/components/tools/tool-page-shell';
+import { ProcessingOverlay } from '@/components/tools/processing-overlay';
+import { TaskErrorBanner } from '@/components/tools/task-error-banner';
+import { SuccessCard } from '@/components/tools/success-card';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useWorker } from '@/lib/hooks/useWorker';
+import { useToolTask } from '@/lib/hooks/useToolTask';
+import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
 import { HugeiconsIcon } from '@hugeicons/react';
-import {
-  RotateClockwiseIcon,
-  Download01Icon,
-  ArrowLeft01Icon,
-  Tick01Icon,
-  RotateRightIcon,
-} from '@hugeicons/core-free-icons';
-import { motion } from 'framer-motion';
+import { Download01Icon, RotateRightIcon } from '@hugeicons/core-free-icons';
+import { ACCENTS, requireTool } from '@/lib/tools';
+
+const tool = requireTool('pdf-rotate');
 
 interface PDFFile {
   name: string;
@@ -28,9 +26,9 @@ interface PDFFile {
 }
 
 interface PDFPageItem {
-  pageIndex: number; // 0-based
+  pageIndex: number;
   thumbnailUrl: string;
-  rotation: number; // 0, 90, 180, 270
+  rotation: number;
 }
 
 interface PdfWorkerBufferResult {
@@ -40,22 +38,20 @@ interface PdfWorkerBufferResult {
 export default function PDFRotatePage() {
   const createWorker = useCallback(() => {
     if (typeof window === 'undefined') return null;
-    return new Worker(new URL('../../workers/pdf.worker.ts', import.meta.url), { type: 'module' });
+    return new Worker(new URL('../../workers/pdf.worker.ts', import.meta.url), {
+      type: 'module',
+    });
   }, []);
   const { postTask } = useWorker(createWorker);
+  const task = useToolTask();
 
   const [file, setFile] = useState<PDFFile | null>(null);
   const [pages, setPages] = useState<PDFPageItem[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
   const [rotatedBlobUrl, setRotatedBlobUrl] = useState<string>('');
 
   useEffect(() => {
     return () => {
-      if (rotatedBlobUrl) {
-        URL.revokeObjectURL(rotatedBlobUrl);
-      }
+      if (rotatedBlobUrl) URL.revokeObjectURL(rotatedBlobUrl);
     };
   }, [rotatedBlobUrl]);
 
@@ -63,59 +59,50 @@ export default function PDFRotatePage() {
     if (selectedFiles.length === 0) return;
     setRotatedBlobUrl('');
 
-    setIsProcessing(true);
-    setProgress(15);
-    setProgressMessage('Reading document structure...');
+    const loaded = await task.runTask(
+      async (report) => {
+        const targetFile = selectedFiles[0];
+        const buffer = await targetFile.arrayBuffer();
 
-    try {
-      const targetFile = selectedFiles[0];
-      const buffer = await targetFile.arrayBuffer();
-      const pageCount = await getPdfPageCount(buffer);
+        report(15, 'Reading document structure…');
+        const pageCount = await getPdfPageCount(buffer);
 
-      setFile({
-        name: targetFile.name,
-        size: targetFile.size,
-        buffer,
-        pageCount,
-      });
+        const renderPagesCount = Math.min(pageCount, 30);
+        const thumbnails = await renderPdfPagesToDataUrls(
+          buffer,
+          Array.from({ length: renderPagesCount }, (_, index) => index + 1),
+          0.35,
+          (current, total) => {
+            report(15 + (current / total) * 80, `Rendering page ${current}/${total}…`);
+          }
+        );
 
-      const newPagesList: PDFPageItem[] = [];
-      const renderPagesCount = Math.min(pageCount, 30);
-      
-      const thumbnails = await renderPdfPagesToDataUrls(
-        buffer,
-        Array.from({ length: renderPagesCount }, (_, index) => index + 1),
-        0.35,
-        (current, total) => {
-          setProgressMessage(`Rendering thumbnail page ${current}/${total}...`);
+        const pagesList: PDFPageItem[] = [];
+        for (let p = 0; p < renderPagesCount; p++) {
+          pagesList.push({ pageIndex: p, thumbnailUrl: thumbnails[p], rotation: 0 });
         }
-      );
+        for (let p = renderPagesCount; p < pageCount; p++) {
+          pagesList.push({ pageIndex: p, thumbnailUrl: '', rotation: 0 });
+        }
 
-      for (let p = 0; p < renderPagesCount; p++) {
-        newPagesList.push({
-          pageIndex: p,
-          thumbnailUrl: thumbnails[p],
-          rotation: 0,
-        });
+        return { targetFile, buffer, pageCount, pagesList };
+      },
+      {
+        initialMessage: 'Reading document…',
+        errorMessage: 'Could not read this PDF. The file may be corrupted or password-protected.',
       }
+    );
 
-      for (let p = renderPagesCount; p < pageCount; p++) {
-        newPagesList.push({
-          pageIndex: p,
-          thumbnailUrl: '', // placeholder
-          rotation: 0,
-        });
-      }
+    if (!loaded.ok) return;
+    const { targetFile, buffer, pageCount, pagesList } = loaded.value;
 
-      setPages(newPagesList);
-      setProgress(100);
-      setProgressMessage('');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('Failed to render PDF pages.');
-    } finally {
-      setIsProcessing(false);
-    }
+    setFile({
+      name: targetFile.name,
+      size: targetFile.size,
+      buffer,
+      pageCount,
+    });
+    setPages(pagesList);
   };
 
   const rotateIndividualPage = (pageIndex: number, degrees: number) => {
@@ -130,10 +117,7 @@ export default function PDFRotatePage() {
 
   const rotateAllPages = (degrees: number) => {
     setPages((prev) =>
-      prev.map((p) => ({
-        ...p,
-        rotation: (p.rotation + degrees + 360) % 360,
-      }))
+      prev.map((p) => ({ ...p, rotation: (p.rotation + degrees + 360) % 360 }))
     );
   };
 
@@ -143,282 +127,241 @@ export default function PDFRotatePage() {
 
   const handleExport = async () => {
     if (!file) return;
-    setIsProcessing(true);
-    setProgress(0);
-    setProgressMessage('Compiling rotations...');
 
-    try {
-      // PDF Rotate uses the same MERGE_SPLIT_ROTATE worker command.
-      // We pass the file buffer and the full pages list with their respective rotations.
-      const payload = {
-        files: [{ name: file.name, buffer: file.buffer.slice(0) }],
-        pages: pages.map((p) => ({
-          fileIndex: 0,
-          pageIndex: p.pageIndex,
-          rotation: p.rotation,
-        })),
-      };
+    const url = await task.runTask(
+      async () => {
+        const payload = {
+          files: [{ name: file.name, buffer: file.buffer.slice(0) }],
+          pages: pages.map((p) => ({
+            fileIndex: 0,
+            pageIndex: p.pageIndex,
+            rotation: p.rotation,
+          })),
+        };
 
-      const result = await postTask<typeof payload, PdfWorkerBufferResult>('MERGE_SPLIT_ROTATE', payload, (pct, msg) => {
-        setProgress(pct);
-        if (msg) setProgressMessage(msg);
-      });
+        const result = await postTask<typeof payload, PdfWorkerBufferResult>(
+          'MERGE_SPLIT_ROTATE',
+          payload
+        );
 
-      const blob = new Blob([result.buffer], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      setRotatedBlobUrl(url);
-      setProgress(100);
-      setProgressMessage('Rotation saved!');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('Failed to rotate document pages.');
-    } finally {
-      setIsProcessing(false);
-    }
+        const blob = new Blob([result.buffer], { type: 'application/pdf' });
+        return URL.createObjectURL(blob);
+      },
+      {
+        initialMessage: 'Applying rotations…',
+        errorMessage: 'Failed to rotate the document pages.',
+      }
+    );
+
+    if (url.ok) setRotatedBlobUrl(url.value);
   };
 
   const clearWorkspace = () => {
     setFile(null);
     setPages([]);
     setRotatedBlobUrl('');
+    task.reset();
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans selection:bg-primary/20 bg-background">
-      <SiteHeader />
-
-      <main className="flex-1 container py-8 md:py-12 max-w-4xl">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-3.5" />
-          Back to Tools
-        </Link>
-
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
-              <HugeiconsIcon icon={RotateClockwiseIcon} className="size-5" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-manrope">Rotate PDF</h1>
-          </div>
-          <p className="text-muted-foreground text-xs sm:text-sm font-dm-sans max-w-xl">
-            Rotate individual PDF pages or all pages at once. Runs entirely offline in browser memory.
-          </p>
-        </div>
-
-        {!file ? (
+    <ToolPageShell
+      title={tool.title}
+      description={tool.description}
+      icon={tool.icon}
+      accent={tool.accent}
+    >
+      {!file ? (
+        <div className="flex flex-col gap-6">
+          <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <FileUploadZone
             accept="application/pdf"
             multiple={false}
             onFilesSelected={handleFilesSelected}
             description="Upload PDF document to rotate"
           />
-        ) : !rotatedBlobUrl ? (
-          <div className="grid gap-6 md:grid-cols-3">
-            {/* Visual Grid of Pages */}
-            <div className="md:col-span-2 flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-border/40 pb-3">
-                <h3 className="font-bold text-sm font-manrope flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-rose-500" />
-                  Workspace pages
-                </h3>
-                <span className="text-xs text-muted-foreground font-dm-sans">
-                  Total: {file.pageCount} page{file.pageCount > 1 ? 's' : ''}
-                </span>
-              </div>
+        </div>
+      ) : !rotatedBlobUrl ? (
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Visual Grid of Pages */}
+          <div className="flex flex-col gap-4 md:col-span-2">
+            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <h2 className="flex items-center gap-2 text-sm font-bold font-manrope">
+                <span
+                  className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                  aria-hidden
+                />
+                Workspace pages
+              </h2>
+              <span className="text-xs text-muted-foreground font-dm-sans">
+                Total: {file.pageCount} page{file.pageCount > 1 ? 's' : ''}
+              </span>
+            </div>
 
-              {/* Light Table Grid */}
-              <div className="rounded-2xl border border-border/60 bg-muted/5 p-5 min-h-[300px] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] max-h-[500px] overflow-y-auto pr-2">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {pages.map((item) => (
-                    <div
-                      key={item.pageIndex}
-                      className="group relative aspect-[3/4] rounded-xl overflow-hidden border bg-background flex flex-col border-border/60 hover:border-border-hover select-none"
-                    >
-                      {/* Page Label */}
-                      <div className="h-7 px-2 border-b border-border/40 bg-muted/20 flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
-                          p. {item.pageIndex + 1}
+            <div className="max-h-[500px] min-h-[300px] overflow-y-auto rounded-2xl border border-border/60 bg-muted/5 p-5 pr-2">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {pages.map((item) => (
+                  <div
+                    key={item.pageIndex}
+                    className="group relative flex aspect-[3/4] select-none flex-col overflow-hidden rounded-xl border border-border/60 bg-background"
+                  >
+                    <div className="flex h-7 items-center justify-between border-b border-border/40 bg-muted/20 px-2">
+                      <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
+                        p. {item.pageIndex + 1}
+                      </span>
+                      {item.rotation > 0 && (
+                        <span className="rounded bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-500 font-dm-sans">
+                          {item.rotation}°
                         </span>
-                        {item.rotation > 0 && (
-                          <span className="text-[9px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded font-dm-sans">
-                            {item.rotation}°
-                          </span>
+                      )}
+                    </div>
+
+                    <div className="relative flex min-h-0 flex-1 items-center justify-center bg-muted/5 p-2">
+                      <div
+                        className="relative flex h-full w-full items-center justify-center transition-transform duration-300"
+                        style={{ transform: `rotate(${item.rotation}deg)` }}
+                      >
+                        {item.thumbnailUrl ? (
+                          <Image
+                            src={item.thumbnailUrl}
+                            alt={`Page ${item.pageIndex + 1}`}
+                            fill
+                            unoptimized
+                            sizes="(min-width: 768px) 12rem, 50vw"
+                            className="pointer-events-none rounded object-contain p-2"
+                          />
+                        ) : (
+                          <div className="text-[10px] text-muted-foreground font-dm-sans">
+                            Preview unavailable
+                          </div>
                         )}
                       </div>
 
-                      {/* Thumbnail or placeholder */}
-                      <div className="flex-1 min-h-0 p-2 flex items-center justify-center bg-muted/5 relative">
-                        <div
-                          className="relative w-full h-full flex items-center justify-center transition-transform duration-300"
-                          style={{ transform: `rotate(${item.rotation}deg)` }}
+                      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/40 opacity-0 backdrop-blur-[1px] transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => rotateIndividualPage(item.pageIndex, -90)}
+                          aria-label={`Rotate page ${item.pageIndex + 1} counter-clockwise`}
+                          className="size-8 rounded-lg border border-border/40 shadow-sm"
                         >
-                          {item.thumbnailUrl ? (
-                            <Image
-                              src={item.thumbnailUrl}
-                              alt={`Page ${item.pageIndex + 1}`}
-                              fill
-                              unoptimized
-                              sizes="(min-width: 768px) 12rem, 50vw"
-                              className="object-contain p-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)] rounded pointer-events-none"
-                            />
-                          ) : (
-                            <div className="text-[10px] text-muted-foreground font-dm-sans">
-                              Loading...
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Hover Overlay Rotates */}
-                        <div className="absolute inset-0 bg-background/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2 backdrop-blur-[1px]">
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            onClick={() => rotateIndividualPage(item.pageIndex, -90)}
-                            className="size-8 rounded-lg shadow-sm border border-border/40"
-                            title="Rotate 90° counter-clockwise"
-                          >
-                            <span className="text-sm font-bold">↶</span>
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            onClick={() => rotateIndividualPage(item.pageIndex, 90)}
-                            className="size-8 rounded-lg shadow-sm border border-border/40"
-                            title="Rotate 90° clockwise"
-                          >
-                            <HugeiconsIcon icon={RotateRightIcon} className="size-4" />
-                          </Button>
-                        </div>
+                          <span className="text-sm font-bold" aria-hidden>
+                            ↶
+                          </span>
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => rotateIndividualPage(item.pageIndex, 90)}
+                          aria-label={`Rotate page ${item.pageIndex + 1} clockwise`}
+                          className="size-8 rounded-lg border border-border/40 shadow-sm"
+                        >
+                          <HugeiconsIcon
+                            icon={RotateRightIcon}
+                            className="size-4"
+                            aria-hidden
+                          />
+                        </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Config panel */}
-            <div className="md:col-span-1">
-              <Card className="p-6 border-border/60 bg-background/50 backdrop-blur-sm flex flex-col gap-6 sticky top-6">
-                <h3 className="font-bold text-sm font-manrope border-b border-border/40 pb-3">
-                  Rotate Settings
-                </h3>
-
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs font-semibold text-foreground/80 font-dm-sans">
-                    Bulk Actions:
-                  </span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => rotateAllPages(90)}
-                      className="text-xs font-semibold"
-                    >
-                      Rotate All 90°
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => rotateAllPages(180)}
-                      className="text-xs font-semibold"
-                    >
-                      Rotate All 180°
-                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={resetAllRotations}
-                    className="w-full text-xs font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 mt-1"
-                  >
-                    Reset All Rotations
-                  </Button>
-                </div>
-
-                <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
-                  <Button
-                    onClick={handleExport}
-                    disabled={isProcessing}
-                    className="w-full font-semibold font-manrope bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/15"
-                  >
-                    Save & Export
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={clearWorkspace}
-                    disabled={isProcessing}
-                    className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
-                  >
-                    Change File
-                  </Button>
-                </div>
-              </Card>
+                ))}
+              </div>
             </div>
           </div>
-        ) : (
-          /* Output Success State */
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="max-w-md mx-auto flex flex-col gap-6"
-          >
-            <div className="border border-border/60 bg-background/50 backdrop-blur-sm p-8 rounded-2xl flex flex-col items-center gap-6 text-center shadow-xl">
-              <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                <HugeiconsIcon icon={Tick01Icon} className="size-7" />
-              </div>
+
+          {/* Config panel */}
+          <div className="md:col-span-1">
+            <Card className="sticky top-6 flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
+              <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
+                Rotate Settings
+              </h2>
+
               <div className="flex flex-col gap-2">
-                <h3 className="font-bold text-2xl font-manrope">Page Rotation Saved</h3>
-                <p className="text-sm text-muted-foreground font-dm-sans leading-relaxed">
-                  Rotations applied successfully to <strong>{file.name}</strong>. 
-                  Processed locally.
-                </p>
+                <span className="text-xs font-semibold font-dm-sans text-foreground/80">
+                  Bulk Actions:
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => rotateAllPages(90)}
+                    className="text-xs font-semibold"
+                  >
+                    Rotate All 90°
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => rotateAllPages(180)}
+                    className="text-xs font-semibold"
+                  >
+                    Rotate All 180°
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetAllRotations}
+                  className="mt-1 w-full text-xs font-semibold text-rose-500 hover:bg-rose-500/5 hover:text-rose-600"
+                >
+                  Reset All Rotations
+                </Button>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <div className="flex flex-col gap-2 border-t border-border/40 pt-2">
                 <Button
-                  variant="outline"
+                  onClick={handleExport}
+                  disabled={task.isProcessing}
+                  className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
+                >
+                  Save &amp; Export
+                </Button>
+                <Button
+                  variant="ghost"
                   onClick={clearWorkspace}
-                  className="flex-1 font-semibold text-xs py-5"
+                  disabled={task.isProcessing}
+                  className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                 >
-                  Start Over
+                  Change File
                 </Button>
-                <Button
-                  asChild
-                  className="flex-1 font-semibold text-xs py-5 bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/15"
-                >
-                  <a href={rotatedBlobUrl} download={`rotated_${file.name}`}>
-                    <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" />
-                    Download PDF
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {isProcessing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <Card className="p-6 max-w-sm w-full mx-4 border-border/60 flex flex-col items-center gap-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" />
-              <div className="flex flex-col gap-1 w-full">
-                <span className="text-sm font-semibold font-manrope">{progressMessage}</span>
-                <span className="text-xs text-muted-foreground font-dm-sans">{progress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-rose-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
               </div>
             </Card>
           </div>
-        )}
-      </main>
+        </div>
+      ) : (
+        <SuccessCard
+          title="Page Rotation Saved"
+          description={`Rotations applied to ${file.name}. Processed locally — nothing was uploaded.`}
+          actions={
+            <>
+              <Button
+                variant="outline"
+                onClick={clearWorkspace}
+                className="flex-1 py-5 text-xs font-semibold"
+              >
+                Start Over
+              </Button>
+              <Button
+                asChild
+                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+              >
+                <a href={rotatedBlobUrl} download={`rotated_${file.name}`}>
+                  <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
+                  Download PDF
+                </a>
+              </Button>
+            </>
+          }
+        />
+      )}
 
-      <SiteFooter />
-    </div>
+      {task.isProcessing && (
+        <ProcessingOverlay
+          accent={tool.accent}
+          message={task.message}
+          progress={task.progress}
+        />
+      )}
+    </ToolPageShell>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 
 export interface WorkerMessage<T = unknown> {
   id: string;
-  type: 'PROGRESS' | 'SUCCESS' | 'ERROR';
+  type: 'READY' | 'PROGRESS' | 'SUCCESS' | 'ERROR';
   payload: T;
 }
 
@@ -17,6 +17,12 @@ interface WorkerStatusPayload {
   progress?: number;
 }
 
+interface PendingTask {
+  onSuccess: (data: unknown) => void;
+  onError: (error: Error) => void;
+  onProgress?: (progress: number, message?: string) => void;
+}
+
 function toWorkerError(message: string, event?: ErrorEvent | MessageEvent) {
   if (event && 'message' in event && event.message) {
     return new Error(event.message);
@@ -25,17 +31,10 @@ function toWorkerError(message: string, event?: ErrorEvent | MessageEvent) {
 }
 
 export function useWorker(createWorker: () => Worker | null) {
-  const callbacksRef = useRef<
-    Map<
-      string,
-      {
-        onSuccess: (data: unknown) => void;
-        onError: (error: Error) => void;
-        onProgress?: (progress: number, message?: string) => void;
-      }
-    >
-  >(new Map());
+  const callbacksRef = useRef<Map<string, PendingTask>>(new Map());
   const workerRef = useRef<Worker | null>(null);
+  const isReadyRef = useRef(false);
+  const queueRef = useRef<WorkerRequest[]>([]);
 
   // Initialize worker client-side
   useEffect(() => {
@@ -45,8 +44,38 @@ export function useWorker(createWorker: () => Worker | null) {
 
     workerRef.current = activeWorker;
 
+    // A worker that dies never reports readiness again, so the queue would
+    // never drain and every later postTask would hang forever. Rejecting the
+    // pending tasks and dropping the queue keeps the failure visible.
+    const failEverything = (message: string, event?: ErrorEvent | MessageEvent) => {
+      queueRef.current = [];
+      isReadyRef.current = false;
+
+      callbacks.forEach((pending) => {
+        pending.onError(toWorkerError(message, event));
+      });
+      callbacks.clear();
+    };
+
+    isReadyRef.current = false;
+    queueRef.current = [];
+
     activeWorker.onmessage = (event: MessageEvent<WorkerMessage>) => {
       const { id, type, payload } = event.data;
+
+      // The worker announces readiness once its module has finished evaluating.
+      // Work must not be posted before that: a `type: 'module'` worker whose
+      // imports use top-level await (MuPDF's WASM init) has not installed its
+      // handler yet, so messages posted in the meantime are dispatched with no
+      // listener and silently lost, leaving the promise pending forever.
+      if (type === 'READY') {
+        isReadyRef.current = true;
+        const queued = queueRef.current;
+        queueRef.current = [];
+        queued.forEach((request) => activeWorker.postMessage(request));
+        return;
+      }
+
       const activeCallbacks = callbacks.get(id);
       const status = payload as WorkerStatusPayload;
 
@@ -66,26 +95,15 @@ export function useWorker(createWorker: () => Worker | null) {
     };
 
     activeWorker.onerror = (event) => {
-      callbacks.forEach((pending) => {
-        pending.onError(toWorkerError('Worker failed to load or crashed', event));
-      });
-      callbacks.clear();
+      failEverything('Worker failed to load or crashed', event);
     };
 
     activeWorker.onmessageerror = (event) => {
-      callbacks.forEach((pending) => {
-        pending.onError(toWorkerError('Worker sent an unreadable message', event));
-      });
-      callbacks.clear();
+      failEverything('Worker sent an unreadable message', event);
     };
 
     return () => {
-      // Reject any pending promises before terminating
-      callbacks.forEach((pending) => {
-        pending.onError(new Error('Worker was terminated during cleanup'));
-      });
-      callbacks.clear();
-
+      failEverything('Worker was terminated during cleanup');
       activeWorker.terminate();
       workerRef.current = null;
     };
@@ -110,11 +128,14 @@ export function useWorker(createWorker: () => Worker | null) {
           onProgress,
         });
 
-        workerRef.current.postMessage({
-          id,
-          type,
-          payload,
-        } as WorkerRequest);
+        const request = { id, type, payload } as WorkerRequest;
+
+        if (isReadyRef.current) {
+          workerRef.current.postMessage(request);
+        } else {
+          // Held until the worker reports READY.
+          queueRef.current.push(request);
+        }
       });
     },
     []

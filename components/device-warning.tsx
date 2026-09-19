@@ -52,11 +52,12 @@ export function DeviceWarning({ fileSizeInBytes = 0, className = '' }: DeviceWar
         </p>
       </div>
       <button
+        type="button"
         onClick={() => setDismissedSize(fileSizeInBytes)}
+        aria-label="Dismiss device performance warning"
         className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive transition-all"
-        title="Dismiss warning"
       >
-        <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+        <HugeiconsIcon icon={Cancel01Icon} className="size-4" aria-hidden />
       </button>
     </div>
   );

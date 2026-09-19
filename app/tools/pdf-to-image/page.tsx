@@ -1,23 +1,30 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
+import { ToolPageShell } from '@/components/tools/tool-page-shell';
+import { ProcessingOverlay } from '@/components/tools/processing-overlay';
+import { TaskErrorBanner } from '@/components/tools/task-error-banner';
+import { ResultActionBar } from '@/components/tools/result-action-bar';
+import { LabeledSlider } from '@/components/tools/labeled-slider';
 import { useWorker } from '@/lib/hooks/useWorker';
+import { useToolTask } from '@/lib/hooks/useToolTask';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  Image01Icon,
-  Download01Icon,
-  ArrowLeft01Icon,
-} from '@hugeicons/core-free-icons';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ACCENTS, requireTool } from '@/lib/tools';
+import { formatSize } from '@/lib/format';
+import { downloadResults } from '@/lib/download';
 import { motion } from 'framer-motion';
-import JSZip from 'jszip';
+
+const tool = requireTool('pdf-to-image');
 
 interface PDFFile {
   name: string;
@@ -41,17 +48,17 @@ interface PDFImageResult {
 export default function PDFToImagePage() {
   const createWorker = useCallback(() => {
     if (typeof window === 'undefined') return null;
-    return new Worker(new URL('../../workers/pdf.worker.ts', import.meta.url), { type: 'module' });
+    return new Worker(new URL('../../workers/pdf.worker.ts', import.meta.url), {
+      type: 'module',
+    });
   }, []);
   const { postTask } = useWorker(createWorker);
+  const task = useToolTask();
 
   const [file, setFile] = useState<PDFFile | null>(null);
   const [format, setFormat] = useState<string>('image/png'); // default PNG
   const [scale, setScale] = useState<string>('1.5'); // default 1.5x (around 108 DPI)
   const [quality, setQuality] = useState<number>(85);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
   const [results, setResults] = useState<ConvertedImage[]>([]);
 
   useEffect(() => {
@@ -67,6 +74,7 @@ export default function PDFToImagePage() {
   const handleFilesSelected = async (selectedFiles: File[]) => {
     if (selectedFiles.length === 0) return;
     setResults([]);
+    task.clearError();
 
     const targetFile = selectedFiles[0];
     const buffer = await targetFile.arrayBuffer();
@@ -80,224 +88,199 @@ export default function PDFToImagePage() {
 
   const handleConvert = async () => {
     if (!file) return;
-    setIsProcessing(true);
-    setProgress(0);
-    setResults([]);
 
-    try {
-      const scaleNum = parseFloat(scale);
-      const isJpeg = format === 'image/jpeg';
-      const ext = isJpeg ? 'jpg' : 'png';
-      const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+    const converted = await task.runTask(
+      async (report) => {
+        const scaleNum = parseFloat(scale);
+        const isJpeg = format === 'image/jpeg';
+        const ext = isJpeg ? 'jpg' : 'png';
+        const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
 
-      const payload = {
-        buffer: file.buffer.slice(0),
-        format,
-        quality,
-        scale: scaleNum,
-      };
-
-      setProgressMessage('Initializing page conversion...');
-      
-      const response = await postTask<typeof payload, PDFImageResult>('PDF_TO_IMAGE', payload, (pct, msg) => {
-        setProgress(pct);
-        if (msg) setProgressMessage(msg);
-      });
-
-      const converted: ConvertedImage[] = response.images.map((img) => {
-        const blob = new Blob([img.buffer], { type: format });
-        const url = URL.createObjectURL(blob);
-        return {
-          pageIndex: img.pageIndex,
-          url,
-          fileName: `${baseName}_page_${img.pageIndex + 1}.${ext}`,
+        const payload = {
+          buffer: file.buffer.slice(0),
+          format,
+          quality,
+          scale: scaleNum,
         };
-      });
 
-      setResults(converted);
-      setProgress(100);
-      setProgressMessage('Conversion complete!');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('Failed to convert PDF pages to images.');
-    } finally {
-      setIsProcessing(false);
-    }
+        report(0, 'Initializing page conversion…');
+
+        const response = await postTask<typeof payload, PDFImageResult>(
+          'PDF_TO_IMAGE',
+          payload,
+          (pct, msg) => report(pct, msg)
+        );
+
+        return response.images.map((img) => {
+          const blob = new Blob([img.buffer], { type: format });
+          const url = URL.createObjectURL(blob);
+          return {
+            pageIndex: img.pageIndex,
+            url,
+            fileName: `${baseName}_page_${img.pageIndex + 1}.${ext}`,
+          };
+        });
+      },
+      {
+        initialMessage: 'Initializing page conversion…',
+        errorMessage: 'Failed to convert PDF pages to images.',
+      }
+    );
+
+    if (converted.ok) setResults(converted.value);
   };
 
-  const handleDownloadAll = async () => {
+  const handleDownloadAll = () => {
     if (results.length === 0 || !file) return;
 
-    if (results.length === 1) {
-      const single = results[0];
-      const link = document.createElement('a');
-      link.href = single.url;
-      link.download = single.fileName;
-      link.click();
-      return;
-    }
+    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
 
-    setIsProcessing(true);
-    setProgress(30);
-    setProgressMessage('Creating ZIP archive...');
-
-    try {
-      const zip = new JSZip();
-      
-      for (const item of results) {
-        const response = await fetch(item.url);
-        const blob = await response.blob();
-        zip.file(item.fileName, blob);
-      }
-
-      setProgress(70);
-      setProgressMessage('Compressing ZIP archive...');
-      
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const zipUrl = URL.createObjectURL(zipBlob);
-      
-      const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-      const link = document.createElement('a');
-      link.href = zipUrl;
-      link.download = `${baseName}_pages.zip`;
-      link.click();
-      
-      URL.revokeObjectURL(zipUrl);
-      setProgress(100);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsProcessing(false);
-    }
+    downloadResults(
+      results.map((item) => ({ name: item.fileName, url: item.url })),
+      `${baseName}_pages.zip`
+    );
   };
 
   const clearWorkspace = () => {
     setFile(null);
     setResults([]);
+    task.reset();
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans selection:bg-primary/20 bg-background">
-      <SiteHeader />
-
-      <main className="flex-1 container py-8 md:py-12 max-w-4xl">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-3.5" />
-          Back to Tools
-        </Link>
-
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
-              <HugeiconsIcon icon={Image01Icon} className="size-5" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-manrope">PDF to Image</h1>
-          </div>
-          <p className="text-muted-foreground text-xs sm:text-sm font-dm-sans max-w-xl">
-            Convert document pages into sharp raster images (PNG or JPEG) locally.
-          </p>
-        </div>
-
-        {results.length === 0 ? (
-          !file ? (
+    <ToolPageShell
+      title={tool.title}
+      description={tool.description}
+      icon={tool.icon}
+      accent={tool.accent}
+    >
+      {results.length === 0 ? (
+        !file ? (
+          <div className="flex flex-col gap-6">
+            <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
             <FileUploadZone
               accept="application/pdf"
               multiple={false}
               onFilesSelected={handleFilesSelected}
               description="Upload PDF document to extract as images"
             />
-          ) : (
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6">
+            <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
             <div className="grid gap-6 md:grid-cols-3">
               {/* Options Panel */}
-              <div className="md:col-span-2 flex flex-col gap-6">
-                <Card className="p-6 border-border/60 bg-background/50 backdrop-blur-sm flex flex-col gap-6">
-                  <h3 className="font-bold text-sm font-manrope border-b border-border/40 pb-3">
+              <div className="flex flex-col gap-6 md:col-span-2">
+                <Card className="flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
+                  <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
                     Image settings
-                  </h3>
+                  </h2>
 
                   {/* Format selector */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-foreground/80 font-dm-sans">
+                    <label
+                      htmlFor="pdf-image-format"
+                      className="text-xs font-semibold text-foreground/80 font-dm-sans"
+                    >
                       Target Format:
                     </label>
-                    <Select value={format} onValueChange={setFormat}>
-                      <SelectTrigger className="w-full h-10">
+                    <Select
+                      value={format}
+                      onValueChange={setFormat}
+                      disabled={task.isProcessing}
+                    >
+                      <SelectTrigger id="pdf-image-format" className="h-10 w-full">
                         <SelectValue placeholder="Select image format" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="image/png">PNG (Lossless / High Quality)</SelectItem>
-                        <SelectItem value="image/jpeg">JPEG (Lossy / Smaller Size)</SelectItem>
+                        <SelectItem value="image/png">
+                          PNG (Lossless / High Quality)
+                        </SelectItem>
+                        <SelectItem value="image/jpeg">
+                          JPEG (Lossy / Smaller Size)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Resolution scale selector */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-foreground/80 font-dm-sans">
+                    <label
+                      htmlFor="pdf-image-scale"
+                      className="text-xs font-semibold text-foreground/80 font-dm-sans"
+                    >
                       Resolution Scale:
                     </label>
-                    <Select value={scale} onValueChange={setScale}>
-                      <SelectTrigger className="w-full h-10">
+                    <Select
+                      value={scale}
+                      onValueChange={setScale}
+                      disabled={task.isProcessing}
+                    >
+                      <SelectTrigger id="pdf-image-scale" className="h-10 w-full">
                         <SelectValue placeholder="Select resolution scale" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1.0">1.0x (Standard screen - 72 DPI)</SelectItem>
-                        <SelectItem value="1.5">1.5x (Medium quality - 108 DPI)</SelectItem>
-                        <SelectItem value="2.0">2.0x (High print quality - 144 DPI)</SelectItem>
-                        <SelectItem value="3.0">3.0x (Ultra print quality - 216 DPI)</SelectItem>
+                        <SelectItem value="1.0">
+                          1.0x (Standard screen - 72 DPI)
+                        </SelectItem>
+                        <SelectItem value="1.5">
+                          1.5x (Medium quality - 108 DPI)
+                        </SelectItem>
+                        <SelectItem value="2.0">
+                          2.0x (High print quality - 144 DPI)
+                        </SelectItem>
+                        <SelectItem value="3.0">
+                          3.0x (Ultra print quality - 216 DPI)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Quality slider for JPEG */}
                   {format === 'image/jpeg' && (
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between text-xs font-semibold font-dm-sans">
-                        <span>JPEG Compression Quality:</span>
-                        <span className="text-primary">{quality}%</span>
-                      </div>
-                      <div className="px-1">
-                        <input
-                          type="range"
-                          value={quality}
-                          onChange={(e) => setQuality(parseInt(e.target.value))}
-                          min={20}
-                          max={100}
-                          step={5}
-                          className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                        />
-                      </div>
-                    </div>
+                    <LabeledSlider
+                      id="pdf-image-quality"
+                      label="JPEG Compression Quality:"
+                      value={quality}
+                      min={20}
+                      max={100}
+                      step={5}
+                      unit="%"
+                      onChange={setQuality}
+                      disabled={task.isProcessing}
+                    />
                   )}
                 </Card>
               </div>
 
               {/* Sidebar controls */}
               <div className="md:col-span-1">
-                <Card className="p-6 border-border/60 bg-background/50 backdrop-blur-sm flex flex-col gap-6 sticky top-6">
-                  <h3 className="font-bold text-sm font-manrope border-b border-border/40 pb-3">
+                <Card className="sticky top-6 flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
+                  <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
                     Document details
-                  </h3>
+                  </h2>
                   <div className="flex flex-col gap-2.5 text-xs text-muted-foreground font-dm-sans">
-                    <span className="truncate block">Name: <strong className="text-foreground">{file.name}</strong></span>
-                    <span>Size: <strong>{(file.size / 1024 / 1024).toFixed(2)} MB</strong></span>
+                    <span className="block truncate">
+                      Name:{' '}
+                      <strong className="text-foreground">{file.name}</strong>
+                    </span>
+                    <span>
+                      Size: <strong>{formatSize(file.size)}</strong>
+                    </span>
                   </div>
 
-                  <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
+                  <div className="flex flex-col gap-2 border-t border-border/40 pt-2">
                     <Button
                       onClick={handleConvert}
-                      disabled={isProcessing}
-                      className="w-full font-semibold font-manrope"
+                      disabled={task.isProcessing}
+                      className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                     >
                       Convert PDF Pages
                     </Button>
                     <Button
                       variant="ghost"
                       onClick={clearWorkspace}
-                      disabled={isProcessing}
+                      disabled={task.isProcessing}
                       className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                     >
                       Change File
@@ -306,101 +289,75 @@ export default function PDFToImagePage() {
                 </Card>
               </div>
             </div>
-          )
-        ) : (
-          /* Converted Grid Results View */
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col gap-6"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
-              <div>
-                <h3 className="font-bold text-lg font-manrope">Extraction Complete</h3>
-                <p className="text-xs text-muted-foreground font-dm-sans">
-                  Extracted {results.length} page{results.length > 1 ? 's' : ''} successfully.
-                </p>
-              </div>
-              <div className="flex gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearWorkspace}
-                  className="text-xs font-semibold flex-1 sm:flex-none"
-                >
-                  Start Over
-                </Button>
-                <Button 
-                  size="sm" 
-                  onClick={handleDownloadAll} 
-                  className="text-xs font-semibold flex-1 sm:flex-none shadow-lg shadow-primary/10"
-                >
-                  <HugeiconsIcon icon={Download01Icon} className="size-3.5 mr-1.5" />
-                  {results.length === 1 ? 'Download Image' : 'Download All (.zip)'}
-                </Button>
-              </div>
-            </div>
-
-            {/* Results images grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {results.map((item) => (
-                <Card key={item.pageIndex} className="p-4 border-border/60 bg-background/50 flex flex-col gap-3 justify-between">
-                  <div className="relative aspect-[3/4] bg-muted/40 rounded-lg overflow-hidden border border-border/40">
-                    <Image
-                      src={item.url}
-                      alt={`Page ${item.pageIndex + 1}`}
-                      fill
-                      unoptimized
-                      sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      className="object-contain p-2 shadow-sm rounded"
-                    />
-                  </div>
-
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-foreground truncate font-manrope">
-                      {item.fileName}
-                    </span>
-                    <span className="text-[9px] text-muted-foreground font-dm-sans">
-                      Page {item.pageIndex + 1}
-                    </span>
-                  </div>
-
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    asChild
-                    className="text-xs font-semibold w-full"
-                  >
-                    <a href={item.url} download={item.fileName}>
-                      Download page
-                    </a>
-                  </Button>
-                </Card>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {isProcessing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <Card className="p-6 max-w-sm w-full mx-4 border-border/60 flex flex-col items-center gap-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              <div className="flex flex-col gap-1 w-full">
-                <span className="text-sm font-semibold font-manrope">{progressMessage}</span>
-                <span className="text-xs text-muted-foreground font-dm-sans">{progress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </Card>
           </div>
-        )}
-      </main>
+        )
+      ) : (
+        /* Converted Grid Results View */
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col gap-6"
+        >
+          <ResultActionBar
+            title="Extraction Complete"
+            subtitle={`Extracted ${results.length} page${
+              results.length > 1 ? 's' : ''
+            } successfully.`}
+            onStartOver={clearWorkspace}
+            onDownloadAll={handleDownloadAll}
+            downloadLabel={results.length === 1 ? 'Download Image' : 'Download All (.zip)'}
+          />
 
-      <SiteFooter />
-    </div>
+          {/* Results images grid */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+            {results.map((item) => (
+              <Card
+                key={item.pageIndex}
+                className="flex flex-col justify-between gap-3 border-border/60 bg-background/50 p-4"
+              >
+                <div className="relative aspect-[3/4] overflow-hidden rounded-lg border border-border/40 bg-muted/40">
+                  <Image
+                    src={item.url}
+                    alt={`Page ${item.pageIndex + 1}`}
+                    fill
+                    unoptimized
+                    sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="rounded object-contain p-2 shadow-sm"
+                  />
+                </div>
+
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate text-xs font-bold text-foreground font-manrope">
+                    {item.fileName}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground font-dm-sans">
+                    Page {item.pageIndex + 1}
+                  </span>
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  asChild
+                  className="w-full text-xs font-semibold"
+                >
+                  <a href={item.url} download={item.fileName}>
+                    Download page
+                  </a>
+                </Button>
+              </Card>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {task.isProcessing && (
+        <ProcessingOverlay
+          accent={tool.accent}
+          message={task.message}
+          progress={task.progress}
+        />
+      )}
+    </ToolPageShell>
   );
 }

@@ -1,73 +1,88 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { HugeiconsIcon } from '@hugeicons/react';
+import { ToolPageShell } from '@/components/tools/tool-page-shell';
+import { ProcessingOverlay } from '@/components/tools/processing-overlay';
+import { TaskErrorBanner } from '@/components/tools/task-error-banner';
+import { ResultActionBar } from '@/components/tools/result-action-bar';
+import { LabeledSlider } from '@/components/tools/labeled-slider';
 import {
-  ColorsIcon,
-  Download01Icon,
-  ArrowLeft01Icon,
-} from '@hugeicons/core-free-icons';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { useToolTask } from '@/lib/hooks/useToolTask';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { ColorsIcon } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
+import { ACCENTS, accentTile, requireTool } from '@/lib/tools';
+import { triggerDownload } from '@/lib/format';
+import {
+  getModelCacheServerSnapshot,
+  getModelCacheSnapshot,
+  markModelCacheDownloaded,
+  subscribeModelCache,
+} from '@/lib/bg-model-cache';
+
+const tool = requireTool('image-remove-bg');
 
 export default function ImageRemoveBgPage() {
+  // Background removal runs on the main thread via @imgly/background-removal,
+  // so there is no worker to hand to useToolTask here.
+  const task = useToolTask();
+
   const [file, setFile] = useState<File | null>(null);
   const [originalUrl, setOriginalUrl] = useState<string>('');
   const [cutoutUrl, setCutoutUrl] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
-  
-  // Track visual comparison slider percentage (0 to 100)
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
-
-  // Cache download confirmation states
-  const [isModelDownloaded, setIsModelDownloaded] = useState<boolean>(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const downloaded = localStorage.getItem('konbato_bg_model_downloaded') === 'true';
-      setIsModelDownloaded(downloaded);
-    }
-  }, []);
+  // Read from the store instead of localStorage-in-an-effect, so the first
+  // client render already knows the answer.
+  const isModelDownloaded = useSyncExternalStore(
+    subscribeModelCache,
+    getModelCacheSnapshot,
+    getModelCacheServerSnapshot
+  );
 
+  // Release each object URL when it is replaced and when the page unmounts.
   useEffect(() => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setOriginalUrl(url);
-      return () => URL.revokeObjectURL(url);
-    }
-  }, [file]);
+    return () => {
+      if (originalUrl) URL.revokeObjectURL(originalUrl);
+    };
+  }, [originalUrl]);
 
   useEffect(() => {
     return () => {
-      if (cutoutUrl) {
-        URL.revokeObjectURL(cutoutUrl);
-      }
+      if (cutoutUrl) URL.revokeObjectURL(cutoutUrl);
     };
   }, [cutoutUrl]);
 
   const handleFilesSelected = (files: File[]) => {
-    if (files.length > 0) {
-      setFile(files[0]);
-      setCutoutUrl('');
-    } else {
-      setFile(null);
-      setCutoutUrl('');
-    }
+    const nextFile = files.length > 0 ? files[0] : null;
+
+    // Created here rather than in an effect that watches `file`: selecting a
+    // file is the event that produces the preview URL. The effect above
+    // releases the previous URL when this state changes.
+    setOriginalUrl(nextFile ? URL.createObjectURL(nextFile) : '');
+    setFile(nextFile);
+    setCutoutUrl('');
+    task.clearError();
   };
 
   const handleRemoveBackgroundClick = () => {
     if (isModelDownloaded) {
-      startProcessing();
+      void startProcessing();
     } else {
       setShowConfirmDialog(true);
     }
@@ -75,56 +90,45 @@ export default function ImageRemoveBgPage() {
 
   const startProcessing = async () => {
     if (!file) return;
-    setIsProcessing(true);
-    
     const cached = isModelDownloaded;
-    setProgress(cached ? 15 : 0);
-    setProgressMessage(
-      cached 
-        ? 'Loading model weights from local cache...' 
-        : 'Initializing neural network engine...'
-    );
 
-    try {
-      // Lazy load the library on user action to keep initial bundle light
-      const { removeBackground } = await import('@imgly/background-removal');
+    const url = await task.runTask(
+      async (report) => {
+        report(cached ? 15 : 0, cached
+          ? 'Loading model weights from local cache…'
+          : 'Initializing neural network engine…');
 
-      if (!cached) {
-        setProgressMessage('Downloading model weights (~25MB)...');
-      } else {
-        setProgressMessage('Loading model from cache...');
-      }
-      
-      const config = {
-        progress: (key: string, current: number, total: number) => {
-          if (total > 0) {
+        // Lazy load the library on user action to keep the initial bundle light
+        const { removeBackground } = await import('@imgly/background-removal');
+
+        const outBlob = await removeBackground(file, {
+          progress: (key: string, current: number, total: number) => {
+            if (total <= 0) return;
             const percent = Math.round((current / total) * 100);
             if (key.includes('fetch')) {
-              setProgressMessage(`Downloading model weights: ${percent}%`);
-              setProgress(Math.round(percent * 0.4)); // First 40% of progress
+              report(
+                Math.round(percent * 0.4),
+                `Downloading model weights: ${percent}%`
+              );
             } else if (key.includes('compute') || key.includes('processing')) {
-              setProgressMessage('Isolating foreground subject...');
-              setProgress(Math.round(40 + percent * 0.6)); // Remaining 60%
+              report(
+                Math.round(40 + percent * 0.6),
+                'Isolating foreground subject…'
+              );
             }
-          }
-        },
-      };
+          },
+        });
 
-      const outBlob = await removeBackground(file, config);
-      const url = URL.createObjectURL(outBlob);
-      setCutoutUrl(url);
-      setProgress(100);
-      setProgressMessage('Background removed successfully!');
-      
-      // Save cache flag
-      localStorage.setItem('konbato_bg_model_downloaded', 'true');
-      setIsModelDownloaded(true);
-    } catch (err) {
-      console.error(err);
-      setProgressMessage(err instanceof Error ? err.message : 'Processing failed. Your device might lack required WebGL/WASM support.');
-    } finally {
-      setIsProcessing(false);
-    }
+        markModelCacheDownloaded();
+        return URL.createObjectURL(outBlob);
+      },
+      {
+        errorMessage:
+          'Background removal failed. Your device may lack the required WebGL or WASM support.',
+      }
+    );
+
+    if (url.ok) setCutoutUrl(url.value);
   };
 
   const handleSliderMove = (e: React.MouseEvent | React.TouchEvent) => {
@@ -134,216 +138,181 @@ export default function ImageRemoveBgPage() {
     const rect = container.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const position = ((clientX - rect.left) / rect.width) * 100;
-    
+
     setSliderPosition(Math.max(0, Math.min(100, position)));
   };
 
+  const startOver = () => {
+    // Clearing the URLs lets the effects above release the blobs.
+    setFile(null);
+    setOriginalUrl('');
+    setCutoutUrl('');
+    task.reset();
+  };
+
   return (
-    <div className="relative min-h-screen flex flex-col font-sans selection:bg-primary/20 bg-background">
-      <SiteHeader />
+    <ToolPageShell
+      title={tool.title}
+      description="Isolate subjects from photos 100% locally in your browser. Runs a local AI segmentation model with zero server uploads."
+      icon={tool.icon}
+      accent={tool.accent}
+    >
+      {!cutoutUrl ? (
+        <div className="flex flex-col gap-6">
+          <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
 
-      <main className="flex-1 container py-8 md:py-12 max-w-4xl">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-3.5" />
-          Back to Tools
-        </Link>
+          <FileUploadZone
+            accept="image/*"
+            multiple={false}
+            onFilesSelected={handleFilesSelected}
+            description="Upload a photo to remove background"
+          />
 
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
-              <HugeiconsIcon icon={ColorsIcon} className="size-5" />
+          {file && (
+            <div className="flex justify-end">
+              <Button
+                onClick={handleRemoveBackgroundClick}
+                disabled={task.isProcessing}
+                className={`w-full px-8 font-semibold font-manrope sm:w-auto ${ACCENTS[tool.accent].button}`}
+              >
+                Remove Background
+              </Button>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-manrope">Remove Background</h1>
-          </div>
-          <p className="text-muted-foreground text-xs sm:text-sm font-dm-sans max-w-xl">
-            Isolate subjects from photos 100% locally in your browser. Runs a local AI segmentation model with zero server uploads.
-          </p>
+          )}
         </div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col gap-6"
+        >
+          <ResultActionBar
+            title="Background Removed"
+            subtitle="Drag the handle — or use the slider — to compare the original and the cutout."
+            onStartOver={startOver}
+            onDownloadAll={() =>
+              triggerDownload(cutoutUrl, `cutout_${file?.name ?? 'image.png'}`)
+            }
+            downloadLabel="Download PNG"
+            startOverLabel="Start Over"
+          />
 
-        {!cutoutUrl ? (
-          <div className="flex flex-col gap-6">
-            <FileUploadZone
-              accept="image/*"
-              multiple={false}
-              onFilesSelected={handleFilesSelected}
-              description="Upload a photo to remove background"
-            />
-            {file && (
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleRemoveBackgroundClick}
-                  disabled={isProcessing}
-                  className="w-full sm:w-auto px-8 font-semibold font-manrope bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/15"
-                >
-                  Remove Background
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Slider Comparison Output */
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col gap-6"
+          {/* Slider Comparison Component */}
+          <div
+            id="comparison-container"
+            className="relative aspect-square w-full cursor-ew-resize select-none overflow-hidden rounded-2xl border border-border/80 bg-muted/40 md:aspect-[4/3]"
+            style={{ touchAction: 'none' }}
+            onMouseMove={(e) => isDraggingSlider && handleSliderMove(e)}
+            onTouchMove={(e) => isDraggingSlider && handleSliderMove(e)}
+            onMouseDown={() => setIsDraggingSlider(true)}
+            onTouchStart={() => setIsDraggingSlider(true)}
+            onMouseUp={() => setIsDraggingSlider(false)}
+            onMouseLeave={() => setIsDraggingSlider(false)}
+            onTouchEnd={() => setIsDraggingSlider(false)}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
-              <div>
-                <h3 className="font-bold text-lg font-manrope">Background Removed</h3>
-                <p className="text-xs text-muted-foreground font-dm-sans">
-                  Drag the slider to compare original and cutout images.
-                </p>
-              </div>
-              <div className="flex gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setFile(null);
-                    setCutoutUrl('');
-                  }}
-                  className="text-xs font-semibold flex-1 sm:flex-none"
-                >
-                  Start Over
-                </Button>
-                <Button
-                  size="sm"
-                  asChild
-                  className="text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white flex-1 sm:flex-none"
-                >
-                  <a href={cutoutUrl} download={`cutout_${file?.name}`}>
-                    <HugeiconsIcon icon={Download01Icon} className="size-3.5 mr-1.5" />
-                    Download PNG
-                  </a>
-                </Button>
-              </div>
+            {/* Underneath: transparent cutout */}
+            <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-muted/5 [background-size:16px_16px]">
+              <Image
+                src={cutoutUrl}
+                alt="Cutout with the background removed"
+                fill
+                unoptimized
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="pointer-events-none object-contain"
+              />
             </div>
 
-            {/* Slider Comparison Component */}
+            {/* Overlaid: original image, clipped to the handle */}
             <div
-              id="comparison-container"
-              className="relative w-full aspect-square md:aspect-[4/3] rounded-2xl overflow-hidden border border-border/80 bg-muted/40 cursor-ew-resize select-none"
-              style={{ touchAction: 'none' }}
-              onMouseMove={(e) => isDraggingSlider && handleSliderMove(e)}
-              onTouchMove={(e) => isDraggingSlider && handleSliderMove(e)}
-              onMouseDown={() => setIsDraggingSlider(true)}
-              onTouchStart={() => setIsDraggingSlider(true)}
-              onMouseUp={() => setIsDraggingSlider(false)}
-              onMouseLeave={() => setIsDraggingSlider(false)}
-              onTouchEnd={() => setIsDraggingSlider(false)}
+              className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden bg-background/5"
+              style={{
+                clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)`,
+              }}
             >
-              {/* Underneath: Transparent Cutout Image */}
-              <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-muted/5 flex items-center justify-center">
-                <Image
-                  src={cutoutUrl}
-                  alt="Cutout background removed"
-                  fill
-                  unoptimized
-                  sizes="(min-width: 1024px) 50vw, 100vw"
-                  className="object-contain pointer-events-none"
-                />
-              </div>
+              <Image
+                src={originalUrl}
+                alt="Original image"
+                fill
+                unoptimized
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="pointer-events-none object-contain"
+              />
+            </div>
 
-              {/* Overlaid: Original Image (Clipped) */}
-              <div
-                className="absolute inset-0 bg-background/5 flex items-center justify-center overflow-hidden pointer-events-none"
-                style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
-              >
-                <Image
-                  src={originalUrl}
-                  alt="Original image"
-                  fill
-                  unoptimized
-                  sizes="(min-width: 1024px) 50vw, 100vw"
-                  className="object-contain pointer-events-none"
-                />
-              </div>
-
-              {/* Sliding Separator Line */}
-              <div
-                className="absolute top-0 bottom-0 w-0.5 bg-indigo-500 cursor-ew-resize flex items-center justify-center"
-                style={{ left: `${sliderPosition}%` }}
-              >
-                <div className="flex size-7 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg border border-white/20 select-none">
-                  <span className="text-[10px] font-bold">↔</span>
-                </div>
+            {/* Separator */}
+            <div
+              className="absolute bottom-0 top-0 flex w-0.5 cursor-ew-resize items-center justify-center bg-indigo-500"
+              style={{ left: `${sliderPosition}%` }}
+              aria-hidden
+            >
+              <div className="flex size-7 select-none items-center justify-center rounded-full border border-white/20 bg-indigo-500 text-white shadow-lg">
+                <span className="text-[10px] font-bold">↔</span>
               </div>
             </div>
-          </motion.div>
-        )}
-
-        {isProcessing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <Card className="p-6 max-w-sm w-full mx-4 border-border/60 flex flex-col items-center gap-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" />
-              <div className="flex flex-col gap-1 w-full">
-                <span className="text-sm font-semibold font-manrope">{progressMessage}</span>
-                <span className="text-xs text-muted-foreground font-dm-sans">{progress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-indigo-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </Card>
           </div>
-        )}
 
-        {/* Confirmation Dialog */}
-        {showConfirmDialog && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <Card className="p-6 max-w-md w-full mx-4 border-border/60 flex flex-col gap-4 shadow-2xl bg-background/90">
-              <div className="flex items-center gap-3 text-indigo-500">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                  <HugeiconsIcon icon={ColorsIcon} className="size-5" />
-                </div>
-                <h3 className="text-lg font-bold font-manrope text-foreground">One-Time Download Required</h3>
-              </div>
-              
-              <p className="text-xs sm:text-sm text-muted-foreground font-dm-sans leading-relaxed">
-                This tool isolates subjects using a neural network running <strong>entirely inside your browser</strong>. 
-                To start, your browser needs to download the model weights file (<strong>~25MB</strong>).
-              </p>
-              
-              <div className="rounded-lg bg-muted/40 border border-border/40 p-3 flex flex-col gap-1.5 text-xs text-muted-foreground font-dm-sans">
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <span>100% secure: files are never uploaded to servers</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <span>Offline-ready: once cached, runs without internet</span>
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowConfirmDialog(false)}
-                  className="flex-1 text-xs font-semibold"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowConfirmDialog(false);
-                    startProcessing();
-                  }}
-                  className="flex-1 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/15"
-                >
-                  Download & Process
-                </Button>
-              </div>
-            </Card>
+          {/* Keyboard-accessible equivalent of the drag handle */}
+          <div className="mx-auto w-full max-w-md">
+            <LabeledSlider
+              id="compare-split"
+              label="Comparison split"
+              value={sliderPosition}
+              min={0}
+              max={100}
+              unit="%"
+              onChange={setSliderPosition}
+              hint="Left shows the original, right shows the cutout."
+            />
           </div>
-        )}
-      </main>
+        </motion.div>
+      )}
 
-      <SiteFooter />
-    </div>
+      {task.isProcessing && (
+        <ProcessingOverlay
+          accent={tool.accent}
+          message={task.message}
+          progress={task.progress}
+        />
+      )}
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogMedia className={accentTile(tool.accent)}>
+              <HugeiconsIcon icon={ColorsIcon} aria-hidden />
+            </AlertDialogMedia>
+            <AlertDialogTitle className="font-manrope font-bold">
+              One-Time Download Required
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-dm-sans">
+              This tool isolates subjects using a neural network running{' '}
+              <strong>entirely inside your browser</strong>. To start, your browser needs
+              to download the model weights file (<strong>~25 MB</strong>).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="flex flex-col gap-1.5 rounded-lg border border-border/40 bg-muted/40 p-3 text-xs text-muted-foreground font-dm-sans">
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+              <span>100% secure: files are never uploaded to servers</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+              <span>Offline-ready: once cached, runs without internet</span>
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-xs font-semibold">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => void startProcessing()}
+              className={`text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+            >
+              Download &amp; Process
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </ToolPageShell>
   );
 }

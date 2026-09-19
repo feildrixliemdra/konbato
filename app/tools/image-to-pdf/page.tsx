@@ -1,24 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import NextImage from 'next/image';
-import Link from 'next/link';
-import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
-import { useWorker } from '@/lib/hooks/useWorker';
+import { ToolPageShell } from '@/components/tools/tool-page-shell';
+import { ProcessingOverlay } from '@/components/tools/processing-overlay';
+import { TaskErrorBanner } from '@/components/tools/task-error-banner';
+import { SuccessCard } from '@/components/tools/success-card';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useWorker } from '@/lib/hooks/useWorker';
+import { useToolTask } from '@/lib/hooks/useToolTask';
 import { HugeiconsIcon } from '@hugeicons/react';
-import {
-  Image01Icon,
-  Download01Icon,
-  ArrowLeft01Icon,
-  Tick01Icon,
-  Delete02Icon,
-  Drag01Icon,
-} from '@hugeicons/core-free-icons';
-import { motion } from 'framer-motion';
+import { Download01Icon, Delete02Icon, Drag01Icon } from '@hugeicons/core-free-icons';
 import {
   DndContext,
   closestCenter,
@@ -36,6 +30,20 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ACCENTS, requireTool } from '@/lib/tools';
+import { formatSize } from '@/lib/format';
+
+const tool = requireTool('image-to-pdf');
+
+/**
+ * Mirrors the image formats the rest of the app accepts. WebP, TIFF and BMP are
+ * normalised to PNG by the worker (MuPDF cannot embed WebP, and browsers cannot
+ * render TIFF for the preview grid).
+ */
+const ACCEPTED_IMAGE_TYPES =
+  'image/png,image/jpeg,image/webp,image/gif,image/tiff,image/bmp,.png,.jpg,.jpeg,.webp,.gif,.tif,.tiff,.bmp';
+
+const UPLOAD_DESCRIPTION = 'Upload images to compile (PNG, JPEG, WebP, GIF, TIFF, BMP)';
 
 interface ImageFile {
   id: string;
@@ -43,6 +51,18 @@ interface ImageFile {
   size: number;
   url: string;
   buffer: ArrayBuffer;
+  width: number;
+  height: number;
+}
+
+interface PreparedImage {
+  id: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  buffer: ArrayBuffer;
+  previewBuffer: ArrayBuffer | null;
+  previewMimeType: string | null;
   width: number;
   height: number;
 }
@@ -74,22 +94,14 @@ function SortableImage({ id, item, onDelete }: SortableImageProps) {
     zIndex: isDragging ? 50 : 'auto',
   };
 
-  const formatSize = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
-
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative aspect-square bg-background border rounded-xl overflow-hidden shadow-sm flex flex-col ${
+      className={`group relative flex aspect-square flex-col overflow-hidden rounded-xl border bg-background shadow-sm ${
         isDragging
           ? 'border-primary ring-2 ring-primary/10 shadow-lg scale-105'
-          : 'border-border/60 hover:border-border-hover'
+          : 'border-border/60'
       } transition-all duration-200 select-none`}
     >
       {/* Top bar with drag handle and delete */}
@@ -98,9 +110,9 @@ function SortableImage({ id, item, onDelete }: SortableImageProps) {
           {...attributes}
           {...listeners}
           className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground/80 p-0.5"
-          title="Drag to reorder"
+          aria-label="Drag to reorder"
         >
-          <HugeiconsIcon icon={Drag01Icon} className="size-3.5" />
+          <HugeiconsIcon icon={Drag01Icon} className="size-3.5" aria-hidden />
         </div>
         <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
           {item.width} x {item.height}
@@ -111,9 +123,9 @@ function SortableImage({ id, item, onDelete }: SortableImageProps) {
             onDelete(id);
           }}
           className="text-muted-foreground/60 hover:text-rose-500 hover:bg-rose-500/10 p-0.5 rounded transition-all"
-          title="Remove image"
+          aria-label={`Remove ${item.name}`}
         >
-          <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+          <HugeiconsIcon icon={Delete02Icon} className="size-3.5" aria-hidden />
         </button>
       </div>
 
@@ -134,9 +146,7 @@ function SortableImage({ id, item, onDelete }: SortableImageProps) {
         <span className="truncate max-w-[70%]" title={item.name}>
           {item.name}
         </span>
-        <span className="shrink-0">
-          {formatSize(item.size)}
-        </span>
+        <span className="shrink-0">{formatSize(item.size)}</span>
       </div>
     </div>
   );
@@ -148,13 +158,12 @@ export default function ImageToPDFPage() {
     return new Worker(new URL('../../workers/pdf.worker.ts', import.meta.url), { type: 'module' });
   }, []);
   const { postTask } = useWorker(createWorker);
+  const task = useToolTask();
 
   const [images, setImages] = useState<ImageFile[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string>('');
   const imageUrlsRef = useRef<Set<string>>(new Set());
+  const addImagesInputRef = useRef<HTMLInputElement | null>(null);
 
   const revokeImageUrl = useCallback((url: string) => {
     URL.revokeObjectURL(url);
@@ -192,46 +201,59 @@ export default function ImageToPDFPage() {
     if (selectedFiles.length === 0) return;
     setPdfBlobUrl('');
 
-    setIsProcessing(true);
-    setProgress(20);
-    setProgressMessage('Reading image attributes...');
+    const stamp = Date.now();
+    const outcome = await task.runTask(
+      async (report) => {
+        const payload = await Promise.all(
+          selectedFiles.map(async (file, i) => ({
+            id: `${stamp}-${i}`,
+            name: file.name,
+            size: file.size,
+            buffer: await file.arrayBuffer(),
+          }))
+        );
 
-    try {
-      const newImagesList: ImageFile[] = [];
+        report(0, 'Reading image attributes…');
 
-      for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i];
-        const buffer = await file.arrayBuffer();
-        const url = URL.createObjectURL(file);
-        imageUrlsRef.current.add(url);
-        
-        // Retrieve image dimensions using HTML Image decoders
-        const imgDimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
-          const imgEl = new Image();
-          imgEl.onload = () => resolve({ width: imgEl.naturalWidth, height: imgEl.naturalHeight });
-          imgEl.onerror = () => reject(new Error('Failed to load image element'));
-          imgEl.src = url;
+        // The worker normalises each image into a PDF-embeddable format and
+        // reports its dimensions, so previews and page sizing work for every
+        // accepted format (including TIFF, which browsers cannot decode).
+        const response = await postTask<
+          { images: typeof payload },
+          { images: PreparedImage[] }
+        >('PREPARE_IMAGES', { images: payload }, (pct, msg) => report(pct, msg));
+
+        return response.images.map((item) => {
+          // TIFF ships a MuPDF-rendered PNG for the thumbnail, since browsers
+          // cannot display TIFF directly.
+          const previewBuffer = item.previewBuffer ?? item.buffer;
+          const previewMimeType = item.previewMimeType ?? item.mimeType;
+          const url = URL.createObjectURL(
+            new Blob([previewBuffer], { type: previewMimeType })
+          );
+          imageUrlsRef.current.add(url);
+
+          // The preview bytes are deliberately dropped here: the object URL
+          // already owns them, and keeping both would double each image's cost.
+          return {
+            id: item.id,
+            name: item.name,
+            size: item.size,
+            buffer: item.buffer,
+            width: item.width,
+            height: item.height,
+            url,
+          };
         });
-
-        newImagesList.push({
-          id: `${Date.now()}-${i}`,
-          name: file.name,
-          size: file.size,
-          url,
-          buffer,
-          width: imgDimensions.width,
-          height: imgDimensions.height,
-        });
+      },
+      {
+        initialMessage: 'Reading image attributes…',
+        errorMessage: 'Failed to load selected images.',
       }
+    );
 
-      setImages((prev) => [...prev, ...newImagesList]);
-      setProgress(100);
-      setProgressMessage('');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('Failed to load selected images.');
-    } finally {
-      setIsProcessing(false);
+    if (outcome.ok) {
+      setImages((prev) => [...prev, ...outcome.value]);
     }
   };
 
@@ -258,35 +280,36 @@ export default function ImageToPDFPage() {
 
   const handleCompile = async () => {
     if (images.length === 0) return;
-    setIsProcessing(true);
-    setProgress(0);
-    setProgressMessage('Collocating image list...');
 
-    try {
-      // Prepare worker payload: transfers copy of ArrayBuffers
-      const imagesPayload = images.map((img) => ({
-        buffer: img.buffer.slice(0),
-        name: img.name,
-        width: img.width,
-        height: img.height,
-      }));
+    const outcome = await task.runTask(
+      async (report) => {
+        // Prepare worker payload: transfers copy of ArrayBuffers
+        const imagesPayload = images.map((img) => ({
+          buffer: img.buffer.slice(0),
+          name: img.name,
+          width: img.width,
+          height: img.height,
+        }));
 
-      setProgressMessage('Compiling images into PDF pages...');
-      const response = await postTask<{ images: typeof imagesPayload }, PDFWorkerResult>('IMAGE_TO_PDF', { images: imagesPayload }, (pct, msg) => {
-        setProgress(pct);
-        if (msg) setProgressMessage(msg);
-      });
+        report(0, 'Compiling images into PDF pages…');
 
-      const blob = new Blob([response.buffer], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      setPdfBlobUrl(url);
-      setProgress(100);
-      setProgressMessage('PDF created successfully!');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('Failed to compile PDF.');
-    } finally {
-      setIsProcessing(false);
+        const response = await postTask<{ images: typeof imagesPayload }, PDFWorkerResult>(
+          'IMAGE_TO_PDF',
+          { images: imagesPayload },
+          (pct, msg) => report(pct, msg)
+        );
+
+        const blob = new Blob([response.buffer], { type: 'application/pdf' });
+        return URL.createObjectURL(blob);
+      },
+      {
+        initialMessage: 'Collocating image list…',
+        errorMessage: 'Failed to compile PDF.',
+      }
+    );
+
+    if (outcome.ok) {
+      setPdfBlobUrl(outcome.value);
     }
   };
 
@@ -295,49 +318,39 @@ export default function ImageToPDFPage() {
     imageUrlsRef.current.clear();
     setImages([]);
     setPdfBlobUrl('');
+    task.reset();
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans selection:bg-primary/20 bg-background">
-      <SiteHeader />
-
-      <main className="flex-1 container py-8 md:py-12 max-w-6xl">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-3.5" />
-          Back to Tools
-        </Link>
-
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
-              <HugeiconsIcon icon={Image01Icon} className="size-5" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-manrope">Image to PDF</h1>
-          </div>
-          <p className="text-muted-foreground text-xs sm:text-sm font-dm-sans max-w-xl">
-            Compile images (JPEG/PNG) client-side into a single PDF document. Drag pages to arrange collation order.
-          </p>
-        </div>
+    <ToolPageShell
+      title={tool.title}
+      description={tool.description}
+      icon={tool.icon}
+      accent={tool.accent}
+      width="wide"
+    >
+      <div className="flex flex-col gap-6">
+        <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
 
         {images.length === 0 ? (
           <FileUploadZone
-            accept="image/png, image/jpeg"
+            accept={ACCEPTED_IMAGE_TYPES}
             multiple={true}
             onFilesSelected={handleFilesSelected}
-            description="Upload images to compile (JPEG, PNG)"
+            description={UPLOAD_DESCRIPTION}
           />
         ) : !pdfBlobUrl ? (
           <div className="grid gap-6 lg:grid-cols-4">
             {/* Collation Workspace */}
             <div className="lg:col-span-3 flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-border/40 pb-3">
-                <h3 className="font-bold text-sm font-manrope flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-primary" />
+                <h2 className="flex items-center gap-2 text-sm font-bold font-manrope">
+                  <span
+                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                    aria-hidden
+                  />
                   Images collation
-                </h3>
+                </h2>
                 <span className="text-xs text-muted-foreground font-dm-sans">
                   {images.length} Image{images.length > 1 ? 's' : ''} • Drag to reorder
                 </span>
@@ -368,17 +381,19 @@ export default function ImageToPDFPage() {
 
             {/* Sidebar Controls */}
             <div className="lg:col-span-1">
-              <Card className="p-6 border-border/60 bg-background/50 backdrop-blur-sm flex flex-col gap-6 sticky top-6">
-                <h3 className="font-bold text-sm font-manrope border-b border-border/40 pb-3">
+              <Card className="sticky top-6 flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
+                <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
                   Document Settings
-                </h3>
+                </h2>
 
                 <div className="flex flex-col gap-3">
                   <span className="text-xs font-semibold text-foreground/80 font-dm-sans">
                     Settings:
                   </span>
                   <div className="text-[10px] text-muted-foreground leading-relaxed font-dm-sans border border-border/40 p-3 rounded-lg bg-muted/20 flex flex-col gap-1">
-                    <span>Layout: <strong>Fit Image Size</strong></span>
+                    <span>
+                      Layout: <strong>Fit Image Size</strong>
+                    </span>
                     <span>Generates custom page dimensions matching the uploaded images.</span>
                   </div>
                 </div>
@@ -387,40 +402,42 @@ export default function ImageToPDFPage() {
                   <span className="text-xs font-semibold text-foreground/80 font-dm-sans">
                     Add more images:
                   </span>
+                  {/* A real <button> rather than a styled <label>, so the control
+                      is focusable and operable from the keyboard. */}
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full relative cursor-pointer"
-                    asChild
+                    className="w-full"
+                    onClick={() => addImagesInputRef.current?.click()}
                   >
-                    <label>
-                      Upload Images
-                      <input
-                        type="file"
-                        accept="image/png, image/jpeg"
-                        multiple
-                        className="hidden"
-                        onChange={(e) => {
-                          const fileList = Array.from(e.target.files || []);
-                          handleFilesSelected(fileList);
-                        }}
-                      />
-                    </label>
+                    Upload Images
                   </Button>
+                  <input
+                    ref={addImagesInputRef}
+                    type="file"
+                    accept={ACCEPTED_IMAGE_TYPES}
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const fileList = Array.from(e.target.files || []);
+                      e.target.value = '';
+                      handleFilesSelected(fileList);
+                    }}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
                   <Button
                     onClick={handleCompile}
-                    disabled={images.length === 0 || isProcessing}
-                    className="w-full font-semibold font-manrope"
+                    disabled={images.length === 0 || task.isProcessing}
+                    className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                   >
                     Compile PDF
                   </Button>
                   <Button
                     variant="ghost"
                     onClick={clearWorkspace}
-                    disabled={isProcessing}
+                    disabled={task.isProcessing}
                     className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
                     Reset Workspace
@@ -431,64 +448,40 @@ export default function ImageToPDFPage() {
           </div>
         ) : (
           /* Output Success State */
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="max-w-md mx-auto flex flex-col gap-6"
-          >
-            <div className="border border-border/60 bg-background/50 backdrop-blur-sm p-8 rounded-2xl flex flex-col items-center gap-6 text-center shadow-xl">
-              <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                <HugeiconsIcon icon={Tick01Icon} className="size-7" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="font-bold text-2xl font-manrope">PDF Compiled</h3>
-                <p className="text-sm text-muted-foreground font-dm-sans leading-relaxed">
-                  Compiled {images.length} image{images.length > 1 ? 's' : ''} into a single organized PDF document locally.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <SuccessCard
+            title="PDF Compiled"
+            description={`Compiled ${images.length} image${images.length > 1 ? 's' : ''} into a single organized PDF document locally.`}
+            actions={
+              <>
                 <Button
                   variant="outline"
                   onClick={clearWorkspace}
-                  className="flex-1 font-semibold text-xs py-5"
+                  className="flex-1 py-5 text-xs font-semibold"
                 >
                   Start Over
                 </Button>
                 <Button
                   asChild
-                  className="flex-1 font-semibold text-xs py-5 shadow-lg shadow-primary/10"
+                  className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
                 >
                   <a href={pdfBlobUrl} download="images_document.pdf">
-                    <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" />
+                    <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
                     Download PDF
                   </a>
                 </Button>
-              </div>
-            </div>
-          </motion.div>
+              </>
+            }
+          />
         )}
+      </div>
 
-        {isProcessing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <Card className="p-6 max-w-sm w-full mx-4 border-border/60 flex flex-col items-center gap-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              <div className="flex flex-col gap-1 w-full">
-                <span className="text-sm font-semibold font-manrope">{progressMessage}</span>
-                <span className="text-xs text-muted-foreground font-dm-sans">{progress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </Card>
-          </div>
-        )}
-      </main>
-
-      <SiteFooter />
-    </div>
+      {task.isProcessing && (
+        <ProcessingOverlay
+          accent={tool.accent}
+          message={task.message}
+          progress={task.progress}
+        />
+      )}
+    </ToolPageShell>
   );
 }

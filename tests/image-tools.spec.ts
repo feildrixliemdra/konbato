@@ -5,6 +5,9 @@ const TEST_IMAGES = {
   png: path.join(__dirname, 'images', 'test-pixel.png'),
   jpg: path.join(__dirname, 'images', 'test-pixel.jpg'),
   webp: path.join(__dirname, 'images', 'test-pixel.webp'),
+  gif: path.join(__dirname, 'images', 'test-pixel.gif'),
+  bmp: path.join(__dirname, 'images', 'test-pixel.bmp'),
+  tiff: path.join(__dirname, 'images', 'test-pixel.tiff'),
 };
 
 const TEST_FILES = {
@@ -50,7 +53,7 @@ const PDF_TOOL_ROUTES = [
   {
     path: '/tools/image-to-pdf',
     heading: 'Image to PDF',
-    uploadText: 'Upload images to compile (JPEG, PNG)',
+    uploadText: 'Upload images to compile (PNG, JPEG, WebP, GIF, TIFF, BMP)',
   },
 ];
 
@@ -93,7 +96,7 @@ async function expectDownloadLink(page: Page, name: string | RegExp = /Download/
   await expect(link).toHaveAttribute('href', /^blob:/);
 }
 
-async function expectProcessingOrComplete(page: Page, processingText: string, completionHeading: string) {
+async function expectProcessingOrComplete(page: Page, processingText: string | RegExp, completionHeading: string) {
   const processing = page.getByText(processingText);
   const complete = page.getByRole('heading', { name: completionHeading });
 
@@ -146,9 +149,13 @@ test.describe('Tools app coverage', () => {
       await expect(page.getByRole('heading', { name: tool.heading })).toBeVisible();
     }
 
-    // Verify navigation by clicking the Image Compress card
-    await page.getByRole('link', { name: /Open Image Compress/ }).click();
-    await expect(page).toHaveURL('/tools/image-compress');
+    // Verify the tool card links through to its route. Activated by keyboard
+    // because the sticky header sits over the top of the scrolled card.
+    const imageCompressLink = page.getByRole('link', { name: /Open Image Compress/ });
+    await expect(imageCompressLink).toHaveAttribute('href', '/tools/image-compress');
+    await imageCompressLink.focus();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/tools\/image-compress$/, { timeout: 30000 });
     await expect(page.getByRole('heading', { name: 'Image Compress', exact: true })).toBeVisible();
   });
 
@@ -189,8 +196,12 @@ test.describe('Tools app coverage', () => {
     await expect(page.getByText('Selected Files (1)').first()).toBeVisible();
     await expect(page.getByText('test-pixel.png').first()).toBeVisible();
 
-    // Click Remove Background button
-    const removeBgButton = page.getByRole('button', { name: 'Remove Background' });
+    // Click Remove Background button. `exact` avoids matching the upload zone,
+    // which is also an accessible button whose name contains this text.
+    const removeBgButton = page.getByRole('button', {
+      name: 'Remove Background',
+      exact: true,
+    });
     await expect(removeBgButton).toBeEnabled();
   });
 
@@ -222,6 +233,26 @@ test.describe('Tools app coverage', () => {
     await page.getByRole('button', { name: 'Remove Metadata' }).click();
 
     await expect(page.getByRole('heading', { name: 'Metadata Removed' })).toBeVisible({ timeout: 60000 });
+    await expectDownloadLink(page, 'Download');
+  });
+
+  test('Image Compress optimizes an uploaded image', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based tests on Webkit');
+    await page.goto('/tools/image-compress');
+
+    await expect(page.getByRole('heading', { name: 'Image Compress', exact: true })).toBeVisible();
+    await uploadFile(page, TEST_IMAGES.jpg);
+
+    await expect(page.getByText('Selected Files (1)')).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Quality' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Compress Images' })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'Compress Images' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Compression Complete' })).toBeVisible({
+      timeout: 60000,
+    });
+    await expect(page.getByText('optimized_test-pixel.jpg')).toBeVisible();
     await expectDownloadLink(page, 'Download');
   });
 
@@ -267,12 +298,16 @@ test.describe('Tools app coverage', () => {
     await uploadFile(page, TEST_FILES.pdf, 'Document Details');
 
     await expect(page.getByText('Document Details')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('button', { name: 'Deep (Rasterize)' })).toBeEnabled();
     await page.getByRole('button', { name: 'Deep (Rasterize)' }).click();
     await expect(page.getByRole('button', { name: 'Start Compression' })).toBeEnabled();
     await page.getByRole('button', { name: 'Start Compression' }).click();
 
-    await expect(page.getByText('Rasterizing and compressing pages...')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Start Compression' })).toBeDisabled();
+    await expectProcessingOrComplete(
+      page,
+      /Rasterizing and compressing pages/,
+      'Compression Complete'
+    );
   });
 
   test('Rotate PDF starts exporting rotated pages from an uploaded PDF', async ({ page, browserName }) => {
@@ -335,8 +370,11 @@ test.describe('Tools app coverage', () => {
     await expect(page.getByRole('button', { name: 'Convert PDF Pages' })).toBeEnabled();
     await page.getByRole('button', { name: 'Convert PDF Pages' }).click();
 
-    await expect(page.getByText('Initializing page conversion...')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Convert PDF Pages' })).toBeDisabled();
+    await expectProcessingOrComplete(
+      page,
+      /Initializing page conversion/,
+      'Extraction Complete'
+    );
   });
 
   test('Image to PDF starts compiling uploaded images into a PDF', async ({ page, browserName }) => {
@@ -354,6 +392,25 @@ test.describe('Tools app coverage', () => {
 
     await expectProcessingOrComplete(page, 'Compiling images into PDF pages...', 'PDF Compiled');
   });
+
+  // WebP is re-encoded by the worker (MuPDF has no WebP decoder) and TIFF is
+  // re-encoded so the preview grid can render it; the rest pass straight through.
+  for (const format of ['jpeg', 'webp', 'gif', 'bmp', 'tiff'] as const) {
+    test(`Image to PDF compiles a ${format.toUpperCase()} input`, async ({ page, browserName }) => {
+      test.skip(browserName === 'webkit', 'Skip worker-based PDF processing on Webkit');
+      test.setTimeout(90000);
+      await page.goto('/tools/image-to-pdf');
+
+      await uploadFile(page, TEST_IMAGES[format === 'jpeg' ? 'jpg' : format], 'Images collation');
+      await expect(page.getByText('Images collation')).toBeVisible({ timeout: 30000 });
+
+      await page.getByRole('button', { name: 'Compile PDF' }).click();
+      await expect(page.getByRole('heading', { name: 'PDF Compiled' })).toBeVisible({
+        timeout: 60000,
+      });
+      await expectDownloadLink(page, 'Download PDF');
+    });
+  }
 
   for (const tool of RESPONSIVE_TOOL_ROUTES) {
     test(`${tool.heading} page is responsive`, async ({ page }) => {

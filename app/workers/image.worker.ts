@@ -473,3 +473,7 @@ self.onmessage = async (e: MessageEvent) => {
     });
   }
 };
+
+// Signals that this module has finished evaluating and the handler above is
+// installed, so `useWorker` knows it is safe to start posting work.
+self.postMessage({ id: '__ready__', type: 'READY', payload: {} });

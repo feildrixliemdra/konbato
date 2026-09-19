@@ -1,23 +1,29 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import NextImage from 'next/image';
-import Link from 'next/link';
-import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
-import { useWorker } from '@/lib/hooks/useWorker';
+import { ToolPageShell } from '@/components/tools/tool-page-shell';
+import { ProcessingOverlay } from '@/components/tools/processing-overlay';
+import { TaskErrorBanner } from '@/components/tools/task-error-banner';
+import { SuccessCard } from '@/components/tools/success-card';
+import { LabeledSlider } from '@/components/tools/labeled-slider';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  ArrowLeft01Icon,
-  Download01Icon,
-  ImageCropIcon,
-  Tick01Icon,
-} from '@hugeicons/core-free-icons';
-import { motion } from 'framer-motion';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useWorker } from '@/lib/hooks/useWorker';
+import { useToolTask } from '@/lib/hooks/useToolTask';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Download01Icon } from '@hugeicons/core-free-icons';
+import { ACCENTS, requireTool } from '@/lib/tools';
+
+const tool = requireTool('image-resize-crop');
 
 interface ImageWorkerResult {
   buffer: ArrayBuffer;
@@ -72,12 +78,16 @@ function clampCrop(box: CropBox, sourceWidth: number, sourceHeight: number): Cro
   };
 }
 
+const cropFields = ['x', 'y', 'width', 'height'] as const;
+
 export default function ImageResizeCropPage() {
   const createWorker = useCallback(() => {
     if (typeof window === 'undefined') return null;
     return new Worker(new URL('../../workers/image.worker.ts', import.meta.url));
   }, []);
   const { postTask } = useWorker(createWorker);
+  const task = useToolTask();
+
   const cropFrameRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
 
@@ -90,10 +100,12 @@ export default function ImageResizeCropPage() {
   const [targetWidth, setTargetWidth] = useState('');
   const [targetHeight, setTargetHeight] = useState('');
   const [targetFormat, setTargetFormat] = useState('image/png');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
-  const [result, setResult] = useState<{ url: string; name: string; width: number; height: number } | null>(null);
+  const [result, setResult] = useState<{
+    url: string;
+    name: string;
+    width: number;
+    height: number;
+  } | null>(null);
 
   useEffect(() => {
     return () => {
@@ -110,16 +122,15 @@ export default function ImageResizeCropPage() {
   const handleFilesSelected = (selectedFiles: File[]) => {
     const selected = selectedFiles[0];
     if (!selected) return;
-    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
-    if (result?.url) URL.revokeObjectURL(result.url);
 
     const url = URL.createObjectURL(selected);
     setFile(selected);
     setSourceUrl(url);
     setResult(null);
     setPreset('Original');
+    task.clearError();
 
-    const image = new Image();
+    const image = new window.Image();
     image.onload = () => {
       setSourceSize({ width: image.naturalWidth, height: image.naturalHeight });
       setCrop({ x: 0, y: 0, width: image.naturalWidth, height: image.naturalHeight });
@@ -134,17 +145,14 @@ export default function ImageResizeCropPage() {
     setPreset(value);
     if (!sourceSize.width || !sourceSize.height) return;
 
-    const ratios: Record<string, number> = {
-      '1:1': 1,
-      '4:3': 4 / 3,
-      '16:9': 16 / 9,
-    };
+    const ratios: Record<string, number> = { '1:1': 1, '4:3': 4 / 3, '16:9': 16 / 9 };
 
-    const nextCrop = value === 'Original'
-      ? { x: 0, y: 0, width: sourceSize.width, height: sourceSize.height }
-      : ratios[value]
-        ? centeredCrop(sourceSize.width, sourceSize.height, ratios[value])
-        : crop;
+    const nextCrop =
+      value === 'Original'
+        ? { x: 0, y: 0, width: sourceSize.width, height: sourceSize.height }
+        : ratios[value]
+          ? centeredCrop(sourceSize.width, sourceSize.height, ratios[value])
+          : crop;
 
     setCrop(nextCrop);
     setCropZoom(1);
@@ -157,6 +165,17 @@ export default function ImageResizeCropPage() {
     setCrop((current) =>
       clampCrop(
         { ...current, [key]: Math.max(0, Number(value) || 0) },
+        sourceSize.width || current.width,
+        sourceSize.height || current.height
+      )
+    );
+  };
+
+  const nudgeCrop = (deltaX: number, deltaY: number) => {
+    setPreset('Custom');
+    setCrop((current) =>
+      clampCrop(
+        { ...current, x: current.x + deltaX, y: current.y + deltaY },
         sourceSize.width || current.width,
         sourceSize.height || current.height
       )
@@ -192,7 +211,7 @@ export default function ImageResizeCropPage() {
   };
 
   const handleCropPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!sourceSize.width || !sourceSize.height || result || isProcessing) return;
+    if (!sourceSize.width || !sourceSize.height || result || task.isProcessing) return;
 
     event.currentTarget.setPointerCapture(event.pointerId);
     dragStateRef.current = {
@@ -212,6 +231,7 @@ export default function ImageResizeCropPage() {
     const deltaX = event.clientX - dragState.startX;
     const deltaY = event.clientY - dragState.startY;
 
+    setPreset('Custom');
     setCrop(
       clampCrop(
         {
@@ -231,29 +251,49 @@ export default function ImageResizeCropPage() {
     }
   };
 
+  // Keyboard equivalent of dragging the preview.
+  const handleCropKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 10 : 1;
+    switch (event.key) {
+      case 'ArrowLeft':
+        event.preventDefault();
+        nudgeCrop(step, 0);
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        nudgeCrop(-step, 0);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        nudgeCrop(0, step);
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        nudgeCrop(0, -step);
+        break;
+      default:
+        break;
+    }
+  };
+
   const handleProcess = async () => {
     if (!file) return;
-    setIsProcessing(true);
-    setProgress(0);
-    setResult(null);
-    setProgressMessage('Preparing resize and crop...');
 
-    try {
-      const response = await postTask<
-        {
-          buffer: ArrayBuffer;
-          fileName: string;
-          mimeType: string;
-          targetMimeType: string;
-          crop: CropBox;
-          targetWidth: number;
-          targetHeight: number;
-          quality: number;
-        },
-        ImageWorkerResult
-      >(
-        'RESIZE_CROP',
-        {
+    const outcome = await task.runTask(
+      async () => {
+        const response = await postTask<
+          {
+            buffer: ArrayBuffer;
+            fileName: string;
+            mimeType: string;
+            targetMimeType: string;
+            crop: CropBox;
+            targetWidth: number;
+            targetHeight: number;
+            quality: number;
+          },
+          ImageWorkerResult
+        >('RESIZE_CROP', {
           buffer: await file.arrayBuffer(),
           fileName: file.name,
           mimeType: file.type,
@@ -262,24 +302,23 @@ export default function ImageResizeCropPage() {
           targetWidth: Number(targetWidth) || crop.width,
           targetHeight: Number(targetHeight) || crop.height,
           quality: 90,
-        },
-        (pct, message) => {
-          setProgress(pct);
-          if (message) setProgressMessage(message);
-        }
-      );
+        });
 
-      const blob = new Blob([response.buffer], { type: response.mimeType });
-      const url = URL.createObjectURL(blob);
-      setResult({ url, name: outputName, width: response.width, height: response.height });
-      setProgress(100);
-      setProgressMessage('Resize and crop complete!');
-    } catch (error) {
-      console.error(error);
-      setProgressMessage('Resize and crop failed.');
-    } finally {
-      setIsProcessing(false);
-    }
+        const blob = new Blob([response.buffer], { type: response.mimeType });
+        return {
+          url: URL.createObjectURL(blob),
+          name: outputName,
+          width: response.width,
+          height: response.height,
+        };
+      },
+      {
+        initialMessage: 'Applying resize and crop…',
+        errorMessage: 'Resize and crop failed.',
+      }
+    );
+
+    if (outcome.ok) setResult(outcome.value);
   };
 
   const reset = () => {
@@ -290,6 +329,7 @@ export default function ImageResizeCropPage() {
     setTargetWidth('');
     setTargetHeight('');
     setResult(null);
+    task.reset();
   };
 
   const cropRatio = Math.max(0.1, crop.width / crop.height);
@@ -306,206 +346,224 @@ export default function ImageResizeCropPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans selection:bg-primary/20 bg-background">
-      <SiteHeader />
-
-      <main className="flex-1 container py-8 md:py-12 max-w-5xl">
-        <Link href="/tools" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-3.5" />
-          Back to Tools
-        </Link>
-
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
-              <HugeiconsIcon icon={ImageCropIcon} className="size-5" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-manrope">Image Resize & Crop</h1>
-          </div>
-          <p className="text-muted-foreground text-xs sm:text-sm font-dm-sans max-w-xl">
-            Crop from exact pixel bounds, resize output dimensions, and export a fresh local image.
-          </p>
-        </div>
-
-        {!file ? (
+    <ToolPageShell
+      title={tool.title}
+      description="Crop from exact pixel bounds, resize output dimensions, and export a fresh local image."
+      icon={tool.icon}
+      accent={tool.accent}
+    >
+      {!file ? (
+        <div className="flex flex-col gap-6">
+          <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <FileUploadZone
             accept="image/*"
             multiple={false}
             onFilesSelected={handleFilesSelected}
             description="Upload one image to resize and crop"
           />
-        ) : !result ? (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <Card className="p-4 border-border/60 bg-background/50 flex flex-col gap-4">
-                <div
-                  ref={cropFrameRef}
-                  className="relative mx-auto w-full overflow-hidden rounded-xl border border-cyan-500/40 bg-muted/30 shadow-inner touch-none cursor-grab active:cursor-grabbing"
-                  style={cropPreviewStyle}
-                  onPointerDown={handleCropPointerDown}
-                  onPointerMove={handleCropPointerMove}
-                  onPointerUp={handleCropPointerUp}
-                  onPointerCancel={handleCropPointerUp}
-                >
-                  <NextImage
-                    src={sourceUrl}
-                    alt="Live crop preview"
-                    width={sourceSize.width || 1}
-                    height={sourceSize.height || 1}
-                    unoptimized
-                    className="absolute max-w-none select-none object-fill"
-                    style={cropImageStyle}
-                    draggable={false}
-                  />
-                  <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/50" />
-                  <div className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3">
-                    {Array.from({ length: 9 }).map((_, index) => (
-                      <div key={index} className="border border-white/25" />
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1 text-xs text-muted-foreground font-dm-sans sm:flex-row sm:items-center sm:justify-between">
-                  <span>Source: {sourceSize.width} x {sourceSize.height}px</span>
-                  <span>Crop: {crop.width} x {crop.height}px at {crop.x}, {crop.y}</span>
-                </div>
-              </Card>
-            </div>
-
-            <Card className="p-6 border-border/60 bg-background/50 flex flex-col gap-5">
-              <h3 className="font-bold text-sm font-manrope border-b border-border/40 pb-3">Settings</h3>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-foreground/80 font-dm-sans">Crop preset</label>
-                <Select value={preset} onValueChange={applyPreset}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Original">Original</SelectItem>
-                    <SelectItem value="1:1">Square 1:1</SelectItem>
-                    <SelectItem value="4:3">Classic 4:3</SelectItem>
-                    <SelectItem value="16:9">Wide 16:9</SelectItem>
-                    <SelectItem value="Custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {(['x', 'y', 'width', 'height'] as const).map((field) => (
-                  <label key={field} className="flex flex-col gap-1 text-[10px] uppercase font-bold text-muted-foreground font-dm-sans">
-                    {field}
-                    <input
-                      type="number"
-                      aria-label={`Crop ${field}`}
-                      value={crop[field]}
-                      onChange={(event) => updateCropField(field, event.target.value)}
-                      className="px-3 py-2 text-xs bg-background border border-border/80 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </label>
-                ))}
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between text-xs font-semibold font-dm-sans">
-                  <label htmlFor="crop-zoom">Image zoom</label>
-                  <span className="text-primary">{cropZoom.toFixed(1)}x</span>
-                </div>
-                <input
-                  id="crop-zoom"
-                  type="range"
-                  min={1}
-                  max={4}
-                  step={0.1}
-                  value={cropZoom}
-                  onChange={(event) => applyCropZoom(Number(event.target.value))}
-                  className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+        </div>
+      ) : !result ? (
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Card className="flex flex-col gap-4 border-border/60 bg-background/50 p-4">
+              <div
+                ref={cropFrameRef}
+                role="group"
+                tabIndex={0}
+                aria-label="Crop preview. Use the arrow keys to reposition the crop, hold Shift for larger steps."
+                className="relative mx-auto w-full cursor-grab touch-none overflow-hidden rounded-xl border border-cyan-500/40 bg-muted/30 shadow-inner focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:cursor-grabbing"
+                style={cropPreviewStyle}
+                onPointerDown={handleCropPointerDown}
+                onPointerMove={handleCropPointerMove}
+                onPointerUp={handleCropPointerUp}
+                onPointerCancel={handleCropPointerUp}
+                onKeyDown={handleCropKeyDown}
+              >
+                <NextImage
+                  src={sourceUrl}
+                  alt="Live crop preview"
+                  width={sourceSize.width || 1}
+                  height={sourceSize.height || 1}
+                  unoptimized
+                  className="absolute max-w-none select-none object-fill"
+                  style={cropImageStyle}
+                  draggable={false}
                 />
-                <span className="text-[10px] text-muted-foreground font-dm-sans leading-relaxed">
-                  Drag the preview to reposition the image inside the crop frame.
+                <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/50" />
+                <div className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3">
+                  {Array.from({ length: 9 }).map((_, index) => (
+                    <div key={index} className="border border-white/25" />
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground font-dm-sans sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  Source: {sourceSize.width} × {sourceSize.height}px
+                </span>
+                <span>
+                  Crop: {crop.width} × {crop.height}px at {crop.x}, {crop.y}
                 </span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <label className="flex flex-col gap-1 text-[10px] uppercase font-bold text-muted-foreground font-dm-sans">
-                  Target width
-                  <input type="number" aria-label="Target width" value={targetWidth} onChange={(e) => setTargetWidth(e.target.value)} className="px-3 py-2 text-xs bg-background border border-border/80 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary" />
-                </label>
-                <label className="flex flex-col gap-1 text-[10px] uppercase font-bold text-muted-foreground font-dm-sans">
-                  Target height
-                  <input type="number" aria-label="Target height" value={targetHeight} onChange={(e) => setTargetHeight(e.target.value)} className="px-3 py-2 text-xs bg-background border border-border/80 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary" />
-                </label>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-foreground/80 font-dm-sans">Output format</label>
-                <Select value={targetFormat} onValueChange={setTargetFormat}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="image/png">PNG</SelectItem>
-                    <SelectItem value="image/jpeg">JPG</SelectItem>
-                    <SelectItem value="image/webp">WEBP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button onClick={handleProcess} disabled={isProcessing} className="w-full font-semibold font-manrope">
-                Resize & Crop
-              </Button>
-              <Button variant="ghost" onClick={reset} disabled={isProcessing} className="w-full text-xs font-semibold">
-                Change File
-              </Button>
             </Card>
           </div>
-        ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-xl mx-auto">
-            <Card className="p-8 border-border/60 bg-background/50 flex flex-col items-center gap-6 text-center">
-              <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                <HugeiconsIcon icon={Tick01Icon} className="size-7" />
-              </div>
-              <div>
-                <h3 className="font-bold text-2xl font-manrope">Image Ready</h3>
-                <p className="text-sm text-muted-foreground font-dm-sans mt-1">
-                  Exported at {result.width} x {result.height}px.
-                </p>
-              </div>
-              <div className="w-full rounded-xl border border-border/50 bg-muted/20 p-3">
-                <NextImage
-                  src={result.url}
-                  alt="Processed preview"
-                  width={result.width}
-                  height={result.height}
-                  unoptimized
-                  className="mx-auto max-h-72 w-auto object-contain rounded-lg"
+
+          <Card className="flex flex-col gap-5 border-border/60 bg-background/50 p-6">
+            <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
+              Settings
+            </h2>
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="crop-preset"
+                className="text-xs font-semibold font-dm-sans text-foreground/80"
+              >
+                Crop preset
+              </label>
+              <Select value={preset} onValueChange={applyPreset}>
+                <SelectTrigger id="crop-preset">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Original">Original</SelectItem>
+                  <SelectItem value="1:1">Square 1:1</SelectItem>
+                  <SelectItem value="4:3">Classic 4:3</SelectItem>
+                  <SelectItem value="16:9">Wide 16:9</SelectItem>
+                  <SelectItem value="Custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {cropFields.map((field) => (
+                <label
+                  key={field}
+                  className="flex flex-col gap-1 text-[10px] font-bold uppercase text-muted-foreground font-dm-sans"
+                >
+                  {field}
+                  <input
+                    type="number"
+                    value={crop[field]}
+                    onChange={(event) => updateCropField(field, event.target.value)}
+                    className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </label>
+              ))}
+            </div>
+
+            <LabeledSlider
+              id="crop-zoom"
+              label="Image zoom"
+              value={cropZoom}
+              min={1}
+              max={4}
+              step={0.1}
+              unit="x"
+              onChange={applyCropZoom}
+              hint="Drag the preview — or focus it and use the arrow keys — to reposition the image inside the crop frame."
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1 text-[10px] font-bold uppercase text-muted-foreground font-dm-sans">
+                Target width
+                <input
+                  type="number"
+                  value={targetWidth}
+                  onChange={(e) => setTargetWidth(e.target.value)}
+                  className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                 />
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full">
-                <Button variant="outline" onClick={reset} className="flex-1 text-xs font-semibold py-5">Start Over</Button>
-                <Button asChild className="flex-1 text-xs font-semibold py-5">
-                  <a href={result.url} download={result.name}>
-                    <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" />
-                    Download Image
-                  </a>
-                </Button>
-              </div>
-            </Card>
-          </motion.div>
-        )}
+              </label>
+              <label className="flex flex-col gap-1 text-[10px] font-bold uppercase text-muted-foreground font-dm-sans">
+                Target height
+                <input
+                  type="number"
+                  value={targetHeight}
+                  onChange={(e) => setTargetHeight(e.target.value)}
+                  className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </label>
+            </div>
 
-        {isProcessing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <Card className="p-6 max-w-sm w-full mx-4 border-border/60 flex flex-col items-center gap-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              <div className="flex flex-col gap-1 w-full">
-                <span className="text-sm font-semibold font-manrope">{progressMessage}</span>
-                <span className="text-xs text-muted-foreground font-dm-sans">{progress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
-              </div>
-            </Card>
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="crop-output-format"
+                className="text-xs font-semibold font-dm-sans text-foreground/80"
+              >
+                Output format
+              </label>
+              <Select value={targetFormat} onValueChange={setTargetFormat}>
+                <SelectTrigger id="crop-output-format">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="image/png">PNG</SelectItem>
+                  <SelectItem value="image/jpeg">JPG</SelectItem>
+                  <SelectItem value="image/webp">WEBP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              onClick={handleProcess}
+              disabled={task.isProcessing}
+              className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
+            >
+              Resize &amp; Crop
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={reset}
+              disabled={task.isProcessing}
+              className="w-full text-xs font-semibold"
+            >
+              Change File
+            </Button>
+          </Card>
+        </div>
+      ) : (
+        <SuccessCard
+          title="Image Ready"
+          description={`Exported at ${result.width} × ${result.height}px.`}
+          actions={
+            <>
+              <Button
+                variant="outline"
+                onClick={reset}
+                className="flex-1 py-5 text-xs font-semibold"
+              >
+                Start Over
+              </Button>
+              <Button
+                asChild
+                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+              >
+                <a href={result.url} download={result.name}>
+                  <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
+                  Download Image
+                </a>
+              </Button>
+            </>
+          }
+        >
+          <div className="w-full rounded-xl border border-border/50 bg-muted/20 p-3">
+            <NextImage
+              src={result.url}
+              alt="Processed image preview"
+              width={result.width}
+              height={result.height}
+              unoptimized
+              className="mx-auto max-h-72 w-auto rounded-lg object-contain"
+            />
           </div>
-        )}
-      </main>
+        </SuccessCard>
+      )}
 
-      <SiteFooter />
-    </div>
+      {task.isProcessing && (
+        <ProcessingOverlay
+          accent={tool.accent}
+          message={task.message}
+          progress={task.progress}
+        />
+      )}
+    </ToolPageShell>
   );
 }

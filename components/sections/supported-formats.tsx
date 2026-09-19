@@ -1,34 +1,42 @@
-'use client';
-
-const formats = {
-  Images: ['JPG', 'PNG', 'WEBP', 'AVIF', 'GIF', 'TIFF'],
-  Documents: ['PDF', 'TXT', 'MD'],
-};
+const formats = [
+  {
+    label: 'Image input',
+    values: ['JPG', 'PNG', 'WEBP', 'GIF', 'TIFF'],
+  },
+  {
+    label: 'Image output',
+    values: ['JPG', 'PNG', 'WEBP'],
+  },
+  {
+    label: 'Documents',
+    values: ['PDF'],
+  },
+];
 
 export function SupportedFormats() {
   return (
-    <section className="container py-10 md:py-16 border-t whitespace-nowrap overflow-hidden">
-      <div className="flex w-full justify-center gap-12 text-sm font-medium text-muted-foreground">
-        <div className="flex gap-4 items-center">
-          <span className="text-foreground">Supported Formats:</span>
-        </div>
-        {Object.entries(formats).map(([key, list]) => (
-          <div key={key} className="hidden md:flex gap-2 items-center">
-            <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground/70">
-              {key}
-            </span>
-            {list.map((fmt) => (
-              <span
-                key={fmt}
-                className="px-2 py-1 rounded-md bg-muted/50 text-xs"
-              >
-                {fmt}
+    <section className="container border-t py-10 md:py-16">
+      <div className="flex flex-col items-center gap-6">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/70 font-manrope">
+          Supported Formats
+        </span>
+        <div className="flex w-full flex-wrap justify-center gap-x-10 gap-y-4">
+          {formats.map((group) => (
+            <div key={group.label} className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground font-dm-sans">
+                {group.label}:
               </span>
-            ))}
-          </div>
-        ))}
-        {/* Simple marquee effect or just static list depending on width */}
-        <div className="md:hidden text-xs">JPG, PNG, WEBP, TIFF, and PDF</div>
+              {group.values.map((fmt) => (
+                <span
+                  key={fmt}
+                  className="rounded-md bg-muted/50 px-2 py-1 text-xs font-medium text-muted-foreground font-dm-sans"
+                >
+                  {fmt}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

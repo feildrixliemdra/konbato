@@ -2,23 +2,23 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
 import { FileUploadZone } from '@/components/file-upload-zone';
+import { ToolPageShell } from '@/components/tools/tool-page-shell';
+import { ProcessingOverlay } from '@/components/tools/processing-overlay';
+import { TaskErrorBanner } from '@/components/tools/task-error-banner';
+import { SuccessCard } from '@/components/tools/success-card';
 import { useWorker } from '@/lib/hooks/useWorker';
+import { useToolTask } from '@/lib/hooks/useToolTask';
 import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { HugeiconsIcon } from '@hugeicons/react';
-import {
-  SplitIcon,
-  Download01Icon,
-  ArrowLeft01Icon,
-  Tick01Icon,
-} from '@hugeicons/core-free-icons';
-import { motion } from 'framer-motion';
+import { Download01Icon } from '@hugeicons/core-free-icons';
+import { ACCENTS, requireTool } from '@/lib/tools';
+import { formatSize } from '@/lib/format';
+
+const tool = requireTool('pdf-split');
 
 interface PDFFile {
   name: string;
@@ -68,7 +68,7 @@ function generateRangeString(selectedIndices: number[]): string {
   const ranges: string[] = [];
   let start = sorted[0];
   let prev = sorted[0];
-  
+
   for (let i = 1; i < sorted.length; i++) {
     const curr = sorted[i];
     if (curr === prev + 1) {
@@ -83,30 +83,30 @@ function generateRangeString(selectedIndices: number[]): string {
       prev = curr;
     }
   }
-  
+
   if (start === prev) {
     ranges.push(`${start + 1}`);
   } else {
     ranges.push(`${start + 1}-${prev + 1}`);
   }
-  
+
   return ranges.join(', ');
 }
 
 export default function PDFSplitPage() {
   const createWorker = useCallback(() => {
     if (typeof window === 'undefined') return null;
-    return new Worker(new URL('../../workers/pdf.worker.ts', import.meta.url), { type: 'module' });
+    return new Worker(new URL('../../workers/pdf.worker.ts', import.meta.url), {
+      type: 'module',
+    });
   }, []);
   const { postTask } = useWorker(createWorker);
+  const task = useToolTask();
 
   const [file, setFile] = useState<PDFFile | null>(null);
   const [pages, setPages] = useState<PDFPageItem[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [rangeInput, setRangeInput] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
   const [splitBlobUrl, setSplitBlobUrl] = useState<string>('');
 
   useEffect(() => {
@@ -121,61 +121,57 @@ export default function PDFSplitPage() {
     if (selectedFiles.length === 0) return;
     setSplitBlobUrl('');
 
-    setIsProcessing(true);
-    setProgress(15);
-    setProgressMessage('Reading document structure...');
+    const loaded = await task.runTask(
+      async (report) => {
+        const targetFile = selectedFiles[0];
+        const buffer = await targetFile.arrayBuffer();
 
-    try {
-      const targetFile = selectedFiles[0];
-      const buffer = await targetFile.arrayBuffer();
-      const pageCount = await getPdfPageCount(buffer);
+        report(15, 'Reading document structure…');
+        const pageCount = await getPdfPageCount(buffer);
 
-      setFile({
-        name: targetFile.name,
-        size: targetFile.size,
-        buffer,
-        pageCount,
-      });
+        const renderPagesCount = Math.min(pageCount, 30);
+        const thumbnails = await renderPdfPagesToDataUrls(
+          buffer,
+          Array.from({ length: renderPagesCount }, (_, index) => index + 1),
+          0.35,
+          (current, total) => {
+            report(
+              15 + (current / total) * 80,
+              `Rendering thumbnail page ${current}/${total}…`
+            );
+          }
+        );
 
-      const newPagesList: PDFPageItem[] = [];
-      const renderPagesCount = Math.min(pageCount, 30);
-      
-      const thumbnails = await renderPdfPagesToDataUrls(
-        buffer,
-        Array.from({ length: renderPagesCount }, (_, index) => index + 1),
-        0.35,
-        (current, total) => {
-          setProgressMessage(`Rendering thumbnail page ${current}/${total}...`);
+        const pagesList: PDFPageItem[] = [];
+        for (let p = 0; p < renderPagesCount; p++) {
+          pagesList.push({ pageIndex: p, thumbnailUrl: thumbnails[p] });
         }
-      );
+        for (let p = renderPagesCount; p < pageCount; p++) {
+          pagesList.push({ pageIndex: p, thumbnailUrl: '' });
+        }
 
-      for (let p = 0; p < renderPagesCount; p++) {
-        newPagesList.push({
-          pageIndex: p,
-          thumbnailUrl: thumbnails[p],
-        });
+        return { targetFile, buffer, pageCount, pagesList };
+      },
+      {
+        initialMessage: 'Reading document…',
+        errorMessage: 'Failed to render PDF pages.',
       }
+    );
 
-      for (let p = renderPagesCount; p < pageCount; p++) {
-        newPagesList.push({
-          pageIndex: p,
-          thumbnailUrl: '', // placeholder
-        });
-      }
+    if (!loaded.ok) return;
+    const { targetFile, buffer, pageCount, pagesList } = loaded.value;
 
-      setPages(newPagesList);
-      // Select all pages by default
-      const allIndices = Array.from({ length: pageCount }, (_, idx) => idx);
-      setSelectedPages(allIndices);
-      setRangeInput(generateRangeString(allIndices));
-      setProgress(100);
-      setProgressMessage('');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('Failed to render PDF pages.');
-    } finally {
-      setIsProcessing(false);
-    }
+    setFile({
+      name: targetFile.name,
+      size: targetFile.size,
+      buffer,
+      pageCount,
+    });
+
+    const allIndices = Array.from({ length: pageCount }, (_, idx) => idx);
+    setPages(pagesList);
+    setSelectedPages(allIndices);
+    setRangeInput(generateRangeString(allIndices));
   };
 
   const handleCheckboxToggle = (pageIndex: number) => {
@@ -192,7 +188,7 @@ export default function PDFSplitPage() {
   const handleRangeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setRangeInput(value);
-    
+
     if (file) {
       // Parse updated indices without resetting input cursor
       const parsed = parseRangeString(value, file.pageCount);
@@ -218,38 +214,36 @@ export default function PDFSplitPage() {
 
   const handleSplit = async () => {
     if (!file || selectedPages.length === 0) return;
-    setIsProcessing(true);
-    setProgress(0);
-    setProgressMessage('Extracting selected pages...');
 
-    try {
-      // PDF Split uses the same MERGE_SPLIT_ROTATE worker command.
-      // We pass the single file buffer and the selected pages sequence.
-      const payload = {
-        files: [{ name: file.name, buffer: file.buffer.slice(0) }],
-        pages: selectedPages.map((idx) => ({
-          fileIndex: 0,
-          pageIndex: idx,
-          rotation: 0,
-        })),
-      };
+    const url = await task.runTask(
+      async (report) => {
+        // PDF Split uses the same MERGE_SPLIT_ROTATE worker command.
+        // We pass the single file buffer and the selected pages sequence.
+        const payload = {
+          files: [{ name: file.name, buffer: file.buffer.slice(0) }],
+          pages: selectedPages.map((idx) => ({
+            fileIndex: 0,
+            pageIndex: idx,
+            rotation: 0,
+          })),
+        };
 
-      const result = await postTask<typeof payload, PDFWorkerResult>('MERGE_SPLIT_ROTATE', payload, (pct, msg) => {
-        setProgress(pct);
-        if (msg) setProgressMessage(msg);
-      });
+        const result = await postTask<typeof payload, PDFWorkerResult>(
+          'MERGE_SPLIT_ROTATE',
+          payload,
+          (pct, msg) => report(pct, msg)
+        );
 
-      const blob = new Blob([result.buffer], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      setSplitBlobUrl(url);
-      setProgress(100);
-      setProgressMessage('Split completed!');
-    } catch (err) {
-      console.error(err);
-      setProgressMessage('Failed to split document.');
-    } finally {
-      setIsProcessing(false);
-    }
+        const blob = new Blob([result.buffer], { type: 'application/pdf' });
+        return URL.createObjectURL(blob);
+      },
+      {
+        initialMessage: 'Extracting selected pages…',
+        errorMessage: 'Failed to split document.',
+      }
+    );
+
+    if (url.ok) setSplitBlobUrl(url.value);
   };
 
   const clearWorkspace = () => {
@@ -258,81 +252,81 @@ export default function PDFSplitPage() {
     setSelectedPages([]);
     setRangeInput('');
     setSplitBlobUrl('');
+    task.reset();
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans selection:bg-primary/20 bg-background">
-      <SiteHeader />
-
-      <main className="flex-1 container py-8 md:py-12 max-w-4xl">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-3.5" />
-          Back to Tools
-        </Link>
-
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20">
-              <HugeiconsIcon icon={SplitIcon} className="size-5" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-manrope">Split PDF</h1>
-          </div>
-          <p className="text-muted-foreground text-xs sm:text-sm font-dm-sans max-w-xl">
-            Extract custom ranges or individual pages from a PDF. Runs entirely locally in browser memory.
-          </p>
-        </div>
-
-        {!file ? (
+    <ToolPageShell
+      title={tool.title}
+      description={tool.description}
+      icon={tool.icon}
+      accent={tool.accent}
+    >
+      {!file ? (
+        <div className="flex flex-col gap-6">
+          <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <FileUploadZone
             accept="application/pdf"
             multiple={false}
             onFilesSelected={handleFilesSelected}
             description="Upload PDF document to split"
           />
-        ) : !splitBlobUrl ? (
+        </div>
+      ) : !splitBlobUrl ? (
+        <div className="flex flex-col gap-6">
+          <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <div className="grid gap-6 md:grid-cols-3">
             {/* Visual Grid of Pages */}
-            <div className="md:col-span-2 flex flex-col gap-4">
+            <div className="flex flex-col gap-4 md:col-span-2">
               <div className="flex items-center justify-between border-b border-border/40 pb-3">
-                <h3 className="font-bold text-sm font-manrope flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-orange-500" />
+                <h2 className="flex items-center gap-2 text-sm font-bold font-manrope">
+                  <span
+                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                    aria-hidden
+                  />
                   Select Pages to Keep
-                </h3>
+                </h2>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="xs" onClick={handleSelectAll} className="text-xs font-semibold">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={handleSelectAll}
+                    className="text-xs font-semibold"
+                  >
                     Select All
                   </Button>
-                  <Button variant="ghost" size="xs" onClick={handleSelectNone} className="text-xs font-semibold text-rose-500 hover:text-rose-600">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={handleSelectNone}
+                    className="text-xs font-semibold text-rose-500 hover:text-rose-600"
+                  >
                     Clear
                   </Button>
                 </div>
               </div>
 
               {/* Light Table Selection Area */}
-              <div className="rounded-2xl border border-border/60 bg-muted/5 p-5 min-h-[300px] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] max-h-[500px] overflow-y-auto pr-2">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="max-h-[500px] min-h-[300px] overflow-y-auto rounded-2xl border border-border/60 bg-muted/5 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] p-5 pr-2 [background-size:20px_20px]">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   {pages.map((item) => {
                     const isSelected = selectedPages.includes(item.pageIndex);
                     return (
-                      <div
+                      <label
                         key={item.pageIndex}
-                        onClick={() => handleCheckboxToggle(item.pageIndex)}
-                        className={`group relative aspect-[3/4] rounded-xl overflow-hidden border bg-background flex flex-col cursor-pointer transition-all duration-200 select-none ${
+                        className={`group relative flex aspect-[3/4] cursor-pointer select-none flex-col overflow-hidden rounded-xl border bg-background transition-all duration-200 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 ${
                           isSelected
-                            ? 'border-orange-500 ring-2 ring-orange-500/10 shadow'
+                            ? 'border-orange-500 shadow ring-2 ring-orange-500/10'
                             : 'border-border/60 opacity-60 hover:opacity-90'
                         }`}
                       >
                         {/* Checkbox Header */}
-                        <div className="h-7 px-2 border-b border-border/40 bg-muted/20 flex items-center justify-between">
+                        <div className="flex h-7 items-center justify-between border-b border-border/40 bg-muted/20 px-2">
                           <input
                             type="checkbox"
                             checked={isSelected}
-                            readOnly
-                            className="accent-orange-500 rounded size-3 cursor-pointer"
+                            onChange={() => handleCheckboxToggle(item.pageIndex)}
+                            className="size-3 cursor-pointer rounded accent-orange-500"
                           />
                           <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
                             Page {item.pageIndex + 1}
@@ -340,23 +334,23 @@ export default function PDFSplitPage() {
                         </div>
 
                         {/* Thumbnail or placeholder */}
-                        <div className="relative flex-1 min-h-0 p-2 flex items-center justify-center bg-muted/5">
+                        <div className="relative flex min-h-0 flex-1 items-center justify-center bg-muted/5 p-2">
                           {item.thumbnailUrl ? (
                             <Image
                               src={item.thumbnailUrl}
-                              alt={`Page ${item.pageIndex + 1}`}
+                              alt=""
                               fill
                               unoptimized
                               sizes="(min-width: 768px) 12rem, 50vw"
-                              className="object-contain p-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)] rounded pointer-events-none"
+                              className="pointer-events-none rounded object-contain p-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
                             />
                           ) : (
                             <div className="text-[10px] text-muted-foreground font-dm-sans">
-                              Loading...
+                              Preview unavailable
                             </div>
                           )}
                         </div>
-                      </div>
+                      </label>
                     );
                   })}
                 </div>
@@ -365,23 +359,33 @@ export default function PDFSplitPage() {
 
             {/* Config panel */}
             <div className="md:col-span-1">
-              <Card className="p-6 border-border/60 bg-background/50 backdrop-blur-sm flex flex-col gap-6 sticky top-6">
-                <h3 className="font-bold text-sm font-manrope border-b border-border/40 pb-3">
+              <Card className="sticky top-6 flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
+                <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
                   Split Settings
-                </h3>
+                </h2>
 
                 <div className="flex flex-col gap-1.5 text-xs text-muted-foreground font-dm-sans">
-                  <span>File: <strong>{file.name}</strong></span>
-                  <span>Size: <strong>{(file.size / 1024 / 1024).toFixed(2)} MB</strong></span>
-                  <span>Total Pages: <strong>{file.pageCount}</strong></span>
+                  <span className="truncate">
+                    File: <strong className="text-foreground">{file.name}</strong>
+                  </span>
+                  <span>
+                    Size: <strong>{formatSize(file.size)}</strong>
+                  </span>
+                  <span>
+                    Total Pages: <strong>{file.pageCount}</strong>
+                  </span>
                 </div>
 
                 {/* Range Input Box */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-foreground/80 font-dm-sans">
+                  <label
+                    htmlFor="split-range"
+                    className="text-xs font-semibold text-foreground/80 font-dm-sans"
+                  >
                     Page Range:
                   </label>
                   <Input
+                    id="split-range"
                     type="text"
                     value={rangeInput}
                     onChange={handleRangeInputChange}
@@ -389,23 +393,25 @@ export default function PDFSplitPage() {
                     placeholder="e.g. 1-3, 5, 8-10"
                     className="h-10 text-sm font-dm-sans"
                   />
-                  <span className="text-[10px] text-muted-foreground leading-relaxed font-dm-sans">
-                    Use commas to separate page numbers/ranges. e.g., <strong>1-3, 5</strong> yields pages 1, 2, 3, and 5.
+                  <span className="text-[10px] leading-relaxed text-muted-foreground font-dm-sans">
+                    Use commas to separate page numbers/ranges. e.g.,{' '}
+                    <strong>1-3, 5</strong> yields pages 1, 2, 3, and 5.
                   </span>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
+                <div className="flex flex-col gap-2 border-t border-border/40 pt-2">
                   <Button
                     onClick={handleSplit}
-                    disabled={selectedPages.length === 0 || isProcessing}
-                    className="w-full font-semibold font-manrope bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-600/15"
+                    disabled={selectedPages.length === 0 || task.isProcessing}
+                    className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                   >
-                    Extract {selectedPages.length} Page{selectedPages.length !== 1 ? 's' : ''}
+                    Extract {selectedPages.length} Page
+                    {selectedPages.length !== 1 ? 's' : ''}
                   </Button>
                   <Button
                     variant="ghost"
                     onClick={clearWorkspace}
-                    disabled={isProcessing}
+                    disabled={task.isProcessing}
                     className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
                     Cancel / Reset
@@ -414,67 +420,43 @@ export default function PDFSplitPage() {
               </Card>
             </div>
           </div>
-        ) : (
-          /* Output Success State */
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="max-w-md mx-auto flex flex-col gap-6"
-          >
-            <div className="border border-border/60 bg-background/50 backdrop-blur-sm p-8 rounded-2xl flex flex-col items-center gap-6 text-center shadow-xl">
-              <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                <HugeiconsIcon icon={Tick01Icon} className="size-7" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="font-bold text-2xl font-manrope">Extraction Complete</h3>
-                <p className="text-sm text-muted-foreground font-dm-sans leading-relaxed">
-                  Extracted {selectedPages.length} pages from <strong>{file.name}</strong> successfully.
-                  Processed locally.
-                </p>
-              </div>
+        </div>
+      ) : (
+        <SuccessCard
+          title="Extraction Complete"
+          description={`Extracted ${selectedPages.length} page${
+            selectedPages.length !== 1 ? 's' : ''
+          } from ${file.name} successfully. Processed locally.`}
+          actions={
+            <>
+              <Button
+                variant="outline"
+                onClick={clearWorkspace}
+                className="flex-1 py-5 text-xs font-semibold"
+              >
+                Start Over
+              </Button>
+              <Button
+                asChild
+                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+              >
+                <a href={splitBlobUrl} download={`extracted_${file.name}`}>
+                  <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
+                  Download PDF
+                </a>
+              </Button>
+            </>
+          }
+        />
+      )}
 
-              <div className="flex flex-col sm:flex-row gap-3 w-full">
-                <Button
-                  variant="outline"
-                  onClick={clearWorkspace}
-                  className="flex-1 font-semibold text-xs py-5"
-                >
-                  Start Over
-                </Button>
-                <Button
-                  asChild
-                  className="flex-1 font-semibold text-xs py-5 bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-600/15"
-                >
-                  <a href={splitBlobUrl} download={`extracted_${file.name}`}>
-                    <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" />
-                    Download PDF
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {isProcessing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <Card className="p-6 max-w-sm w-full mx-4 border-border/60 flex flex-col items-center gap-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
-              <div className="flex flex-col gap-1 w-full">
-                <span className="text-sm font-semibold font-manrope">{progressMessage}</span>
-                <span className="text-xs text-muted-foreground font-dm-sans">{progress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-orange-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </Card>
-          </div>
-        )}
-      </main>
-
-      <SiteFooter />
-    </div>
+      {task.isProcessing && (
+        <ProcessingOverlay
+          accent={tool.accent}
+          message={task.message}
+          progress={task.progress}
+        />
+      )}
+    </ToolPageShell>
   );
 }
