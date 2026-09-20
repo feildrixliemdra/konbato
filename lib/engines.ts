@@ -50,6 +50,7 @@ export const ENGINES: Engine[] = [
     workers: ['app/workers/pdf.worker.ts'],
     role: 'Parses PDFs, applies the page edits, and writes the file back out.',
     tools: [
+      'pdf-organizer',
       'pdf-merge',
       'pdf-split',
       'pdf-rotate',
@@ -83,7 +84,7 @@ export const ENGINES: Engine[] = [
     lane: 'Main thread',
     workers: null,
     role: 'Rasterises page thumbnails for the previews and page pickers.',
-    tools: ['pdf-merge', 'pdf-split', 'pdf-rotate', 'pdf-reorder'],
+    tools: ['pdf-organizer', 'pdf-merge', 'pdf-split', 'pdf-rotate', 'pdf-reorder'],
   },
   {
     name: '@imgly/background-removal',

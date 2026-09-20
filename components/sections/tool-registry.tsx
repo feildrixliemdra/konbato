@@ -19,9 +19,9 @@ import {
 /*
  * The registry.
  *
- * This replaces two sections that sat back to back and listed the same thirteen
- * tools twice: a "top rated" card grid carrying seven of them, then a category
- * grid carrying all thirteen. Two card grids of equal weight also said nothing
+ * This replaces two sections that sat back to back and listed every tool
+ * twice: a "top rated" card grid carrying a handful of them, then a category
+ * grid carrying all of them. Two card grids of equal weight also said nothing
  * about which tool mattered, because every card was the same size.
  *
  * A registry is the honest shape for a directory. One dense scan, grouped by

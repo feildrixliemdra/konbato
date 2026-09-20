@@ -12,9 +12,15 @@ const TEST_IMAGES = {
 
 const TEST_FILES = {
   pdf: path.join(__dirname, 'files', 'test-document.pdf'),
+  organizerPdf: path.join(__dirname, 'files', 'pdf-organizer.pdf'),
 };
 
 const PDF_TOOL_ROUTES = [
+  {
+    path: '/tools/pdf-organizer',
+    heading: 'PDF Organizer',
+    uploadText: 'Upload PDF documents to organize (multiple allowed)',
+  },
   {
     path: '/tools/pdf-merge',
     heading: 'Merge PDF',
@@ -254,6 +260,36 @@ test.describe('Tools app coverage', () => {
     });
     await expect(page.getByText('optimized_test-pixel.jpg')).toBeVisible();
     await expectDownloadLink(page, 'Download');
+  });
+
+  test('PDF Organizer exports the selected pages in the arranged order', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based PDF processing on Webkit');
+    test.setTimeout(90000);
+    await page.goto('/tools/pdf-organizer');
+
+    await expect(page.getByRole('heading', { name: 'PDF Organizer', exact: true })).toBeVisible();
+    await uploadFile(page, TEST_FILES.organizerPdf, 'Page organizer workspace');
+
+    await expect(page.getByText('Page organizer workspace')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText('pdf-organizer.pdf').first()).toBeVisible();
+
+    // Every page starts included, and the export names the page count.
+    const exportButton = page.getByRole('button', { name: 'Export 3 Pages' });
+    await expect(exportButton).toBeEnabled();
+
+    await exportButton.click();
+
+    await expect(page.getByRole('heading', { name: 'Export Complete' })).toBeVisible({
+      timeout: 60000,
+    });
+    await expectDownloadLink(page, 'Download PDF');
+    await expect(page.getByRole('link', { name: 'Download PDF' })).toHaveAttribute(
+      'download',
+      /^organized_document_.*\.pdf$/
+    );
   });
 
   test('Merge PDF processes an uploaded PDF', async ({ page, browserName }) => {

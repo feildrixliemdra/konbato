@@ -342,6 +342,126 @@ test.describe('UX regressions', () => {
     });
   });
 
+  test.describe('pdf organizer', () => {
+    const ORGANIZER_PDF = path.join(__dirname, 'files', 'pdf-organizer.pdf');
+
+    test('selection decides what is exported, deletion is what removes a page', async ({
+      page,
+    }) => {
+      test.setTimeout(90000);
+      await page.goto('/tools/pdf-organizer');
+      await uploadWhenHydrated(page, ORGANIZER_PDF, page.getByText('Page organizer workspace'));
+
+      await expect(page.getByRole('button', { name: 'Export 3 Pages' })).toBeEnabled();
+
+      await page.getByRole('button', { name: 'Select none' }).click();
+      await expect(page.getByRole('button', { name: 'Export 0 Pages' })).toBeDisabled();
+
+      // A deselected page is excluded from the export, not removed from the
+      // workspace, and the card still names the state without using colour.
+      await expect(page.getByLabel('Select page 2 of pdf-organizer.pdf')).toBeVisible();
+      await expect(page.getByText('Excluded').first()).toBeVisible();
+
+      await page.getByLabel('Select page 2 of pdf-organizer.pdf').check();
+      await expect(page.getByRole('button', { name: 'Export 1 Page' })).toBeEnabled();
+
+      // Deleting is the destructive action, and it takes the card with it.
+      await page.getByRole('button', { name: 'Delete page 3 of pdf-organizer.pdf' }).click();
+      await expect(page.getByLabel('Select page 3 of pdf-organizer.pdf')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Export 1 Page' })).toBeEnabled();
+    });
+
+    test('pages reorder with the keyboard', async ({ page }) => {
+      test.setTimeout(90000);
+      await page.goto('/tools/pdf-organizer');
+      await uploadWhenHydrated(page, ORGANIZER_PDF, page.getByText('Page organizer workspace'));
+
+      const handles = page.getByRole('button', {
+        name: /^Reorder page \d+ of pdf-organizer\.pdf$/,
+      });
+      await expect(handles).toHaveCount(3);
+      await expect(handles.nth(0)).toHaveAccessibleName('Reorder page 1 of pdf-organizer.pdf');
+
+      // dnd-kit's keyboard sensor: space picks up, arrow moves, space drops.
+      // Wrapped in toPass because the sensor ignores a keypress that lands
+      // before it has attached, which would otherwise fail silently.
+      await expect(async () => {
+        await handles.nth(0).focus();
+        await page.keyboard.press('Space');
+        await page.keyboard.press('ArrowRight');
+        await page.keyboard.press('Space');
+
+        await expect(handles.nth(0)).toHaveAccessibleName('Reorder page 2 of pdf-organizer.pdf');
+      }).toPass({ timeout: 15000 });
+
+      await expect(handles.nth(1)).toHaveAccessibleName('Reorder page 1 of pdf-organizer.pdf');
+      await expect(handles).toHaveCount(3);
+    });
+
+    test('adding another document appends pages instead of replacing them', async ({ page }) => {
+      test.setTimeout(90000);
+      await page.goto('/tools/pdf-organizer');
+      await uploadWhenHydrated(page, ORGANIZER_PDF, page.getByText('Page organizer workspace'));
+      await expect(page.getByRole('button', { name: 'Export 3 Pages' })).toBeEnabled();
+
+      await page.locator('input[type="file"]').first().setInputFiles(ORGANIZER_PDF);
+
+      // A second full read plus up to 30 more thumbnails, so this needs more
+      // room than a single-document load.
+      await expect(page.getByRole('button', { name: 'Export 6 Pages' })).toBeEnabled({
+        timeout: 60000,
+      });
+      // The first document's pages are still there, so page 1 exists twice.
+      await expect(page.getByLabel('Select page 1 of pdf-organizer.pdf')).toHaveCount(2);
+    });
+
+    test('page controls stay reachable and sized on touch devices', async ({ browser }) => {
+      test.setTimeout(90000);
+      const context = await browser.newContext({
+        viewport: { width: 375, height: 812 },
+        hasTouch: true,
+        isMobile: true,
+      });
+      const page = await context.newPage();
+      await page.goto('/tools/pdf-organizer');
+      await uploadWhenHydrated(page, ORGANIZER_PDF, page.getByText('Page organizer workspace'));
+
+      const probe = await page.evaluate(() => {
+        const box = (selector: string) => {
+          const el = document.querySelector<HTMLElement>(selector);
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return { width: Math.round(r.width), height: Math.round(r.height) };
+        };
+        const rotate = document.querySelector<HTMLElement>('[aria-label^="Rotate page 1 of"]');
+        const de = document.documentElement;
+        return {
+          handle: box('[aria-label^="Reorder page 1 of"]'),
+          rotate: box('[aria-label^="Rotate page 1 of"]'),
+          rotateOverlayOpacity: rotate?.parentElement
+            ? getComputedStyle(rotate.parentElement).opacity
+            : null,
+          overflow: de.scrollWidth - de.clientWidth,
+        };
+      });
+
+      expect(probe.handle, 'drag handle not found').not.toBeNull();
+      // The whole bar is the handle, so it still spans the card next to the
+      // delete button, and grows to the 44px touch floor.
+      expect(probe.handle!.width).toBeGreaterThan(60);
+      expect(probe.handle!.height).toBeGreaterThanOrEqual(44);
+
+      // Rotation must not be gated behind hover where hover does not exist.
+      expect(probe.rotateOverlayOpacity).toBe('1');
+      expect(probe.rotate!.width).toBeGreaterThanOrEqual(44);
+      expect(probe.rotate!.height).toBeGreaterThanOrEqual(44);
+
+      expect(probe.overflow, 'organizer overflows at 375px').toBeLessThanOrEqual(1);
+
+      await context.close();
+    });
+  });
+
   test.describe('surface system', () => {
     test('card surfaces are borderless and carry elevation instead', async ({ page }) => {
       const offenders: string[] = [];

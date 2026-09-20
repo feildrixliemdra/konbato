@@ -88,10 +88,12 @@ graph TD
 
 ### Epic 4: PDF Document Tools
 
-**Story**: As a user handling confidential documents, I want to merge, split, reorder, compress, rotate, scrub metadata, and convert PDFs locally.
+**Story**: As a user handling confidential documents, I want to organize, merge, split, reorder, compress, rotate, scrub metadata, and convert PDFs locally.
 
 **Acceptance Criteria**
 
+- PDF organizer combines multiple documents in one workspace, supporting drag reordering, per-page rotation, page deletion, and selection-driven export. Unselected pages stay in the workspace rather than being deleted.
+- PDF organizer exports the selected pages in their visible order as a single PDF.
 - PDF merge supports multiple documents and page ordering.
 - PDF split supports selected page extraction.
 - PDF reorder supports drag-based page sequencing for one source document.
@@ -185,6 +187,7 @@ Low-memory systems can freeze if large buffers are allocated. Konbato should cla
 
 ### Phase 2: PDF Suite
 
+- PDF organizer.
 - PDF merge.
 - PDF split.
 - PDF compression.
@@ -229,6 +232,7 @@ Potential future video tools:
 ### Automated Verification
 
 - Playwright tests for core image and PDF workflows.
+- Playwright coverage for the PDF organizer workflow: selection-driven export, keyboard reordering, appending documents, deletion versus deselection, and touch-sized page controls.
 - Network interception tests that confirm no file payloads are uploaded.
 - Browser-specific coverage for Chromium and WebKit.
 - Unit tests for page-range parsing and resource classifiers.

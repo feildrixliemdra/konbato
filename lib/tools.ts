@@ -10,6 +10,7 @@ import {
   ImageCropIcon,
   Shield01Icon,
   ArrangeIcon,
+  DashboardSquare01Icon,
 } from '@hugeicons/core-free-icons';
 
 export type ToolCategory = 'Image' | 'PDF';
@@ -117,6 +118,16 @@ export const TOOLS: Tool[] = [
     description: 'Remove background from images. Full resolution output.',
     category: 'Image',
     icon: ColorsIcon,
+    featured: true,
+  },
+  {
+    slug: 'pdf-organizer',
+    href: '/tools/pdf-organizer',
+    title: 'PDF Organizer',
+    description:
+      'Combine PDFs, reorder pages, rotate, remove, and selectively export in one workspace.',
+    category: 'PDF',
+    icon: DashboardSquare01Icon,
     featured: true,
   },
   {

@@ -24,8 +24,8 @@ import { CTABottom } from '@/components/sections/cta-bottom';
  *   faq         narrow column, then wide matrix                 quiet
  *   cta         centred terminal statement                      quiet
  *
- * The two tool sections were also merged. They sat back to back listing the
- * same thirteen tools, once as a card grid and again as a category grid.
+ * The two tool sections were also merged. They sat back to back listing every
+ * tool twice, once as a card grid and again as a category grid.
  */
 export default function Page() {
   return (

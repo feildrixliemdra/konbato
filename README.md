@@ -9,6 +9,7 @@ Konbato is a Next.js app for converting, compressing, and editing images and PDF
 ## ⚡ Key Features
 
 ### 📄 PDF Utilities
+- **Organizer**: Combine PDFs, reorder, rotate, remove, and selectively export pages in one workspace.
 - **Merge**: Combine multiple PDF files in any order.
 - **Split**: Extract specific pages or split a PDF into separate files.
 - **Rotate**: Fix the orientation of pages on the fly.
@@ -20,7 +21,7 @@ Konbato is a Next.js app for converting, compressing, and editing images and PDF
 
 ### 🖼️ Image Utilities
 - **Compress**: High-performance client-side image compression.
-- **Convert**: Format conversion (PNG, JPEG, WebP, AVIF, etc.).
+- **Convert**: Format conversion (PNG, JPEG, WebP).
 - **Resize & Crop**: Precise resizing and aspect-ratio cropping.
 - **Remove Background**: Clean subject separation and transparency generation.
 - **Metadata Remove**: Strip EXIF, geolocation, and camera details.
@@ -96,7 +97,7 @@ Dominant tools like *ilovepdf*, *Smallpdf*, and *Convertio* are server-upload-fi
 
 ## 🗺️ Scope
 
-* **In scope**: Browser-side image conversion, compression, resizing, cropping, background removal, metadata removal, and PDF merge, split, rotate, reorder, compress, metadata removal, PDF-to-image, and image-to-PDF workflows.
+* **In scope**: Browser-side image conversion, compression, resizing, cropping, background removal, metadata removal, and PDF page organization, merge, split, rotate, reorder, compress, metadata removal, PDF-to-image, and image-to-PDF workflows.
 * **Out of scope**: Server-side processing, user accounts, cloud storage, forensic sanitization guarantees, office document conversion, and video tools. Keeping these out ensures privacy, focus, and adherence to browser memory limits.
 
 ---
