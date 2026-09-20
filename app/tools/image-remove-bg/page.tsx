@@ -24,6 +24,7 @@ import { useToolTask } from '@/lib/hooks/useToolTask';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ColorsIcon } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
+import { DURATION, EASE } from '@/lib/motion';
 import { ACCENTS, accentTile, requireTool } from '@/lib/tools';
 import { triggerDownload } from '@/lib/format';
 import {
@@ -155,7 +156,7 @@ export default function ImageRemoveBgPage() {
       title={tool.title}
       description="Isolate subjects from photos 100% locally in your browser. Runs a local AI segmentation model with zero server uploads."
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {!cutoutUrl ? (
         <div className="flex flex-col gap-6">
@@ -173,7 +174,7 @@ export default function ImageRemoveBgPage() {
               <Button
                 onClick={handleRemoveBackgroundClick}
                 disabled={task.isProcessing}
-                className={`w-full px-8 font-semibold font-manrope sm:w-auto ${ACCENTS[tool.accent].button}`}
+                className={`w-full px-8 font-semibold font-manrope sm:w-auto ${ACCENTS[tool.category].button}`}
               >
                 Remove Background
               </Button>
@@ -184,11 +185,12 @@ export default function ImageRemoveBgPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ duration: DURATION.quick, ease: EASE.out }}
           className="flex flex-col gap-6"
         >
           <ResultActionBar
             title="Background Removed"
-            subtitle="Drag the handle — or use the slider — to compare the original and the cutout."
+            subtitle="Drag the handle, or use the slider, to compare the original and the cutout."
             onStartOver={startOver}
             onDownloadAll={() =>
               triggerDownload(cutoutUrl, `cutout_${file?.name ?? 'image.png'}`)
@@ -210,8 +212,10 @@ export default function ImageRemoveBgPage() {
             onMouseLeave={() => setIsDraggingSlider(false)}
             onTouchEnd={() => setIsDraggingSlider(false)}
           >
-            {/* Underneath: transparent cutout */}
-            <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-muted/5 [background-size:16px_16px]">
+            {/* Underneath: transparent cutout. The dot grid uses --border rather
+                than a literal hex so it tracks the theme; the hardcoded grey
+                only ever worked in light mode. */}
+            <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-muted/5 [background-size:16px_16px]">
               <Image
                 src={cutoutUrl}
                 alt="Cutout with the background removed"
@@ -241,12 +245,12 @@ export default function ImageRemoveBgPage() {
 
             {/* Separator */}
             <div
-              className="absolute bottom-0 top-0 flex w-0.5 cursor-ew-resize items-center justify-center bg-indigo-500"
+              className="absolute bottom-0 top-0 flex w-0.5 cursor-ew-resize items-center justify-center bg-category-image"
               style={{ left: `${sliderPosition}%` }}
               aria-hidden
             >
-              <div className="flex size-7 select-none items-center justify-center rounded-full border border-white/20 bg-indigo-500 text-white shadow-lg">
-                <span className="text-[10px] font-bold">↔</span>
+              <div className="flex size-7 select-none items-center justify-center rounded-full border border-white/20 bg-category-image text-white shadow-lg">
+                <span className="text-xs font-bold">↔</span>
               </div>
             </div>
           </div>
@@ -269,7 +273,7 @@ export default function ImageRemoveBgPage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />
@@ -278,7 +282,7 @@ export default function ImageRemoveBgPage() {
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogMedia className={accentTile(tool.accent)}>
+            <AlertDialogMedia className={accentTile(tool.category)}>
               <HugeiconsIcon icon={ColorsIcon} aria-hidden />
             </AlertDialogMedia>
             <AlertDialogTitle className="font-manrope font-bold">
@@ -293,11 +297,11 @@ export default function ImageRemoveBgPage() {
 
           <div className="flex flex-col gap-1.5 rounded-lg border border-border/40 bg-muted/40 p-3 text-xs text-muted-foreground font-dm-sans">
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+              <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
               <span>100% secure: files are never uploaded to servers</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+              <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
               <span>Offline-ready: once cached, runs without internet</span>
             </div>
           </div>
@@ -306,7 +310,7 @@ export default function ImageRemoveBgPage() {
             <AlertDialogCancel className="text-xs font-semibold">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => void startProcessing()}
-              className={`text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+              className={`text-xs font-semibold ${ACCENTS[tool.category].button}`}
             >
               Download &amp; Process
             </AlertDialogAction>

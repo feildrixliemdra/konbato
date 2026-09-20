@@ -8,6 +8,7 @@ import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { ResultActionBar } from '@/components/tools/result-action-bar';
 import { LabeledSlider } from '@/components/tools/labeled-slider';
+import { PanelActions, PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
 import { useWorker } from '@/lib/hooks/useWorker';
 import { useToolTask } from '@/lib/hooks/useToolTask';
 import { Card } from '@/components/ui/card';
@@ -19,10 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ACCENTS, requireTool } from '@/lib/tools';
+import { requireTool } from '@/lib/tools';
 import { formatSize } from '@/lib/format';
 import { downloadResults } from '@/lib/download';
 import { motion } from 'framer-motion';
+import { DURATION, EASE } from '@/lib/motion';
 
 const tool = requireTool('pdf-to-image');
 
@@ -152,7 +154,7 @@ export default function PDFToImagePage() {
       title={tool.title}
       description={tool.description}
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {results.length === 0 ? (
         !file ? (
@@ -171,10 +173,7 @@ export default function PDFToImagePage() {
             <div className="grid gap-6 md:grid-cols-3">
               {/* Options Panel */}
               <div className="flex flex-col gap-6 md:col-span-2">
-                <Card className="flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
-                  <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                    Image settings
-                  </h2>
+                <ToolPanel title="Image settings">
 
                   {/* Format selector */}
                   <div className="flex flex-col gap-2">
@@ -250,15 +249,12 @@ export default function PDFToImagePage() {
                       disabled={task.isProcessing}
                     />
                   )}
-                </Card>
+                </ToolPanel>
               </div>
 
               {/* Sidebar controls */}
               <div className="md:col-span-1">
-                <Card className="sticky top-6 flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
-                  <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                    Document details
-                  </h2>
+                <ToolPanel title="Document details" sticky>
                   <div className="flex flex-col gap-2.5 text-xs text-muted-foreground font-dm-sans">
                     <span className="block truncate">
                       Name:{' '}
@@ -269,24 +265,21 @@ export default function PDFToImagePage() {
                     </span>
                   </div>
 
-                  <div className="flex flex-col gap-2 border-t border-border/40 pt-2">
-                    <Button
+                  <PanelActions>
+                    <PanelPrimaryAction category={tool.category}
                       onClick={handleConvert}
                       disabled={task.isProcessing}
-                      className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                     >
                       Convert PDF Pages
-                    </Button>
-                    <Button
-                      variant="ghost"
+                    </PanelPrimaryAction>
+                    <PanelSecondaryAction
                       onClick={clearWorkspace}
                       disabled={task.isProcessing}
-                      className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                     >
                       Change File
-                    </Button>
-                  </div>
-                </Card>
+                    </PanelSecondaryAction>
+                  </PanelActions>
+                </ToolPanel>
               </div>
             </div>
           </div>
@@ -296,6 +289,7 @@ export default function PDFToImagePage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ duration: DURATION.quick, ease: EASE.out }}
           className="flex flex-col gap-6"
         >
           <ResultActionBar
@@ -313,9 +307,9 @@ export default function PDFToImagePage() {
             {results.map((item) => (
               <Card
                 key={item.pageIndex}
-                className="flex flex-col justify-between gap-3 border-border/60 bg-background/50 p-4"
+                className="flex flex-col justify-between gap-3 p-4"
               >
-                <div className="relative aspect-[3/4] overflow-hidden rounded-lg border border-border/40 bg-muted/40">
+                <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted/40">
                   <Image
                     src={item.url}
                     alt={`Page ${item.pageIndex + 1}`}
@@ -330,7 +324,7 @@ export default function PDFToImagePage() {
                   <span className="truncate text-xs font-bold text-foreground font-manrope">
                     {item.fileName}
                   </span>
-                  <span className="text-[9px] text-muted-foreground font-dm-sans">
+                  <span className="text-xs text-muted-foreground font-dm-sans">
                     Page {item.pageIndex + 1}
                   </span>
                 </div>
@@ -353,7 +347,7 @@ export default function PDFToImagePage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

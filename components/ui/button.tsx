@@ -5,7 +5,17 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-lg border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 aria-invalid:ring-3 [&_svg:not([class*='size-'])]:size-4 inline-flex items-center justify-center whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none shrink-0 [&_svg]:shrink-0 outline-none group/button select-none",
+  // `transition-[color,background-color,border-color,box-shadow,scale]` rather
+  // than `transition-all`: naming the properties keeps the press and hover
+  // feedback on the compositor and stops unrelated changes from animating.
+  //
+  // No `motion-reduce:active:scale-100` or `disabled:active:scale-100` guard:
+  // both emit an `:active` rule at the same specificity as the one below, so
+  // whichever comes last in the sheet wins and the press state dies. Under
+  // reduced motion the global block already collapses the transition duration,
+  // so the press lands instantly, and `disabled:pointer-events-none` already
+  // stops a disabled control from activating at all.
+  "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-lg border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 aria-invalid:ring-3 [&_svg:not([class*='size-'])]:size-4 inline-flex items-center justify-center whitespace-nowrap transition-[color,background-color,border-color,box-shadow,scale] duration-150 ease-out active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none shrink-0 [&_svg]:shrink-0 outline-none group/button select-none",
   {
     variants: {
       variant: {

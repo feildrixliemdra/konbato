@@ -7,7 +7,8 @@ import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { SuccessCard } from '@/components/tools/success-card';
 import { LabeledSlider } from '@/components/tools/labeled-slider';
-import { Card } from '@/components/ui/card';
+import { PanelActions, PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
+import { NotePanel } from '@/components/tools/note-panel';
 import { Button } from '@/components/ui/button';
 import { useWorker } from '@/lib/hooks/useWorker';
 import { useToolTask } from '@/lib/hooks/useToolTask';
@@ -119,13 +120,24 @@ export default function PDFCompressPage() {
     task.reset();
   };
 
+  /*
+   * Compression can legitimately make a small or already-optimised PDF larger,
+   * because the re-save adds its own structures. Reporting "0%" reduction and
+   * "optimised" in that case tells the user something untrue, so the success
+   * card is driven by the real signed delta.
+   */
+  const reductionPct = result
+    ? Math.round(((result.originalSize - result.compressedSize) / result.originalSize) * 100)
+    : 0;
+  const didShrink = reductionPct > 0;
+
   const modeButton = (mode: 'light' | 'deep', label: string) => (
     <button
       type="button"
       onClick={() => setCompressionMode(mode)}
       aria-pressed={compressionMode === mode}
       className={cn(
-        'flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all',
+        'flex-1 rounded-lg py-2.5 text-xs font-semibold transition-[color,background-color,box-shadow] [@media(pointer:coarse)]:min-h-11',
         compressionMode === mode
           ? 'bg-background text-foreground shadow-sm'
           : 'text-muted-foreground hover:text-foreground'
@@ -140,7 +152,7 @@ export default function PDFCompressPage() {
       title={tool.title}
       description={tool.description}
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {!file ? (
         <div className="flex flex-col gap-6">
@@ -170,7 +182,7 @@ export default function PDFCompressPage() {
             </div>
 
             {compressionMode === 'light' ? (
-              <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-muted/5 p-6">
+              <NotePanel className="flex flex-col gap-4">
                 <h3 className="text-sm font-bold font-manrope text-foreground">
                   Light Lossless Compression
                 </h3>
@@ -190,12 +202,12 @@ export default function PDFCompressPage() {
                   <li>Compacting cross-reference table objects</li>
                   <li>Running clean garbage collection on unreferenced objects</li>
                 </ul>
-                <span className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-600 font-dm-sans dark:text-amber-400">
+                <span className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-xs font-semibold text-warning font-dm-sans dark:text-warning">
                   Ideal for: text-heavy contracts, official receipts, and vector drawings.
                 </span>
-              </div>
+              </NotePanel>
             ) : (
-              <div className="flex flex-col gap-6 rounded-2xl border border-border/60 bg-muted/5 p-6">
+              <NotePanel className="flex flex-col gap-6">
                 <div>
                   <h3 className="text-sm font-bold font-manrope text-foreground">
                     Deep Rasterized Compression
@@ -230,16 +242,13 @@ export default function PDFCompressPage() {
                   onChange={setDpi}
                   hint="Standard screen display is 72–150 DPI. 150 DPI is recommended for readable scans."
                 />
-              </div>
+              </NotePanel>
             )}
           </div>
 
           {/* Sidebar Summary */}
           <div className="md:col-span-1">
-            <Card className="sticky top-6 flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
-              <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                Document Details
-              </h2>
+            <ToolPanel title="Document details" sticky>
 
               <div className="flex flex-col gap-2.5 text-xs text-muted-foreground font-dm-sans">
                 <span>
@@ -259,30 +268,31 @@ export default function PDFCompressPage() {
                 </span>
               </div>
 
-              <div className="flex flex-col gap-2 border-t border-border/40 pt-2">
-                <Button
+              <PanelActions>
+                <PanelPrimaryAction category={tool.category}
                   onClick={handleCompress}
                   disabled={task.isProcessing}
-                  className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                 >
                   Start Compression
-                </Button>
-                <Button
-                  variant="ghost"
+                </PanelPrimaryAction>
+                <PanelSecondaryAction
                   onClick={clearWorkspace}
                   disabled={task.isProcessing}
-                  className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                 >
                   Change File
-                </Button>
-              </div>
-            </Card>
+                </PanelSecondaryAction>
+              </PanelActions>
+            </ToolPanel>
           </div>
         </div>
       ) : (
         <SuccessCard
-          title="Compression Complete"
-          description="Your document has been optimized client-side."
+          title={didShrink ? 'Compression Complete' : 'Compression Finished'}
+          description={
+            didShrink
+              ? 'Your document has been optimized client-side.'
+              : 'This file is already compact, so the re-saved copy came out slightly larger. The original may be the better download.'
+          }
           actions={
             <>
               <Button
@@ -294,7 +304,7 @@ export default function PDFCompressPage() {
               </Button>
               <Button
                 asChild
-                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.category].button}`}
               >
                 <a href={result.blobUrl} download={`compressed_${result.name}`}>
                   <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
@@ -306,7 +316,7 @@ export default function PDFCompressPage() {
         >
           <div className="grid w-full grid-cols-3 divide-x divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-muted/20 text-center font-dm-sans">
             <div className="flex flex-col gap-0.5 py-4">
-              <span className="text-[10px] font-semibold text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 ORIGINAL
               </span>
               <span className="text-sm font-bold text-foreground">
@@ -314,25 +324,23 @@ export default function PDFCompressPage() {
               </span>
             </div>
             <div className="flex flex-col gap-0.5 py-4">
-              <span className="text-[10px] font-semibold text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 COMPRESSED
               </span>
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="text-sm font-bold text-success">
                 {formatSize(result.compressedSize)}
               </span>
             </div>
             <div className="flex flex-col gap-0.5 py-4">
-              <span className="text-[10px] font-semibold text-muted-foreground">
-                REDUCTION
+              <span className="text-xs font-semibold text-muted-foreground">
+                {didShrink ? 'REDUCTION' : 'CHANGE'}
               </span>
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                {result.originalSize > result.compressedSize
-                  ? `${Math.round(
-                      ((result.originalSize - result.compressedSize) /
-                        result.originalSize) *
-                        100
-                    )}%`
-                  : '0%'}
+              <span
+                className={`text-sm font-bold ${
+                  didShrink ? 'text-success' : 'text-warning'
+                }`}
+              >
+                {reductionPct > 0 ? `${reductionPct}%` : `+${Math.abs(reductionPct)}%`}
               </span>
             </div>
           </div>
@@ -341,7 +349,7 @@ export default function PDFCompressPage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

@@ -7,6 +7,8 @@ import { ToolPageShell } from '@/components/tools/tool-page-shell';
 import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { ResultActionBar } from '@/components/tools/result-action-bar';
+import { PanelPrimaryAction, ToolPanel } from '@/components/tools/tool-panel';
+import { ThumbnailFrame } from '@/components/tools/thumbnail-frame';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +23,8 @@ import { useToolTask } from '@/lib/hooks/useToolTask';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Tick01Icon } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
-import { ACCENTS, requireTool } from '@/lib/tools';
+import { DURATION, EASE } from '@/lib/motion';
+import { requireTool } from '@/lib/tools';
 import { downloadResults } from '@/lib/download';
 
 const tool = requireTool('image-convert');
@@ -166,7 +169,7 @@ export default function ImageConvertPage() {
       title={tool.title}
       description={tool.description}
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {results.length === 0 ? (
         <div className="flex flex-col gap-6">
@@ -185,10 +188,7 @@ export default function ImageConvertPage() {
 
             {/* Options Panel */}
             <div className="md:col-span-1">
-              <Card className="flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
-                <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                  Settings
-                </h2>
+              <ToolPanel title="Settings">
 
                 <div className="flex flex-col gap-2">
                   <label
@@ -211,20 +211,19 @@ export default function ImageConvertPage() {
                       <SelectItem value="image/webp">WEBP (Modern / Small)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <span className="text-[10px] leading-relaxed text-muted-foreground font-dm-sans">
+                  <span className="text-xs leading-relaxed text-muted-foreground font-dm-sans">
                     Note: converting to PNG yields a larger file because compression is
                     lossless.
                   </span>
                 </div>
 
-                <Button
+                <PanelPrimaryAction category={tool.category}
                   onClick={handleConvert}
                   disabled={files.length === 0 || task.isProcessing}
-                  className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                 >
                   {task.isProcessing ? 'Converting…' : 'Convert Images'}
-                </Button>
-              </Card>
+                </PanelPrimaryAction>
+              </ToolPanel>
             </div>
           </div>
         </div>
@@ -232,6 +231,7 @@ export default function ImageConvertPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ duration: DURATION.quick, ease: EASE.out }}
           className="flex flex-col gap-6"
         >
           <ResultActionBar
@@ -248,10 +248,10 @@ export default function ImageConvertPage() {
             {results.map((item, idx) => (
               <Card
                 key={idx}
-                className="flex flex-col justify-between gap-4 border-border/60 bg-background/50 p-4 sm:flex-row sm:items-center"
+                className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border/40 bg-muted">
+                  <ThumbnailFrame>
                     <Image
                       src={item.convertedUrl}
                       alt={`Converted preview of ${item.name}`}
@@ -260,19 +260,19 @@ export default function ImageConvertPage() {
                       sizes="48px"
                       className="object-cover"
                     />
-                  </div>
+                  </ThumbnailFrame>
                   <div className="flex min-w-0 flex-col">
                     <span className="truncate text-xs font-bold font-manrope text-foreground">
                       {item.outputName}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-dm-sans">
+                    <span className="text-xs text-muted-foreground font-dm-sans">
                       {item.targetFormat} Format • Ready
                     </span>
                   </div>
                 </div>
 
                 <div className="flex shrink-0 items-center justify-between gap-6 sm:justify-end">
-                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-success/10 px-2 py-1 text-xs font-bold text-success">
                     <HugeiconsIcon icon={Tick01Icon} className="size-3" aria-hidden />
                     Success
                   </span>
@@ -290,7 +290,7 @@ export default function ImageConvertPage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

@@ -16,8 +16,8 @@ export function SiteFooter() {
       <div className="container py-16 md:py-20">
         <div className="grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-4">
-            <Link href="/" className="mb-4 inline-flex items-center space-x-2 group">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
+            <Link href="/" className="mb-4 inline-flex items-center space-x-2 group [@media(pointer:coarse)]:min-h-11">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-[color,background-color,scale] group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
                 <HugeiconsIcon icon={CommandIcon} className="h-6 w-6" aria-hidden />
               </div>
               <span className="text-xl font-bold font-manrope">Konbato</span>
@@ -30,7 +30,7 @@ export function SiteFooter() {
               href={githubUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-sm font-semibold text-muted-foreground transition-all font-dm-sans hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
+              className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-sm font-semibold text-muted-foreground transition-[color,background-color,border-color] font-dm-sans hover:border-primary/30 hover:bg-primary/10 hover:text-primary [@media(pointer:coarse)]:min-h-11"
             >
               <HugeiconsIcon icon={GithubIcon} className="h-4 w-4" aria-hidden />
               GitHub
@@ -45,7 +45,7 @@ export function SiteFooter() {
               >
                 <HugeiconsIcon
                   icon={Image01Icon}
-                  className="h-4 w-4 text-blue-500"
+                  className="h-4 w-4 text-category-image"
                   aria-hidden
                 />
                 Image Tools
@@ -55,7 +55,7 @@ export function SiteFooter() {
                   <li key={tool.slug}>
                     <Link
                       href={tool.href}
-                      className="text-sm text-muted-foreground transition-colors font-dm-sans hover:text-foreground"
+                      className="inline-block text-sm text-muted-foreground transition-colors font-dm-sans hover:text-foreground [@media(pointer:coarse)]:py-3"
                     >
                       {tool.title}
                     </Link>
@@ -71,7 +71,7 @@ export function SiteFooter() {
               >
                 <HugeiconsIcon
                   icon={Pdf01Icon}
-                  className="h-4 w-4 text-rose-500"
+                  className="h-4 w-4 text-category-doc"
                   aria-hidden
                 />
                 PDF Tools
@@ -81,7 +81,7 @@ export function SiteFooter() {
                   <li key={tool.slug}>
                     <Link
                       href={tool.href}
-                      className="text-sm text-muted-foreground transition-colors font-dm-sans hover:text-foreground"
+                      className="inline-block text-sm text-muted-foreground transition-colors font-dm-sans hover:text-foreground [@media(pointer:coarse)]:py-3"
                     >
                       {tool.title}
                     </Link>
@@ -92,7 +92,12 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-border/60 pt-8">
+        {/* Bottom inset keeps the last line clear of the home indicator on
+            notched hardware. Resolves to 0 where there is no inset. */}
+        <div
+          className="mt-12 border-t border-border/60 pt-8"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
           <p className="text-sm text-muted-foreground font-dm-sans">
             &copy; {new Date().getFullYear()} Konbato. Built for local file conversion.
           </p>

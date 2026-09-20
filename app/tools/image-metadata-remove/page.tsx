@@ -7,6 +7,9 @@ import { ToolPageShell } from '@/components/tools/tool-page-shell';
 import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { ResultActionBar } from '@/components/tools/result-action-bar';
+import { PanelPrimaryAction, ToolPanel } from '@/components/tools/tool-panel';
+import { ThumbnailFrame } from '@/components/tools/thumbnail-frame';
+import { NotePanel } from '@/components/tools/note-panel';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useWorker } from '@/lib/hooks/useWorker';
@@ -14,6 +17,7 @@ import { useToolTask } from '@/lib/hooks/useToolTask';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Tick01Icon } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
+import { DURATION, EASE } from '@/lib/motion';
 import { ACCENTS, requireTool } from '@/lib/tools';
 import { formatSize } from '@/lib/format';
 import { downloadResults } from '@/lib/download';
@@ -195,7 +199,7 @@ export default function ImageMetadataRemovePage() {
       title={tool.title}
       description="Re-encode visible pixels to remove common embedded image metadata. This is a practical privacy scrub, not forensic sanitization."
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {results.length === 0 ? (
         <div className="flex flex-col gap-6">
@@ -211,10 +215,7 @@ export default function ImageMetadataRemovePage() {
               />
             </div>
 
-            <Card className="flex flex-col gap-5 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
-              <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                Privacy Scrub
-              </h2>
+            <ToolPanel title="Privacy scrub">
               <p className="text-xs leading-relaxed text-muted-foreground font-dm-sans">
                 The tool draws each image to canvas and exports fresh PNG, JPG, or WebP
                 bytes. It removes common EXIF, GPS, camera, and software metadata embedded
@@ -244,11 +245,11 @@ export default function ImageMetadataRemovePage() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-border/60 bg-muted/5 p-4">
+                  <NotePanel>
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h3 className="text-xs font-bold font-manrope">Metadata Found</h3>
                       <span
-                        className={`rounded-md px-2 py-1 text-[10px] font-bold ${ACCENTS[tool.accent].tile}`}
+                        className={`rounded-md px-2 py-1 text-xs font-bold ${ACCENTS[tool.category].tile}`}
                       >
                         {detectedMetadataCount} item
                         {detectedMetadataCount === 1 ? '' : 's'}
@@ -264,7 +265,7 @@ export default function ImageMetadataRemovePage() {
                       <div className="max-h-56 overflow-y-auto pr-1">
                         {metadataByFile.map((item) => (
                           <div key={item.fileName} className="mb-3 last:mb-0">
-                            <p className="mb-1 truncate text-[10px] font-bold font-dm-sans text-foreground/80">
+                            <p className="mb-1 truncate text-xs font-bold font-dm-sans text-foreground/80">
                               {item.fileName}
                             </p>
                             <div className="space-y-1">
@@ -276,7 +277,7 @@ export default function ImageMetadataRemovePage() {
                                   <div className="font-semibold text-foreground">
                                     {entry.label}
                                   </div>
-                                  <div className="truncate text-[10px] text-muted-foreground">
+                                  <div className="truncate text-xs text-muted-foreground">
                                     {entry.value}
                                   </div>
                                 </div>
@@ -286,24 +287,24 @@ export default function ImageMetadataRemovePage() {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </NotePanel>
                 </div>
               )}
 
-              <Button
+              <PanelPrimaryAction category={tool.category}
                 onClick={handleScrubMetadata}
                 disabled={files.length === 0 || task.isProcessing}
-                className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
               >
                 {task.isProcessing ? 'Removing Metadata…' : 'Remove Metadata'}
-              </Button>
-            </Card>
+              </PanelPrimaryAction>
+            </ToolPanel>
           </div>
         </div>
       ) : (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ duration: DURATION.quick, ease: EASE.out }}
           className="flex flex-col gap-6"
         >
           <ResultActionBar
@@ -318,10 +319,10 @@ export default function ImageMetadataRemovePage() {
             {results.map((result) => (
               <Card
                 key={result.name}
-                className="flex flex-col gap-4 border-border/60 bg-background/50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-border/40 bg-muted">
+                  <ThumbnailFrame className="size-14">
                     <Image
                       src={result.url}
                       alt={`${result.name} preview`}
@@ -330,17 +331,17 @@ export default function ImageMetadataRemovePage() {
                       sizes="56px"
                       className="object-cover"
                     />
-                  </div>
+                  </ThumbnailFrame>
                   <div className="min-w-0">
                     <p className="truncate text-xs font-bold font-manrope">{result.name}</p>
-                    <p className="text-[10px] text-muted-foreground font-dm-sans">
-                      {result.width} × {result.height} px — {formatSize(result.originalSize)} →{' '}
+                    <p className="text-xs text-muted-foreground font-dm-sans">
+                      {result.width} × {result.height} px · {formatSize(result.originalSize)} →{' '}
                       {formatSize(result.scrubbedSize)}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-3 sm:justify-end">
-                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-success/10 px-2 py-1 text-xs font-bold text-success">
                     <HugeiconsIcon icon={Tick01Icon} className="size-3" aria-hidden />
                     Ready
                   </span>
@@ -358,7 +359,7 @@ export default function ImageMetadataRemovePage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

@@ -26,11 +26,11 @@ function ToolMenuLink({ tool }: { tool: Tool }) {
     <NavigationMenuLink asChild>
       <Link
         href={tool.href}
-        className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans group/link"
+        className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/65 transition-colors text-xs font-semibold font-dm-sans group/link"
       >
         <HugeiconsIcon
           icon={tool.icon}
-          className={ACCENTS[tool.accent].icon}
+          className={ACCENTS[tool.category].icon}
           aria-hidden
         />
         {tool.shortLabel ?? tool.title}
@@ -44,10 +44,10 @@ function MobileToolLink({ tool, onNavigate }: { tool: Tool; onNavigate: () => vo
     <Link
       href={tool.href}
       onClick={onNavigate}
-      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-all text-xs font-semibold font-dm-sans"
+      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-colors text-xs font-semibold font-dm-sans"
     >
       <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${accentTile(tool.accent)}`}
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${accentTile(tool.category)}`}
       >
         <HugeiconsIcon icon={tool.icon} className="size-4" aria-hidden />
       </div>
@@ -63,8 +63,8 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Brand Logo - visible everywhere */}
-        <Link href="/" className="flex items-center space-x-2 group shrink-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
+        <Link href="/" className="flex items-center space-x-2 group shrink-0 [@media(pointer:coarse)]:min-h-11">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-[color,background-color,scale] group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
             <HugeiconsIcon icon={CommandIcon} className="h-5 w-5" aria-hidden />
           </div>
           <span className="font-bold text-lg font-manrope transition-colors group-hover:text-primary">
@@ -116,7 +116,7 @@ export function SiteHeader() {
           <Button
             variant="outline"
             size="sm"
-            className="hidden sm:inline-flex font-dm-sans font-medium border-border/60 hover:border-primary/30 hover:bg-primary/5 transition-all"
+            className="hidden sm:inline-flex font-dm-sans font-medium border-border/60 hover:border-primary/30 hover:bg-primary/5 transition-[background-color,border-color]"
             asChild
           >
             <Link href="/tools">View All Tools</Link>
@@ -124,7 +124,7 @@ export function SiteHeader() {
           <Button
             size="icon"
             variant="ghost"
-            className="md:hidden hover:bg-primary/10 transition-colors"
+            className="md:hidden hover:bg-primary/10 transition-colors [@media(pointer:coarse)]:size-11"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-nav"

@@ -3,146 +3,183 @@
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
+  ArrowDown01Icon,
   ArrowRight01Icon,
-  Upload01Icon,
-  Tick02Icon,
 } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
+import { EASE, stagger } from '@/lib/motion';
+import { DEMO_FILE as receipt } from '@/lib/demo-file';
+import { TOOLS, requireTool } from '@/lib/tools';
 import Link from 'next/link';
 
-const features = ['No server file uploads', 'Lightning fast', 'Privacy guaranteed'];
-
+/*
+ * The hero is a statement over an instrument, not a split with a side card.
+ *
+ * It used to be the standard two-column SaaS composition: headline, lede,
+ * ticks and two buttons on the left, a floating proof card with a halo on the
+ * right. That skeleton is the single most generated shape on the web, and it
+ * also demoted the one piece of evidence the page has to a decorative panel.
+ *
+ * Now the headline is set once, as large as the container allows, and the
+ * proof stops being a card and becomes the floor of the hero: a full-width
+ * conversion strip, divided into cells like a readout, showing the demo file
+ * going in, the boundary it stays behind, and the figure it comes out with.
+ * The three tick bullets are gone; the strip already says what they said.
+ */
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pt-16 pb-20 md:pt-36 md:pb-36">
-      <div className="container relative z-10">
-        <div className="mx-auto max-w-5xl">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-6 text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl font-manrope"
-          >
-            <span className="block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
-              Convert & Edit Files
-            </span>
-            <span className="block mt-2 bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-              Securely in Your Browser
-            </span>
-          </motion.h1>
+    <section className="atmosphere-hero relative overflow-hidden pt-16 md:pt-24">
+      <div className="container">
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: EASE.out }}
+          className="flex items-center gap-2.5 font-mono text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
+          {TOOLS.length} tools · No account · No upload step
+        </motion.p>
 
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: stagger(1, 0.1), ease: EASE.out }}
+          className="mt-6 max-w-6xl text-5xl font-bold font-manrope leading-[0.98] tracking-tight sm:text-7xl lg:text-8xl"
+        >
+          Convert &amp; edit files securely in your browser
+        </motion.h1>
+
+        <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-8 max-w-2xl text-lg text-muted-foreground sm:text-xl font-dm-sans leading-relaxed"
+            transition={{ duration: 0.6, delay: stagger(2, 0.1), ease: EASE.out }}
+            className="max-w-xl text-lg leading-relaxed text-muted-foreground font-dm-sans"
           >
-            Convert images and PDFs securely in your browser.
-            Privacy-first, fast, and free. No server processing, no data leaks.
+            Your file is decoded, processed and re-encoded on this device. No
+            upload step exists, so there is nothing to leak.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-10 flex flex-wrap gap-4"
+            transition={{ duration: 0.6, delay: stagger(3, 0.1), ease: EASE.out }}
+            className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center"
           >
-            {features.map((feature) => (
-              <div
-                key={feature}
-                className="flex items-center gap-2 text-sm font-medium text-foreground/80"
-              >
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <HugeiconsIcon icon={Tick02Icon} className="h-3 w-3" />
-                </div>
-                {feature}
-              </div>
-            ))}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="flex flex-col gap-4 sm:flex-row"
-          >
-            <Button
-              size="lg"
-              className="group h-14 px-8 text-base font-semibold shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02]"
-              asChild
-            >
+            <Button size="lg" className="group h-14 px-8 text-base font-semibold" asChild>
               <Link href="/tools">
-                Start Converting
-                <HugeiconsIcon
-                  icon={Upload01Icon}
-                  className="ml-2 h-5 w-5 transition-transform group-hover:translate-y-[-2px]"
-                />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-14 px-8 text-base font-semibold bg-background/50 backdrop-blur-sm border-border/60 hover:border-primary/30 hover:bg-background/80 transition-all"
-              asChild
-            >
-              <Link href="#how-it-works" className="group">
-                How It Works
+                Start converting
                 <HugeiconsIcon
                   icon={ArrowRight01Icon}
                   className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1"
+                  aria-hidden
                 />
               </Link>
             </Button>
+            <a
+              href="#how-it-works"
+              className="inline-flex h-14 items-center gap-2 rounded-sm text-base font-semibold font-dm-sans text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+            >
+              How it works
+              <HugeiconsIcon icon={ArrowDown01Icon} className="h-4 w-4" aria-hidden />
+            </a>
           </motion.div>
         </div>
+
+        {/* The conversion strip. One real job, laid out as a readout across
+            the full width of the hero: what you drop, the boundary it stays
+            behind, what you keep, and what it cost. */}
+        <motion.dl
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: stagger(4, 0.1), ease: EASE.out }}
+          className="relative mt-14 grid gap-y-8 border-t border-border py-8 md:mt-20 md:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center md:gap-x-6 md:py-10 lg:gap-x-10"
+        >
+          <span aria-hidden className="rule-brand absolute inset-x-0 -top-px h-px" />
+
+          <div>
+            <dt className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              You drop
+            </dt>
+            <dd className="mt-3 truncate text-base font-semibold font-dm-sans">
+              {receipt.source.name}
+            </dd>
+            <dd className="mt-1 text-sm text-muted-foreground font-dm-sans tabular-nums">
+              {receipt.source.format} · {receipt.source.size}
+            </dd>
+          </div>
+
+          {/* The connector is a term and a definition like its neighbours, not
+              a decorative spacer: it is the claim that the file was rewritten
+              here rather than shipped somewhere. Only the arrows are hidden from
+              assistive tech, so the sentence around them is still read. */}
+          <div>
+            <dt className="sr-only">Transform</dt>
+            <dd className="flex items-center gap-3 text-muted-foreground md:flex-col md:gap-2">
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                className="hidden h-5 w-5 md:block"
+                aria-hidden
+              />
+              <HugeiconsIcon
+                icon={ArrowDown01Icon}
+                className="h-5 w-5 md:hidden"
+                aria-hidden
+              />
+              <span className="font-mono text-xs uppercase tracking-[0.14em] md:text-center">
+                <span className="block">re-encoded</span>
+                <span className="block">on this device</span>
+              </span>
+            </dd>
+          </div>
+
+          <div>
+            <dt className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              You keep
+            </dt>
+            <dd className="mt-3 truncate text-base font-semibold font-dm-sans">
+              {receipt.result.name}
+            </dd>
+            <dd className="mt-1 text-sm text-muted-foreground font-dm-sans tabular-nums">
+              {receipt.result.format} · {receipt.result.size}
+            </dd>
+          </div>
+
+          <div>
+            <dt className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              The cost
+            </dt>
+            <dd className="mt-2 flex flex-col items-start gap-1 lg:flex-row lg:items-baseline lg:gap-3">
+              <span className="text-4xl font-bold font-manrope tabular-nums text-success md:text-5xl">
+                {receipt.reduction}
+              </span>
+              <span className="text-sm text-muted-foreground font-dm-sans">smaller</span>
+            </dd>
+            {/* The bar is data, not ornament: its width is the figure stated
+                beside it, read from the same source. */}
+            <dd
+              className="mt-3 h-1 w-full overflow-hidden rounded-full bg-border/70"
+              role="img"
+              aria-label={`File size reduced by ${receipt.reduction}`}
+            >
+              <motion.span
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.9, delay: 0.8, ease: EASE.out }}
+                style={{ width: `${receipt.reductionPercent}%` }}
+                className="block h-full origin-left rounded-full bg-gradient-to-r from-category-image to-success"
+              />
+            </dd>
+            <dd className="mt-3 text-xs text-muted-foreground font-dm-sans">
+              {requireTool(receipt.tool).title} · 0 bytes uploaded
+            </dd>
+          </div>
+        </motion.dl>
       </div>
 
-      {/* Enhanced Background with Gradient Mesh */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        {/* Gradient Mesh */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2 }}
-          className="absolute inset-0"
-          style={{ background: 'var(--gradient-mesh)' }}
-        />
-
-        {/* Geometric Pattern Overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.015]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }}
-        />
-
-        {/* Animated Accent Orbs */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          className="absolute top-20 right-[10%] h-[400px] w-[400px] rounded-full bg-primary/20 blur-[100px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: 1,
-          }}
-          className="absolute bottom-20 left-[15%] h-[350px] w-[350px] rounded-full bg-accent/20 blur-[100px]"
-        />
-      </div>
+      {/* Bottom padding lives on the section so the atmosphere fade has room
+          to run out below the strip. */}
+      <div className="pb-12 md:pb-20" />
     </section>
   );
 }

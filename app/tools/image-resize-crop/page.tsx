@@ -8,6 +8,8 @@ import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { SuccessCard } from '@/components/tools/success-card';
 import { LabeledSlider } from '@/components/tools/labeled-slider';
+import { PanelActions, PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
+import { FieldInput } from '@/components/tools/field-input';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -350,7 +352,7 @@ export default function ImageResizeCropPage() {
       title={tool.title}
       description="Crop from exact pixel bounds, resize output dimensions, and export a fresh local image."
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {!file ? (
         <div className="flex flex-col gap-6">
@@ -365,13 +367,13 @@ export default function ImageResizeCropPage() {
       ) : !result ? (
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <Card className="flex flex-col gap-4 border-border/60 bg-background/50 p-4">
+            <Card className="flex flex-col gap-4 p-4">
               <div
                 ref={cropFrameRef}
                 role="group"
                 tabIndex={0}
                 aria-label="Crop preview. Use the arrow keys to reposition the crop, hold Shift for larger steps."
-                className="relative mx-auto w-full cursor-grab touch-none overflow-hidden rounded-xl border border-cyan-500/40 bg-muted/30 shadow-inner focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:cursor-grabbing"
+                className="relative mx-auto w-full cursor-grab touch-none overflow-hidden rounded-xl border border-category-image/40 bg-muted/30 shadow-inner focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:cursor-grabbing"
                 style={cropPreviewStyle}
                 onPointerDown={handleCropPointerDown}
                 onPointerMove={handleCropPointerMove}
@@ -407,10 +409,7 @@ export default function ImageResizeCropPage() {
             </Card>
           </div>
 
-          <Card className="flex flex-col gap-5 border-border/60 bg-background/50 p-6">
-            <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-              Settings
-            </h2>
+          <ToolPanel title="Settings">
 
             <div className="flex flex-col gap-2">
               <label
@@ -437,14 +436,13 @@ export default function ImageResizeCropPage() {
               {cropFields.map((field) => (
                 <label
                   key={field}
-                  className="flex flex-col gap-1 text-[10px] font-bold uppercase text-muted-foreground font-dm-sans"
+                  className="flex flex-col gap-1 text-xs font-bold uppercase text-muted-foreground font-dm-sans"
                 >
                   {field}
-                  <input
+                  <FieldInput
                     type="number"
                     value={crop[field]}
                     onChange={(event) => updateCropField(field, event.target.value)}
-                    className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </label>
               ))}
@@ -459,26 +457,24 @@ export default function ImageResizeCropPage() {
               step={0.1}
               unit="x"
               onChange={applyCropZoom}
-              hint="Drag the preview — or focus it and use the arrow keys — to reposition the image inside the crop frame."
+              hint="Drag the preview, or focus it and use the arrow keys, to reposition the image inside the crop frame."
             />
 
             <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1 text-[10px] font-bold uppercase text-muted-foreground font-dm-sans">
+              <label className="flex flex-col gap-1 text-xs font-bold uppercase text-muted-foreground font-dm-sans">
                 Target width
-                <input
+                <FieldInput
                   type="number"
                   value={targetWidth}
                   onChange={(e) => setTargetWidth(e.target.value)}
-                  className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-[10px] font-bold uppercase text-muted-foreground font-dm-sans">
+              <label className="flex flex-col gap-1 text-xs font-bold uppercase text-muted-foreground font-dm-sans">
                 Target height
-                <input
+                <FieldInput
                   type="number"
                   value={targetHeight}
                   onChange={(e) => setTargetHeight(e.target.value)}
-                  className="rounded-lg border border-border/80 bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </label>
             </div>
@@ -502,22 +498,19 @@ export default function ImageResizeCropPage() {
               </Select>
             </div>
 
-            <Button
-              onClick={handleProcess}
-              disabled={task.isProcessing}
-              className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
-            >
-              Resize &amp; Crop
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={reset}
-              disabled={task.isProcessing}
-              className="w-full text-xs font-semibold"
-            >
-              Change File
-            </Button>
-          </Card>
+            <PanelActions>
+              <PanelPrimaryAction
+                category={tool.category}
+                onClick={handleProcess}
+                disabled={task.isProcessing}
+              >
+                Resize &amp; Crop
+              </PanelPrimaryAction>
+              <PanelSecondaryAction onClick={reset} disabled={task.isProcessing}>
+                Change File
+              </PanelSecondaryAction>
+            </PanelActions>
+          </ToolPanel>
         </div>
       ) : (
         <SuccessCard
@@ -534,7 +527,7 @@ export default function ImageResizeCropPage() {
               </Button>
               <Button
                 asChild
-                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.category].button}`}
               >
                 <a href={result.url} download={result.name}>
                   <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
@@ -559,7 +552,7 @@ export default function ImageResizeCropPage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

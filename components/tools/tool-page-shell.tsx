@@ -5,14 +5,14 @@ import type { ReactNode } from 'react';
 import type { IconSvgElement } from '@hugeicons/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
-import { accentTile, type AccentKey } from '@/lib/tools';
+import { accentTile, type ToolCategory } from '@/lib/tools';
 import { cn } from '@/lib/utils';
 
 interface ToolPageShellProps {
   title: string;
   description: string;
   icon: IconSvgElement;
-  accent: AccentKey;
+  category: ToolCategory;
   children: ReactNode;
   /** `wide` uses a 6xl container for thumbnail-heavy workspaces. */
   width?: 'default' | 'wide';
@@ -23,7 +23,7 @@ export function ToolPageShell({
   title,
   description,
   icon,
-  accent,
+  category,
   children,
   width = 'default',
   className,
@@ -38,7 +38,7 @@ export function ToolPageShell({
     >
       <Link
         href="/tools"
-        className="mb-6 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+        className="mb-6 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground [@media(pointer:coarse)]:min-h-11"
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} className="size-3.5" aria-hidden />
         Back to Tools
@@ -49,7 +49,7 @@ export function ToolPageShell({
           <div
             className={cn(
               'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-              accentTile(accent)
+              accentTile(category)
             )}
           >
             <HugeiconsIcon icon={icon} className="size-5" aria-hidden />

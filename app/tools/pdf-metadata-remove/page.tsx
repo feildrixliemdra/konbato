@@ -6,7 +6,8 @@ import { ToolPageShell } from '@/components/tools/tool-page-shell';
 import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { SuccessCard } from '@/components/tools/success-card';
-import { Card } from '@/components/ui/card';
+import { PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
+import { NotePanel } from '@/components/tools/note-panel';
 import { Button } from '@/components/ui/button';
 import { useWorker } from '@/lib/hooks/useWorker';
 import { useToolTask } from '@/lib/hooks/useToolTask';
@@ -179,7 +180,7 @@ export default function PDFMetadataRemovePage() {
       title={tool.title}
       description="Remove common document information fields from a PDF locally. This privacy scrub does not guarantee forensic sanitization."
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {!file ? (
         <div className="flex flex-col gap-6">
@@ -196,10 +197,10 @@ export default function PDFMetadataRemovePage() {
           <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <div className="grid gap-6 md:grid-cols-3">
             <div className="md:col-span-2">
-              <Card className="flex flex-col gap-5 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
+              <ToolPanel>
                 <div className="flex items-center gap-3">
                   <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${ACCENTS[tool.accent].tile}`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${ACCENTS[tool.category].tile}`}
                   >
                     <HugeiconsIcon icon={FileEditIcon} className="size-5" aria-hidden />
                   </div>
@@ -213,7 +214,7 @@ export default function PDFMetadataRemovePage() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-dm-sans">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-dm-sans">
                       Original Size
                     </span>
                     <p className="mt-1 text-sm font-bold font-manrope">
@@ -221,7 +222,7 @@ export default function PDFMetadataRemovePage() {
                     </p>
                   </div>
                   <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-dm-sans">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-dm-sans">
                       Output Name
                     </span>
                     <p className="mt-1 truncate text-sm font-bold font-manrope">
@@ -230,11 +231,11 @@ export default function PDFMetadataRemovePage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-border/60 bg-muted/5 p-5">
+                <NotePanel>
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <h3 className="text-sm font-bold font-manrope">Metadata Found</h3>
                     <span
-                      className={`rounded-md px-2 py-1 text-[10px] font-bold ${ACCENTS[tool.accent].tile}`}
+                      className={`rounded-md px-2 py-1 text-xs font-bold ${ACCENTS[tool.category].tile}`}
                     >
                       {metadata.length} field{metadata.length === 1 ? '' : 's'}
                     </span>
@@ -253,41 +254,35 @@ export default function PDFMetadataRemovePage() {
                           className="rounded-lg border border-border/40 bg-background/70 p-3"
                         >
                           <div className="font-semibold text-foreground">{entry.label}</div>
-                          <div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                          <div className="mt-0.5 truncate text-xs text-muted-foreground">
                             {entry.value}
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
-                </div>
-              </Card>
+                </NotePanel>
+              </ToolPanel>
             </div>
 
-            <Card className="flex flex-col gap-5 border-border/60 bg-background/50 p-6 backdrop-blur-sm md:sticky md:top-6 md:self-start">
-              <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                Export
-              </h2>
+            <ToolPanel title="Export" sticky>
               <p className="text-xs leading-relaxed text-muted-foreground font-dm-sans">
                 The PDF is saved again with common info fields cleared while preserving the
                 document structure.
               </p>
-              <Button
+              <PanelPrimaryAction category={tool.category}
                 onClick={handleRemoveMetadata}
                 disabled={task.isProcessing}
-                className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
               >
                 {task.isProcessing ? 'Removing Metadata…' : 'Remove Metadata'}
-              </Button>
-              <Button
-                variant="ghost"
+              </PanelPrimaryAction>
+              <PanelSecondaryAction
                 onClick={clearWorkspace}
                 disabled={task.isProcessing}
-                className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 Change File
-              </Button>
-            </Card>
+              </PanelSecondaryAction>
+            </ToolPanel>
           </div>
         </div>
       ) : (
@@ -305,7 +300,7 @@ export default function PDFMetadataRemovePage() {
               </Button>
               <Button
                 asChild
-                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.category].button}`}
               >
                 <a href={result.blobUrl} download={result.name}>
                   <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
@@ -317,16 +312,16 @@ export default function PDFMetadataRemovePage() {
         >
           <div className="grid w-full grid-cols-2 divide-x divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-muted/20 text-center font-dm-sans">
             <div className="py-4">
-              <span className="text-[10px] font-semibold text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 ORIGINAL
               </span>
               <p className="text-sm font-bold">{formatSize(result.originalSize)}</p>
             </div>
             <div className="py-4">
-              <span className="text-[10px] font-semibold text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 SCRUBBED
               </span>
-              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+              <p className="text-sm font-bold text-success">
                 {formatSize(result.scrubbedSize)}
               </p>
             </div>
@@ -336,7 +331,7 @@ export default function PDFMetadataRemovePage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

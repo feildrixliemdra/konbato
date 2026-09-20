@@ -7,7 +7,8 @@ import { ToolPageShell } from '@/components/tools/tool-page-shell';
 import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { SuccessCard } from '@/components/tools/success-card';
-import { Card } from '@/components/ui/card';
+import { PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
+import { CanvasSurface } from '@/components/tools/canvas-surface';
 import { Button } from '@/components/ui/button';
 import { useWorker } from '@/lib/hooks/useWorker';
 import { useToolTask } from '@/lib/hooks/useToolTask';
@@ -77,27 +78,33 @@ function SortablePage({ item }: SortablePageProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative aspect-[3/4] overflow-hidden rounded-xl border bg-background shadow-sm transition-all duration-200 select-none ${
+      className={`group relative aspect-[3/4] overflow-hidden rounded-xl border bg-background shadow-sm transition-[border-color,box-shadow,scale] duration-200 select-none ${
         isDragging
-          ? 'border-red-500 ring-2 ring-red-500/10 shadow-lg scale-105'
+          ? 'border-category-doc ring-2 ring-category-doc/10 shadow-lg scale-105'
           : 'border-border/60'
       }`}
     >
-      <div className="flex h-8 items-center justify-between border-b border-border/40 bg-muted/20 px-2">
+      {/* The whole bar is the drag handle, not just the icon. An 18px glyph is
+          below a comfortable touch target. Grows on coarse pointers. */}
+      <div className="flex h-9 items-center justify-between border-b border-border/40 bg-muted/20 px-2 [@media(pointer:coarse)]:h-12">
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-foreground/80 active:cursor-grabbing"
           aria-label="Drag to reorder"
+          className="flex h-full flex-1 cursor-grab items-center rounded active:cursor-grabbing"
         >
-          <HugeiconsIcon icon={Drag01Icon} className="size-3.5" aria-hidden />
+          <HugeiconsIcon
+            icon={Drag01Icon}
+            className="size-3.5 text-muted-foreground/60"
+            aria-hidden
+          />
         </div>
-        <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
+        <span className="text-xs font-bold text-muted-foreground font-dm-sans">
           Page {item.pageIndex + 1}
         </span>
       </div>
 
-      <div className="relative flex h-[calc(100%-2rem)] items-center justify-center bg-muted/5 p-2.5">
+      <div className="relative flex h-[calc(100%-2.25rem)] items-center justify-center bg-muted/5 p-2.5">
         {item.thumbnailUrl ? (
           <Image
             src={item.thumbnailUrl}
@@ -108,8 +115,8 @@ function SortablePage({ item }: SortablePageProps) {
             className="rounded object-contain p-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)] pointer-events-none"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center rounded border border-dashed border-border/60 bg-muted/20 text-[10px] text-muted-foreground font-dm-sans">
-            Preview unavailable
+          <div className="flex h-full w-full items-center justify-center rounded border border-dashed border-border/60 bg-muted/20 px-1 text-center text-xs text-muted-foreground font-dm-sans">
+            Not previewed (over 30 pages)
           </div>
         )}
       </div>
@@ -277,7 +284,7 @@ export default function PDFReorderPage() {
       title={tool.title}
       description={tool.description}
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
       width="wide"
     >
       {!file ? (
@@ -298,7 +305,7 @@ export default function PDFReorderPage() {
               <div className="flex flex-col gap-2 border-b border-border/40 pb-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="font-bold text-sm font-manrope flex items-center gap-2">
                   <span
-                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.category].bar}`}
                     aria-hidden
                   />
                   Page reorder workspace
@@ -308,7 +315,7 @@ export default function PDFReorderPage() {
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-dashed border-border/80 bg-muted/5 min-h-[400px] p-4 sm:p-6 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
+              <CanvasSurface>
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={pages.map((page) => page.id)} strategy={rectSortingStrategy}>
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -318,15 +325,12 @@ export default function PDFReorderPage() {
                     </div>
                   </SortableContext>
                 </DndContext>
-              </div>
+              </CanvasSurface>
             </div>
 
-            <Card className="p-6 border-border/60 bg-background/50 backdrop-blur-sm flex flex-col gap-5 lg:sticky lg:top-6 lg:self-start">
-              <h3 className="font-bold text-sm font-manrope border-b border-border/40 pb-3">
-                Document
-              </h3>
+            <ToolPanel title="Document" sticky>
               <div className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/20 p-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-category-doc/10 text-category-doc">
                   <HugeiconsIcon icon={File01Icon} className="size-4" aria-hidden />
                 </div>
                 <div className="min-w-0 text-xs font-dm-sans">
@@ -339,22 +343,19 @@ export default function PDFReorderPage() {
               <p className="text-xs text-muted-foreground font-dm-sans leading-relaxed">
                 Reordering keeps the original page content and writes a new PDF with your selected page sequence.
               </p>
-              <Button
+              <PanelPrimaryAction category={tool.category}
                 onClick={handleExport}
                 disabled={task.isProcessing || pages.length === 0}
-                className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
               >
                 Export Reordered PDF
-              </Button>
-              <Button
-                variant="ghost"
+              </PanelPrimaryAction>
+              <PanelSecondaryAction
                 onClick={clearWorkspace}
                 disabled={task.isProcessing}
-                className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 Change File
-              </Button>
-            </Card>
+              </PanelSecondaryAction>
+            </ToolPanel>
           </div>
         </div>
       ) : (
@@ -372,7 +373,7 @@ export default function PDFReorderPage() {
               </Button>
               <Button
                 asChild
-                className={`flex-1 font-semibold text-xs py-5 ${ACCENTS[tool.accent].button}`}
+                className={`flex-1 font-semibold text-xs py-5 ${ACCENTS[tool.category].button}`}
               >
                 <a href={resultUrl} download={resultName}>
                   <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" aria-hidden />
@@ -386,7 +387,7 @@ export default function PDFReorderPage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

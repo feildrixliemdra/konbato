@@ -1,162 +1,99 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import {
-  UserMultipleIcon,
-  PencilEdit01Icon,
-  BookOpen01Icon,
-  SafeIcon,
-} from '@hugeicons/core-free-icons';
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { motion } from 'framer-motion';
+import { stagger } from '@/lib/motion';
+import Link from 'next/link';
+import { SECTION_KICKER } from '@/components/section-header';
+import { requireTool } from '@/lib/tools';
 
-const useCases = [
+/*
+ * Who it is for.
+ *
+ * The heading is pinned to the left rail and the four jobs scroll past it. That
+ * gives this section a shape nothing else on the page has: a standing label
+ * with a list running beside it, rather than a header stacked over a grid. It
+ * also means the section is still labelled after the reader has scrolled into
+ * the middle of the rows.
+ *
+ * This used to be four gradient cards, each paying off with a usage count
+ * (10K+ designers, 50K+ students) that nothing in the product corroborates. A
+ * number is not evidence. The rows name the audience, name the job, and link to
+ * the tool that does it.
+ */
+const audiences = [
   {
-    title: 'For Designers',
-    description: 'Convert & optimize images for web without quality loss.',
-    icon: PencilEdit01Icon,
-    metric: '10K+',
-    metricLabel: 'Designers',
-    // Deep Indigo → Slate Blue
-    gradientFrom: 'oklch(0.45 0.18 270)',
-    gradientTo: 'oklch(0.55 0.16 260)',
-    iconBg: 'bg-[oklch(0.50_0.17_265/0.15)]',
-    iconColor: 'text-[oklch(0.50_0.17_265)]',
-    borderColor: 'border-[oklch(0.50_0.17_265/0.3)]',
+    who: 'Designers',
+    job: 'Convert and optimize images for the web without visible quality loss.',
+    tool: requireTool('image-convert'),
   },
   {
-    title: 'For Students',
-    description: 'Split & merge lecture PDFs in seconds.',
-    icon: BookOpen01Icon,
-    metric: '50K+',
-    metricLabel: 'Students',
-    // Bright Blue → Sky Blue
-    gradientFrom: 'oklch(0.60 0.20 240)',
-    gradientTo: 'oklch(0.70 0.18 230)',
-    iconBg: 'bg-[oklch(0.65_0.19_235/0.15)]',
-    iconColor: 'text-[oklch(0.65_0.19_235)]',
-    borderColor: 'border-[oklch(0.65_0.19_235/0.3)]',
+    who: 'Students',
+    job: 'Merge and split lecture PDFs between classes without re-downloading them.',
+    tool: requireTool('pdf-merge'),
   },
   {
-    title: 'For Office',
-    description: 'Compress documents for email attachments.',
-    icon: UserMultipleIcon,
-    metric: '5K+',
-    metricLabel: 'Companies',
-    // Warm Slate → Steel Blue
-    gradientFrom: 'oklch(0.50 0.12 250)',
-    gradientTo: 'oklch(0.58 0.14 245)',
-    iconBg: 'bg-[oklch(0.54_0.13_247/0.15)]',
-    iconColor: 'text-[oklch(0.54_0.13_247)]',
-    borderColor: 'border-[oklch(0.54_0.13_247/0.3)]',
+    who: 'Office teams',
+    job: 'Shrink a document until it clears an email attachment limit.',
+    tool: requireTool('pdf-compress'),
   },
   {
-    title: 'For Privacy',
-    description: 'Process sensitive files without uploading them.',
-    icon: SafeIcon,
-    metric: '100%',
-    metricLabel: 'Private',
-    // Teal → Cyan
-    gradientFrom: 'oklch(0.55 0.16 200)',
-    gradientTo: 'oklch(0.65 0.18 190)',
-    iconBg: 'bg-[oklch(0.60_0.17_195/0.15)]',
-    iconColor: 'text-[oklch(0.60_0.17_195)]',
-    borderColor: 'border-[oklch(0.60_0.17_195/0.3)]',
-    featured: true,
+    who: 'Confidential work',
+    job: 'Scrub embedded metadata from a file before it leaves your hands.',
+    tool: requireTool('image-metadata-remove'),
   },
 ];
 
 export function UseCases() {
   return (
-    <section className="container py-12 md:py-24">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-16"
-      >
-        <h2 className="text-4xl font-bold font-manrope sm:text-5xl mb-4">
-          Who is Konbato for?
-        </h2>
-        <p className="text-lg text-muted-foreground font-dm-sans max-w-2xl mx-auto">
-          Trusted by professionals, students, and privacy-conscious users
-          worldwide
-        </p>
-      </motion.div>
+    <section className="container py-14 md:py-24">
+      <div className="grid gap-10 border-t border-border pt-6 md:pt-8 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:gap-20">
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <p className={SECTION_KICKER}>Who it is for</p>
+          <h2 className="mt-4 text-3xl font-bold font-manrope tracking-tight sm:text-4xl">
+            Four jobs, one constraint
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-muted-foreground font-dm-sans">
+            Every tool here runs under the same rule: the file is read, changed
+            and written back on your machine. Who you are only changes which
+            tool you reach for.
+          </p>
+        </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {useCases.map((useCase, index) => (
-          <motion.div
-            key={useCase.title}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
-            <Card
-              className="group relative h-full overflow-hidden border-border/60 backdrop-blur-xl bg-background/60 p-6 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-primary/30"
-              style={{
-                background: `linear-gradient(135deg, color-mix(in oklch, ${useCase.gradientFrom}, transparent 92%) 0%, color-mix(in oklch, ${useCase.gradientTo}, transparent 94%) 100%)`,
-              }}
+        <div className="flex flex-col">
+          {audiences.map((audience, index) => (
+            <motion.div
+              key={audience.who}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: stagger(index, 0.08) }}
             >
-              {/* Glassmorphism border glow */}
-              <div
-                className="absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-500 group-hover:opacity-20 -z-10"
-                style={{
-                  background: `linear-gradient(135deg, ${useCase.gradientFrom} 0%, ${useCase.gradientTo} 100%)`,
-                  filter: 'blur(30px)',
-                }}
-              />
-
-              {/* Content */}
-              <div className="relative z-10 flex flex-col h-full">
-                {/* Icon with floating animation */}
-                <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  className={`mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl ${useCase.iconBg} ${useCase.iconColor} transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 shadow-lg border ${useCase.borderColor}`}
-                >
-                  <HugeiconsIcon icon={useCase.icon} className="h-8 w-8" />
-                </motion.div>
-
-                {/* Title */}
-                <h3 className="mb-3 text-xl font-bold font-manrope transition-colors group-hover:text-primary">
-                  {useCase.title}
-                </h3>
-
-                {/* Description */}
-                <p className="text-sm text-muted-foreground font-dm-sans leading-relaxed mb-6 group-hover:text-foreground/80 transition-colors flex-1">
-                  {useCase.description}
-                </p>
-
-                {/* Metric */}
-                <div className="mt-auto pt-4 border-t border-border/40">
-                  <div className="flex items-baseline gap-2">
-                    <span
-                      className={`text-3xl font-bold font-manrope ${useCase.iconColor}`}
-                    >
-                      {useCase.metric}
-                    </span>
-                    <span className="text-sm text-muted-foreground font-dm-sans">
-                      {useCase.metricLabel}
-                    </span>
-                  </div>
+              <Link
+                href={audience.tool.href}
+                className="group flex items-start justify-between gap-6 border-b border-border py-6 transition-colors first:border-t hover:bg-muted/30 focus-visible:bg-muted/30 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+              >
+                <div>
+                  <h3 className="text-base font-bold font-manrope transition-colors group-hover:text-primary">
+                    {audience.who}
+                  </h3>
+                  <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground font-dm-sans">
+                    {audience.job}
+                  </p>
                 </div>
-              </div>
-
-              {/* Accent orb */}
-              <div
-                className="absolute -bottom-10 -right-10 h-32 w-32 rounded-full opacity-10 blur-2xl transition-opacity group-hover:opacity-15"
-                style={{ background: useCase.gradientTo }}
-              />
-            </Card>
-          </motion.div>
-        ))}
+                <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-xs font-semibold font-manrope text-muted-foreground transition-colors group-hover:text-primary">
+                  {audience.tool.shortLabel ?? audience.tool.title}
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    className="h-3 w-3 transition-transform group-hover:translate-x-0.5"
+                    aria-hidden
+                  />
+                </span>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );

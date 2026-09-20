@@ -38,12 +38,12 @@ export function DeviceWarning({ fileSizeInBytes = 0, className = '' }: DeviceWar
 
   return (
     <div
-      className={`relative flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive-foreground transition-all animate-in fade-in duration-200 ${className}`}
+      className={`relative flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive-foreground transition-colors animate-in fade-in duration-200 ${className}`}
     >
       <div className="flex size-5 shrink-0 items-center justify-center rounded-md bg-destructive/10 text-destructive mt-0.5">
         <HugeiconsIcon icon={AlertCircleIcon} className="size-4" />
       </div>
-      <div className="flex-1 pr-6">
+      <div className="flex-1 pr-6 [@media(pointer:coarse)]:pr-12">
         <h5 className="font-semibold text-destructive mb-1 font-manrope">
           Device Performance Warning
         </h5>
@@ -55,7 +55,7 @@ export function DeviceWarning({ fileSizeInBytes = 0, className = '' }: DeviceWar
         type="button"
         onClick={() => setDismissedSize(fileSizeInBytes)}
         aria-label="Dismiss device performance warning"
-        className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive transition-all"
+        className="absolute right-3 top-3 inline-flex items-center justify-center rounded-md p-1 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive transition-[color,background-color] [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
       >
         <HugeiconsIcon icon={Cancel01Icon} className="size-4" aria-hidden />
       </button>

@@ -31,7 +31,7 @@ export default function Error({
           nothing left your device.
         </p>
         {error.digest && (
-          <p className="text-[11px] text-muted-foreground/70 font-mono">
+          <p className="text-xs text-muted-foreground/70 font-mono">
             Reference: {error.digest}
           </p>
         )}

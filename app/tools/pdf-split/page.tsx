@@ -7,10 +7,10 @@ import { ToolPageShell } from '@/components/tools/tool-page-shell';
 import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { SuccessCard } from '@/components/tools/success-card';
+import { PanelActions, PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
 import { useWorker } from '@/lib/hooks/useWorker';
 import { useToolTask } from '@/lib/hooks/useToolTask';
 import { getPdfPageCount, renderPdfPagesToDataUrls } from '@/lib/pdf-utils';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -260,7 +260,7 @@ export default function PDFSplitPage() {
       title={tool.title}
       description={tool.description}
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {!file ? (
         <div className="flex flex-col gap-6">
@@ -281,7 +281,7 @@ export default function PDFSplitPage() {
               <div className="flex items-center justify-between border-b border-border/40 pb-3">
                 <h2 className="flex items-center gap-2 text-sm font-bold font-manrope">
                   <span
-                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.category].bar}`}
                     aria-hidden
                   />
                   Select Pages to Keep
@@ -291,7 +291,7 @@ export default function PDFSplitPage() {
                     variant="ghost"
                     size="xs"
                     onClick={handleSelectAll}
-                    className="text-xs font-semibold"
+                    className="text-xs font-semibold [@media(pointer:coarse)]:min-h-11"
                   >
                     Select All
                   </Button>
@@ -299,7 +299,7 @@ export default function PDFSplitPage() {
                     variant="ghost"
                     size="xs"
                     onClick={handleSelectNone}
-                    className="text-xs font-semibold text-rose-500 hover:text-rose-600"
+                    className="text-xs font-semibold text-destructive hover:text-destructive/80 [@media(pointer:coarse)]:min-h-11"
                   >
                     Clear
                   </Button>
@@ -307,16 +307,16 @@ export default function PDFSplitPage() {
               </div>
 
               {/* Light Table Selection Area */}
-              <div className="max-h-[500px] min-h-[300px] overflow-y-auto rounded-2xl border border-border/60 bg-muted/5 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] p-5 pr-2 [background-size:20px_20px]">
+              <div className="max-h-[500px] min-h-[300px] overflow-y-auto rounded-2xl border border-border/60 bg-muted/5 bg-[radial-gradient(var(--border)_1px,transparent_1px)] p-5 pr-2 [background-size:20px_20px]">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   {pages.map((item) => {
                     const isSelected = selectedPages.includes(item.pageIndex);
                     return (
                       <label
                         key={item.pageIndex}
-                        className={`group relative flex aspect-[3/4] cursor-pointer select-none flex-col overflow-hidden rounded-xl border bg-background transition-all duration-200 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 ${
+                        className={`group relative flex aspect-[3/4] cursor-pointer select-none flex-col overflow-hidden rounded-xl border bg-background transition-[border-color,box-shadow,opacity] duration-200 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 ${
                           isSelected
-                            ? 'border-orange-500 shadow ring-2 ring-orange-500/10'
+                            ? 'border-category-doc shadow ring-2 ring-category-doc/10'
                             : 'border-border/60 opacity-60 hover:opacity-90'
                         }`}
                       >
@@ -326,9 +326,9 @@ export default function PDFSplitPage() {
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => handleCheckboxToggle(item.pageIndex)}
-                            className="size-3 cursor-pointer rounded accent-orange-500"
+                            className="size-3 cursor-pointer rounded accent-category-doc"
                           />
-                          <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
+                          <span className="text-xs font-bold text-muted-foreground font-dm-sans">
                             Page {item.pageIndex + 1}
                           </span>
                         </div>
@@ -345,8 +345,8 @@ export default function PDFSplitPage() {
                               className="pointer-events-none rounded object-contain p-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
                             />
                           ) : (
-                            <div className="text-[10px] text-muted-foreground font-dm-sans">
-                              Preview unavailable
+                            <div className="px-1 text-center text-xs text-muted-foreground font-dm-sans">
+                              Not previewed (over 30 pages)
                             </div>
                           )}
                         </div>
@@ -359,10 +359,7 @@ export default function PDFSplitPage() {
 
             {/* Config panel */}
             <div className="md:col-span-1">
-              <Card className="sticky top-6 flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
-                <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                  Split Settings
-                </h2>
+              <ToolPanel title="Split settings" sticky>
 
                 <div className="flex flex-col gap-1.5 text-xs text-muted-foreground font-dm-sans">
                   <span className="truncate">
@@ -391,33 +388,30 @@ export default function PDFSplitPage() {
                     onChange={handleRangeInputChange}
                     onBlur={handleRangeInputBlur}
                     placeholder="e.g. 1-3, 5, 8-10"
-                    className="h-10 text-sm font-dm-sans"
+                    className="h-10 text-base sm:text-sm font-dm-sans"
                   />
-                  <span className="text-[10px] leading-relaxed text-muted-foreground font-dm-sans">
+                  <span className="text-xs leading-relaxed text-muted-foreground font-dm-sans">
                     Use commas to separate page numbers/ranges. e.g.,{' '}
                     <strong>1-3, 5</strong> yields pages 1, 2, 3, and 5.
                   </span>
                 </div>
 
-                <div className="flex flex-col gap-2 border-t border-border/40 pt-2">
-                  <Button
+                <PanelActions>
+                  <PanelPrimaryAction category={tool.category}
                     onClick={handleSplit}
                     disabled={selectedPages.length === 0 || task.isProcessing}
-                    className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                   >
                     Extract {selectedPages.length} Page
                     {selectedPages.length !== 1 ? 's' : ''}
-                  </Button>
-                  <Button
-                    variant="ghost"
+                  </PanelPrimaryAction>
+                  <PanelSecondaryAction
                     onClick={clearWorkspace}
                     disabled={task.isProcessing}
-                    className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
                     Cancel / Reset
-                  </Button>
-                </div>
-              </Card>
+                  </PanelSecondaryAction>
+                </PanelActions>
+              </ToolPanel>
             </div>
           </div>
         </div>
@@ -438,7 +432,7 @@ export default function PDFSplitPage() {
               </Button>
               <Button
                 asChild
-                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.category].button}`}
               >
                 <a href={splitBlobUrl} download={`extracted_${file.name}`}>
                   <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
@@ -452,7 +446,7 @@ export default function PDFSplitPage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

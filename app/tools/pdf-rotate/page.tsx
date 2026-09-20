@@ -7,7 +7,7 @@ import { ToolPageShell } from '@/components/tools/tool-page-shell';
 import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { SuccessCard } from '@/components/tools/success-card';
-import { Card } from '@/components/ui/card';
+import { PanelActions, PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
 import { Button } from '@/components/ui/button';
 import { useWorker } from '@/lib/hooks/useWorker';
 import { useToolTask } from '@/lib/hooks/useToolTask';
@@ -168,7 +168,7 @@ export default function PDFRotatePage() {
       title={tool.title}
       description={tool.description}
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {!file ? (
         <div className="flex flex-col gap-6">
@@ -187,7 +187,7 @@ export default function PDFRotatePage() {
             <div className="flex items-center justify-between border-b border-border/40 pb-3">
               <h2 className="flex items-center gap-2 text-sm font-bold font-manrope">
                 <span
-                  className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                  className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.category].bar}`}
                   aria-hidden
                 />
                 Workspace pages
@@ -205,11 +205,11 @@ export default function PDFRotatePage() {
                     className="group relative flex aspect-[3/4] select-none flex-col overflow-hidden rounded-xl border border-border/60 bg-background"
                   >
                     <div className="flex h-7 items-center justify-between border-b border-border/40 bg-muted/20 px-2">
-                      <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
+                      <span className="text-xs font-bold text-muted-foreground font-dm-sans">
                         p. {item.pageIndex + 1}
                       </span>
                       {item.rotation > 0 && (
-                        <span className="rounded bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-500 font-dm-sans">
+                        <span className="rounded bg-category-doc/10 px-1.5 py-0.5 text-xs font-bold text-category-doc font-dm-sans">
                           {item.rotation}°
                         </span>
                       )}
@@ -230,19 +230,19 @@ export default function PDFRotatePage() {
                             className="pointer-events-none rounded object-contain p-2"
                           />
                         ) : (
-                          <div className="text-[10px] text-muted-foreground font-dm-sans">
-                            Preview unavailable
+                          <div className="px-1 text-center text-xs text-muted-foreground font-dm-sans">
+                            Not previewed (over 30 pages)
                           </div>
                         )}
                       </div>
 
-                      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/40 opacity-0 backdrop-blur-[1px] transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+                      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/40 backdrop-blur-[1px] transition-opacity duration-200 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100">
                         <Button
                           size="icon"
                           variant="secondary"
                           onClick={() => rotateIndividualPage(item.pageIndex, -90)}
                           aria-label={`Rotate page ${item.pageIndex + 1} counter-clockwise`}
-                          className="size-8 rounded-lg border border-border/40 shadow-sm"
+                          className="size-8 rounded-lg border border-border/40 shadow-sm [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                         >
                           <span className="text-sm font-bold" aria-hidden>
                             ↶
@@ -253,7 +253,7 @@ export default function PDFRotatePage() {
                           variant="secondary"
                           onClick={() => rotateIndividualPage(item.pageIndex, 90)}
                           aria-label={`Rotate page ${item.pageIndex + 1} clockwise`}
-                          className="size-8 rounded-lg border border-border/40 shadow-sm"
+                          className="size-8 rounded-lg border border-border/40 shadow-sm [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                         >
                           <HugeiconsIcon
                             icon={RotateRightIcon}
@@ -271,10 +271,7 @@ export default function PDFRotatePage() {
 
           {/* Config panel */}
           <div className="md:col-span-1">
-            <Card className="sticky top-6 flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
-              <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                Rotate Settings
-              </h2>
+            <ToolPanel title="Rotate settings" sticky>
 
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-semibold font-dm-sans text-foreground/80">
@@ -285,7 +282,7 @@ export default function PDFRotatePage() {
                     variant="outline"
                     size="sm"
                     onClick={() => rotateAllPages(90)}
-                    className="text-xs font-semibold"
+                    className="text-xs font-semibold [@media(pointer:coarse)]:min-h-11"
                   >
                     Rotate All 90°
                   </Button>
@@ -293,7 +290,7 @@ export default function PDFRotatePage() {
                     variant="outline"
                     size="sm"
                     onClick={() => rotateAllPages(180)}
-                    className="text-xs font-semibold"
+                    className="text-xs font-semibold [@media(pointer:coarse)]:min-h-11"
                   >
                     Rotate All 180°
                   </Button>
@@ -302,36 +299,33 @@ export default function PDFRotatePage() {
                   variant="ghost"
                   size="sm"
                   onClick={resetAllRotations}
-                  className="mt-1 w-full text-xs font-semibold text-rose-500 hover:bg-rose-500/5 hover:text-rose-600"
+                  className="mt-1 w-full text-xs font-semibold text-destructive hover:bg-destructive/5 [@media(pointer:coarse)]:min-h-11"
                 >
                   Reset All Rotations
                 </Button>
               </div>
 
-              <div className="flex flex-col gap-2 border-t border-border/40 pt-2">
-                <Button
+              <PanelActions>
+                <PanelPrimaryAction category={tool.category}
                   onClick={handleExport}
                   disabled={task.isProcessing}
-                  className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                 >
                   Save &amp; Export
-                </Button>
-                <Button
-                  variant="ghost"
+                </PanelPrimaryAction>
+                <PanelSecondaryAction
                   onClick={clearWorkspace}
                   disabled={task.isProcessing}
-                  className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                 >
                   Change File
-                </Button>
-              </div>
-            </Card>
+                </PanelSecondaryAction>
+              </PanelActions>
+            </ToolPanel>
           </div>
         </div>
       ) : (
         <SuccessCard
           title="Page Rotation Saved"
-          description={`Rotations applied to ${file.name}. Processed locally — nothing was uploaded.`}
+          description={`Rotations applied to ${file.name}. Processed locally, and nothing was uploaded.`}
           actions={
             <>
               <Button
@@ -343,7 +337,7 @@ export default function PDFRotatePage() {
               </Button>
               <Button
                 asChild
-                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+                className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.category].button}`}
               >
                 <a href={rotatedBlobUrl} download={`rotated_${file.name}`}>
                   <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
@@ -357,7 +351,7 @@ export default function PDFRotatePage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

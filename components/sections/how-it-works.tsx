@@ -1,201 +1,91 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import {
-  Upload01Icon,
-  CpuIcon,
-  Download01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react';
+import { stagger } from '@/lib/motion';
+import { SectionHeader } from '@/components/section-header';
 
+/*
+ * Three steps.
+ *
+ * This was a three-across card grid, which made it the third card grid in a
+ * row on a page that already had too many. The steps do not need containers:
+ * they are a sequence, and a sequence reads better as a rail. Each numbered
+ * node sits on the rule that runs out from it, the three rules line up into one
+ * track, and the section is deliberately narrow and airy so it acts as a breath
+ * between the dense registry above and the boxed privacy panel below.
+ */
 const steps = [
   {
     number: '01',
-    title: 'Upload',
-    description: 'Select your files from your device. They stay local.',
-    detail: 'Drag & drop or click to browse. Supports batch uploads.',
-    icon: Upload01Icon,
-    metric: 'Instant',
-    color: 'from-blue-500 to-cyan-500',
+    title: 'Open a file',
+    description:
+      'Pick a file from your device, or drop it onto the workspace. It is read into memory in the tab.',
+    detail: 'Batch selection and drag-and-drop are both supported.',
+    metric: 'No upload',
   },
   {
     number: '02',
-    title: 'Process',
+    title: 'Work on it',
     description:
-      'Files are converted instantly in your browser using WebAssembly.',
-    detail: 'Powered by WebAssembly, Canvas, and Web Workers for maximum performance.',
-    icon: CpuIcon,
-    metric: '< 2 sec',
-    color: 'from-primary to-purple-500',
-    featured: true,
+      'The engines run in a worker, so the interface stays responsive while the file is rewritten.',
+    detail: 'Conversion, compression, cropping, page edits, background removal.',
+    metric: 'On-device',
   },
   {
     number: '03',
-    title: 'Download',
-    description: 'Get your converted files immediately with zero wait time.',
-    detail: 'Auto-download or preview before saving. Batch export supported.',
-    icon: Download01Icon,
-    metric: 'Instant',
-    color: 'from-purple-500 to-pink-500',
+    title: 'Take it back',
+    description:
+      'Preview the result, then save it. The file is handed to your downloads folder and dropped from memory.',
+    detail: 'Single files or a zip of the whole batch.',
+    metric: 'Immediate',
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="container scroll-mt-20 py-12 md:py-24">
-      <div className="text-center mb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="text-4xl font-bold font-manrope sm:text-5xl mb-4">
-            How It Works
-          </h2>
-          <p className="text-lg text-muted-foreground font-dm-sans max-w-2xl mx-auto">
-            Three simple steps to convert your files. Fast, secure, and
-            completely client-side.
-          </p>
-        </motion.div>
-      </div>
+    <section id="how-it-works" className="container scroll-mt-20 py-10 md:py-16">
+      {/* The wrapper is what narrows this section, not a `max-w-*` on the
+          section itself: the `.container` utility sets its own `max-width` at
+          each breakpoint, so a sibling `max-w-5xl` on the same element loses
+          the cascade and the section stays full width. */}
+      <div className="mx-auto max-w-4xl">
+        <SectionHeader
+          variant="inline"
+          kicker="How it works"
+          title="Three steps, no round trip"
+          lede="There is no upload step to wait on and no server to trust."
+        />
 
-      {/* Bento Grid Layout */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {steps.map((step, index) => (
-          <motion.div
-            key={step.title}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: index * 0.15 }}
-            className={`group relative ${step.featured ? 'md:col-span-2 lg:col-span-1 lg:row-span-2' : ''}`}
-          >
-            <div className="relative h-full overflow-hidden rounded-2xl border border-border/60 bg-background/60 backdrop-blur-xl p-6 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-primary/30">
-              {/* Background Gradient */}
-              <div
-                className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-10"
-                style={{
-                  background: `linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)`,
-                }}
-              />
-
-              {/* Content */}
-              <div className="relative z-10 flex flex-col h-full">
-                {/* Step Number Badge */}
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 text-sm font-bold text-primary font-manrope mb-4">
+        <ol className="grid gap-10 sm:grid-cols-3 sm:gap-8">
+          {steps.map((step, index) => (
+            <motion.li
+              key={step.title}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: stagger(index, 0.1) }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border font-mono text-xs font-semibold text-foreground tabular-nums">
                   {step.number}
-                </div>
-
-                {/* Icon with Animation */}
-                <motion.div
-                  animate={{
-                    rotate: step.featured ? [0, 5, -5, 0] : 0,
-                    scale: step.featured ? [1, 1.05, 1] : 1,
-                  }}
-                  transition={{
-                    duration: step.featured ? 4 : 0,
-                    repeat: step.featured ? Infinity : 0,
-                    ease: 'easeInOut',
-                  }}
-                  className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${step.color} text-white mb-6 shadow-lg group-hover:scale-110 transition-transform`}
-                >
-                  <HugeiconsIcon icon={step.icon} className="h-8 w-8" />
-                </motion.div>
-
-                {/* Title & Metric */}
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-2xl font-bold font-manrope transition-colors group-hover:text-primary">
-                    {step.title}
-                  </h3>
-                  <span className="text-xs px-3 py-1 rounded-full bg-green-500/10 text-green-600 font-semibold border border-green-500/20">
-                    {step.metric}
-                  </span>
-                </div>
-
-                {/* Description */}
-                <p className="text-sm text-muted-foreground font-dm-sans leading-relaxed mb-4">
-                  {step.description}
-                </p>
-
-                {/* Detail (expandable feel) */}
-                <div
-                  className={`mt-auto pt-4 border-t border-border/40 ${step.featured ? 'block' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
-                >
-                  <p className="text-xs text-muted-foreground/80 font-dm-sans italic">
-                    {step.detail}
-                  </p>
-                </div>
-
-                {/* Animated Progress Bar */}
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  whileInView={{ scaleX: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: index * 0.15 + 0.3 }}
-                  className={`mt-4 h-1 rounded-full bg-gradient-to-r ${step.color} origin-left`}
-                />
+                </span>
+                <span className="h-px flex-1 bg-border" aria-hidden />
               </div>
 
-              {/* Accent Orb */}
-              <div
-                className="absolute -bottom-10 -right-10 h-32 w-32 rounded-full opacity-10 blur-2xl transition-opacity group-hover:opacity-20"
-                style={{
-                  background: `linear-gradient(135deg, var(--color-primary), var(--color-accent))`,
-                }}
-              />
-            </div>
-
-            {/* Connecting Arrow (desktop only) */}
-            {index < steps.length - 1 && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.15 + 0.5 }}
-                className="hidden lg:block absolute top-1/2 -right-3 z-20"
-              >
-                <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/20 border-2 border-background">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
-        ))}
+              <h3 className="mt-5 text-lg font-bold font-manrope">{step.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground font-dm-sans">
+                {step.description}
+              </p>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground/80 font-dm-sans">
+                {step.detail}
+              </p>
+              <p className="mt-4 text-xs font-semibold font-manrope uppercase tracking-[0.14em] text-primary">
+                {step.metric}
+              </p>
+            </motion.li>
+          ))}
+        </ol>
       </div>
-
-      {/* Bottom Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-        className="mt-12 flex flex-wrap items-center justify-center gap-8 text-center"
-      >
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-sm text-muted-foreground font-dm-sans">
-            <strong className="text-foreground font-semibold">100%</strong>{' '}
-            Browser-Based
-          </span>
-        </div>
-        <div className="h-4 w-px bg-border" />
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-sm text-muted-foreground font-dm-sans">
-            <strong className="text-foreground font-semibold">Zero</strong>{' '}
-            Server Upload
-          </span>
-        </div>
-        <div className="h-4 w-px bg-border" />
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
-          <span className="text-sm text-muted-foreground font-dm-sans">
-            <strong className="text-foreground font-semibold">Instant</strong>{' '}
-            Results
-          </span>
-        </div>
-      </motion.div>
     </section>
   );
 }

@@ -7,7 +7,8 @@ import { ToolPageShell } from '@/components/tools/tool-page-shell';
 import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { SuccessCard } from '@/components/tools/success-card';
-import { Card } from '@/components/ui/card';
+import { PanelActions, PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
+import { CanvasSurface } from '@/components/tools/canvas-surface';
 import { Button } from '@/components/ui/button';
 import { useWorker } from '@/lib/hooks/useWorker';
 import { useToolTask } from '@/lib/hooks/useToolTask';
@@ -108,21 +109,26 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
       style={style}
       className={`group relative aspect-[3/4] bg-background border rounded-xl overflow-hidden shadow-sm flex flex-col ${
         isDragging
-          ? 'border-red-500 ring-2 ring-red-500/10 shadow-lg scale-105'
+          ? 'border-category-doc ring-2 ring-category-doc/10 shadow-lg scale-105'
           : 'border-border/60'
-      } transition-all duration-200 select-none`}
+      } transition-[border-color,box-shadow,scale] duration-200 select-none`}
     >
-      {/* Top Bar with drag handle and delete */}
-      <div className="h-7 border-b border-border/40 bg-muted/20 px-2 flex items-center justify-between">
+      {/* Top bar: the whole bar is the drag handle, not just the icon. An 18px
+          glyph is below a comfortable touch target. Grows on coarse pointers. */}
+      <div className="flex h-9 items-center justify-between border-b border-border/40 bg-muted/20 px-2 [@media(pointer:coarse)]:h-12">
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground/80 p-0.5"
           aria-label="Drag to reorder"
+          className="flex h-full flex-1 cursor-grab items-center active:cursor-grabbing"
         >
-          <HugeiconsIcon icon={Drag01Icon} className="size-3.5" aria-hidden />
+          <HugeiconsIcon
+            icon={Drag01Icon}
+            className="size-3.5 text-muted-foreground/60"
+            aria-hidden
+          />
         </div>
-        <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
+        <span className="text-xs font-bold text-muted-foreground font-dm-sans">
           p. {item.pageIndex + 1}
         </span>
         <button
@@ -131,7 +137,7 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
             e.stopPropagation();
             onDelete(id);
           }}
-          className="text-muted-foreground/60 hover:text-rose-500 hover:bg-rose-500/10 p-0.5 rounded transition-all"
+          className="inline-flex items-center justify-center rounded p-0.5 text-muted-foreground/60 transition-[color,background-color] hover:bg-destructive/10 hover:text-destructive [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
           aria-label="Remove page"
         >
           <HugeiconsIcon icon={Delete02Icon} className="size-3.5" aria-hidden />
@@ -154,14 +160,16 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
               className="object-contain p-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)] rounded pointer-events-none"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center rounded border border-dashed border-border/60 bg-muted/20 text-[10px] text-muted-foreground font-dm-sans">
-              Preview unavailable
+            <div className="flex h-full w-full items-center justify-center rounded border border-dashed border-border/60 bg-muted/20 px-1 text-center text-xs text-muted-foreground font-dm-sans">
+              Not previewed (over 30 pages)
             </div>
           )}
         </div>
 
-        {/* Rotate button overlay */}
-        <div className="absolute inset-0 bg-background/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 flex items-center justify-center backdrop-blur-[1px]">
+        {/* Rotate button overlay.
+            Revealed on hover only where hover exists; on touch the control has
+            to stay visible, or it is unreachable. */}
+        <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-[1px] transition-opacity duration-200 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100">
           <Button
             size="icon"
             variant="secondary"
@@ -169,7 +177,7 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
               e.stopPropagation();
               onRotate(id);
             }}
-            className="size-8 rounded-lg shadow-sm border border-border/40"
+            className="size-8 rounded-lg shadow-sm border border-border/40 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
             aria-label="Rotate 90° clockwise"
           >
             <HugeiconsIcon icon={RotateRightIcon} className="size-4" aria-hidden />
@@ -180,7 +188,7 @@ function SortablePage({ id, item, onRotate, onDelete }: SortablePageProps) {
       {/* Footer Info */}
       <div className="h-6 px-2 bg-muted/10 flex items-center border-t border-border/20 truncate">
         <span
-          className="text-[9px] text-muted-foreground truncate font-dm-sans w-full"
+          className="text-xs text-muted-foreground truncate font-dm-sans w-full"
           title={item.fileName}
         >
           {item.fileName}
@@ -385,7 +393,7 @@ export default function PDFMergePage() {
       title={tool.title}
       description={tool.description}
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
       width="wide"
     >
       {pages.length === 0 ? (
@@ -407,7 +415,7 @@ export default function PDFMergePage() {
               <div className="flex items-center justify-between border-b border-border/40 pb-3">
                 <h3 className="font-bold text-sm font-manrope flex items-center gap-2">
                   <span
-                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.category].bar}`}
                     aria-hidden
                   />
                   Light Table Collation
@@ -418,7 +426,7 @@ export default function PDFMergePage() {
               </div>
 
               {/* Light Table Blueprint Grid */}
-              <div className="rounded-2xl border border-dashed border-border/80 bg-muted/5 min-h-[400px] p-6 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
+              <CanvasSurface>
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -438,15 +446,12 @@ export default function PDFMergePage() {
                     </div>
                   </SortableContext>
                 </DndContext>
-              </div>
+              </CanvasSurface>
             </div>
 
             {/* Sidebar Controls */}
             <div className="lg:col-span-1">
-              <Card className="p-6 border-border/60 bg-background/50 backdrop-blur-sm flex flex-col gap-6 sticky top-6">
-                <h3 className="font-bold text-sm font-manrope border-b border-border/40 pb-3">
-                  Merge Settings
-                </h3>
+              <ToolPanel title="Merge settings" sticky>
 
                 {/* File list overview */}
                 <div className="flex flex-col gap-3">
@@ -462,7 +467,7 @@ export default function PDFMergePage() {
                         <span className="font-bold truncate text-foreground/90 font-manrope">
                           {file.name}
                         </span>
-                        <span className="text-[10px] text-muted-foreground font-dm-sans">
+                        <span className="text-xs text-muted-foreground font-dm-sans">
                           {file.pageCount} pages • {(file.size / 1024 / 1024).toFixed(2)} MB
                         </span>
                       </div>
@@ -497,24 +502,21 @@ export default function PDFMergePage() {
                   </Button>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
-                  <Button
+                <PanelActions>
+                  <PanelPrimaryAction category={tool.category}
                     onClick={handleMerge}
                     disabled={pages.length === 0 || task.isProcessing}
-                    className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                   >
                     Collate &amp; Merge
-                  </Button>
-                  <Button
-                    variant="ghost"
+                  </PanelPrimaryAction>
+                  <PanelSecondaryAction
                     onClick={clearWorkspace}
                     disabled={task.isProcessing}
-                    className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
                     Reset Workspace
-                  </Button>
-                </div>
-              </Card>
+                  </PanelSecondaryAction>
+                </PanelActions>
+              </ToolPanel>
             </div>
           </div>
         </div>
@@ -533,7 +535,7 @@ export default function PDFMergePage() {
               </Button>
               <Button
                 asChild
-                className={`flex-1 font-semibold text-xs py-5 ${ACCENTS[tool.accent].button}`}
+                className={`flex-1 font-semibold text-xs py-5 ${ACCENTS[tool.category].button}`}
               >
                 <a href={mergedBlobUrl} download={mergedFileName}>
                   <HugeiconsIcon icon={Download01Icon} className="size-4 mr-2" aria-hidden />
@@ -547,7 +549,7 @@ export default function PDFMergePage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

@@ -1,190 +1,178 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { stagger } from '@/lib/motion';
+import { SectionHeader } from '@/components/section-header';
+import { ENGINES, type ExecutionLane } from '@/lib/engines';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  CodeIcon,
-  Rocket01Icon,
-  SecurityCheckIcon,
+  CpuIcon,
+  Download01Icon,
+  Route01Icon,
+  Upload01Icon,
 } from '@hugeicons/core-free-icons';
 
-const technologies = [
+/*
+ * The job lifecycle.
+ *
+ * Four stages in the order they happen when a tool runs, each tagged with the
+ * same lane vocabulary the engine table uses. Three of the four are handoffs:
+ * only `Process` moves off the thread that paints.
+ */
+const stages: {
+  step: string;
+  title: string;
+  detail: string;
+  lane: ExecutionLane;
+  icon: typeof CpuIcon;
+}[] = [
   {
-    name: 'WebAssembly',
-    color: 'from-blue-500 to-blue-600',
-    description: 'Near-native performance',
-    icon: Rocket01Icon,
+    step: '01',
+    title: 'Read',
+    detail: 'The file you picked is read from disk into an ArrayBuffer.',
+    lane: 'Main thread',
+    icon: Upload01Icon,
   },
   {
-    name: 'MuPDF WASM',
-    color: 'from-purple-500 to-purple-600',
-    description: 'PDF editing engine',
-    icon: CodeIcon,
+    step: '02',
+    title: 'Dispatch',
+    detail: 'The buffer is copied into a module worker by structured clone.',
+    lane: 'Main thread',
+    icon: Route01Icon,
   },
   {
-    name: 'Web Workers',
-    color: 'from-green-500 to-green-600',
-    description: 'Multi-threaded execution',
-    icon: SecurityCheckIcon,
+    step: '03',
+    title: 'Process',
+    detail: 'The engine rewrites the bytes, off the thread that paints.',
+    lane: 'Worker',
+    icon: CpuIcon,
   },
   {
-    name: 'Canvas API',
-    color: 'from-orange-500 to-orange-600',
-    description: 'Hardware acceleration',
-    icon: Rocket01Icon,
+    step: '04',
+    title: 'Return',
+    detail: 'The result comes back as a Blob and saves straight to your disk.',
+    lane: 'Main thread',
+    icon: Download01Icon,
   },
 ];
 
-const codeSnippet = `// Process files locally
-const convert = async (file) => {
-  const worker = new Worker();
-  const result = await worker
-    .process(file);
-  return result; // No upload!
-};`;
+/** A lane chip. The label always states the lane, so colour is never the only cue. */
+function LaneChip({ lane }: { lane: ExecutionLane }) {
+  return (
+    <span
+      className={`inline-block whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold font-dm-sans ${
+        lane === 'Worker' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+      }`}
+    >
+      {lane}
+    </span>
+  );
+}
+
+const HEAD =
+  'border-b border-border px-5 py-4 text-start font-mono text-xs font-normal uppercase tracking-[0.14em] text-muted-foreground';
+
+const CELL = 'block px-5 py-4 align-top sm:table-cell sm:py-5';
+
+/** The table stacks below `sm`, so each cell carries its own column label. */
+const CELL_LABEL =
+  'block font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground sm:hidden';
 
 export function PerformanceTech() {
   return (
     <section className="container py-12 md:py-24">
-      <div className="relative rounded-3xl bg-gradient-to-br from-primary/5 via-background to-accent/5 overflow-hidden border border-primary/10">
-        {/* Animated Grid Background */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
-            backgroundSize: '40px 40px',
-          }}
-        />
+      <SectionHeader
+        variant="inline"
+        kicker="Under the hood"
+        title="Built for performance"
+        lede="Two engines run in a worker, two run on the thread that paints. The table does not round that split off."
+      />
 
-        <div className="relative z-10 grid lg:grid-cols-2 gap-12 p-8 md:p-12 lg:p-16">
-          {/* Left Side - Content */}
-          <div className="flex flex-col justify-center">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+      {/* One instrument, not two modules: the lifecycle strip runs along the
+          top of the same panel the engine ledger sits in, so the "what happens"
+          and the "what does it" read as a single spec sheet. */}
+      <div className="overflow-hidden rounded-2xl bg-card shadow-surface">
+        <ol className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
+          {stages.map((stage, index) => (
+            <motion.li
+              key={stage.title}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.35, delay: stagger(index, 0.07) }}
+              className="flex flex-col bg-card p-5"
             >
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 text-xs font-semibold text-primary mb-6">
-                <HugeiconsIcon icon={Rocket01Icon} className="h-3.5 w-3.5" />
-                POWERED BY
+              <div className="mb-4 flex items-center justify-between">
+                <span className="font-mono text-xs font-semibold text-muted-foreground tabular-nums">
+                  {stage.step}
+                </span>
+                <HugeiconsIcon icon={stage.icon} className="h-4 w-4 text-primary" aria-hidden />
               </div>
-
-              <h2 className="text-4xl font-bold tracking-tight sm:text-5xl font-manrope mb-6">
-                Built for Performance
-              </h2>
-
-              <p className="text-lg text-muted-foreground font-dm-sans mb-10 leading-relaxed">
-                Leveraging cutting-edge web technologies to deliver
-                desktop-class performance directly in your browser. No servers,
-                no delays.
+              <h3 className="text-sm font-bold font-manrope">{stage.title}</h3>
+              <p className="mt-1.5 flex-1 text-xs leading-relaxed text-muted-foreground font-dm-sans">
+                {stage.detail}
               </p>
+              <span className="mt-4 self-start">
+                <LaneChip lane={stage.lane} />
+              </span>
+            </motion.li>
+          ))}
+        </ol>
 
-              {/* Tech Stack Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                {technologies.map((tech, index) => (
-                  <motion.div
-                    key={tech.name}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                    className="group relative"
-                  >
-                    <div
-                      className={`absolute inset-0 rounded-xl bg-gradient-to-br ${tech.color} opacity-0 blur-xl transition-all group-hover:opacity-20`}
-                    />
-                    <div className="relative p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-border/60 group-hover:border-primary/30 transition-all">
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${tech.color} text-white flex-shrink-0`}
-                        >
-                          <HugeiconsIcon icon={tech.icon} className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-sm font-manrope mb-1">
-                            {tech.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground font-dm-sans">
-                            {tech.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Right Side - Code Preview */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex items-center"
-          >
-            <div className="relative w-full">
-              {/* Code Window */}
-              <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 overflow-hidden shadow-2xl">
-                {/* Window Header */}
-                <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/50 border-b border-slate-700">
-                  <div className="flex gap-1.5">
-                    <div className="h-3 w-3 rounded-full bg-red-500/80" />
-                    <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
-                    <div className="h-3 w-3 rounded-full bg-green-500/80" />
-                  </div>
-                  <div className="flex-1 text-center">
-                    <span className="text-xs text-slate-400 font-dm-sans">
-                      converter.js
-                    </span>
-                  </div>
-                </div>
-
-                {/* Code Content */}
-                <div className="p-6 font-mono text-sm">
-                  <pre className="text-slate-300">
-                    <code>
-                      {codeSnippet.split('\n').map((line, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: -10 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 0.3, delay: 0.4 + i * 0.1 }}
-                        >
-                          {line}
-                        </motion.div>
-                      ))}
-                    </code>
-                  </pre>
-                </div>
-              </div>
-
-              {/* Floating Stats */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+        <table className="w-full border-collapse border-t border-border text-sm">
+          <caption className="sr-only">
+            The engines Konbato runs, their runtime, the lane they execute on, and what each one
+            contributes
+          </caption>
+          <thead className="hidden sm:table-header-group">
+            <tr>
+              {['Engine', 'Runtime', 'Runs on', 'Contributes'].map((heading) => (
+                <th key={heading} scope="col" className={HEAD}>
+                  {heading}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ENGINES.map((engine, index) => (
+              <motion.tr
+                key={engine.name}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.8 }}
-                className="absolute -bottom-4 -right-4 bg-background border border-primary/20 rounded-xl px-4 py-3 shadow-xl"
+                transition={{ duration: 0.3, delay: stagger(index, 0.06) }}
+                className="block border-b border-border/60 transition-colors last:border-0 hover:bg-muted/30 sm:table-row"
               >
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-sm font-semibold font-dm-sans">
-                    100% Client-side
-                  </span>
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Accent Orbs */}
-        <div className="absolute top-20 right-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute bottom-20 left-20 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
+                <th
+                  scope="row"
+                  className="block px-5 py-4 text-start font-mono text-sm font-semibold sm:table-cell sm:py-5 sm:align-top"
+                >
+                  {engine.name}
+                </th>
+                <td className={`${CELL} text-muted-foreground font-dm-sans`}>
+                  <span className={CELL_LABEL}>Runtime</span>
+                  {engine.runtime}
+                </td>
+                <td className={CELL}>
+                  <span className={`${CELL_LABEL} mb-1`}>Runs on</span>
+                  <LaneChip lane={engine.lane} />
+                </td>
+                <td className={`${CELL} text-muted-foreground font-dm-sans`}>
+                  <span className={CELL_LABEL}>Contributes</span>
+                  {engine.role}
+                </td>
+              </motion.tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+
+      <p className="mt-5 max-w-3xl text-sm leading-relaxed text-muted-foreground font-dm-sans">
+        Two jobs still run on the main thread: page thumbnails through
+        pdfjs-dist, and background removal. Everything else is dispatched to a
+        worker, so the interface keeps painting while a 200-page document is
+        being rewritten.
+      </p>
     </section>
   );
 }

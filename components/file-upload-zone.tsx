@@ -97,7 +97,7 @@ export function FileUploadZone({
           {
             description: rejected
               .slice(0, 3)
-              .map((file) => `${file.name} — ${file.reason}`)
+              .map((file) => `${file.name}: ${file.reason}`)
               .join('\n'),
           }
         );
@@ -176,7 +176,7 @@ export function FileUploadZone({
         aria-label={description}
         whileHover={{ scale: 0.995 }}
         whileTap={{ scale: 0.985 }}
-        className={`relative flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all duration-300 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:min-h-[220px] sm:p-12 ${
+        className={`relative flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-[background-color,border-color] duration-300 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:min-h-[220px] sm:p-12 ${
           isDragActive
             ? 'border-primary bg-primary/5 shadow-inner'
             : 'border-border/80 bg-background/50 hover:border-primary/40 hover:bg-muted/10'
@@ -203,7 +203,7 @@ export function FileUploadZone({
             <span className="text-xs font-semibold font-manrope text-foreground sm:text-sm">
               {description}
             </span>
-            <span className="text-[10px] leading-relaxed text-muted-foreground font-dm-sans sm:text-xs">
+            <span className="text-xs leading-relaxed text-muted-foreground font-dm-sans">
               Files are processed 100% locally on your machine.
             </span>
           </div>
@@ -225,13 +225,13 @@ export function FileUploadZone({
                 {rejectedFiles.length} file
                 {rejectedFiles.length > 1 ? 's' : ''} could not be added
               </div>
-              <ul className="flex flex-col gap-1 text-[11px] text-muted-foreground font-dm-sans">
+              <ul className="flex flex-col gap-1 text-xs text-muted-foreground font-dm-sans">
                 {rejectedFiles.slice(0, 4).map((file) => (
                   <li key={file.name} className="truncate">
                     <span className="font-semibold text-foreground/80">
                       {file.name}
-                    </span>{' '}
-                    — {file.reason}
+                    </span>
+                    : {file.reason}
                   </li>
                 ))}
                 {rejectedFiles.length > 4 && (
@@ -274,7 +274,7 @@ export function FileUploadZone({
                       <span className="truncate text-xs font-semibold font-manrope text-foreground">
                         {file.name}
                       </span>
-                      <span className="text-[10px] text-muted-foreground font-dm-sans">
+                      <span className="text-xs text-muted-foreground font-dm-sans">
                         {formatSize(file.size)}
                       </span>
                     </div>
@@ -287,7 +287,7 @@ export function FileUploadZone({
                       removeFile(idx);
                     }}
                     aria-label={`Remove ${file.name}`}
-                    className="shrink-0 rounded-md p-1.5 text-muted-foreground/60 transition-all hover:bg-muted hover:text-foreground"
+                    className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted-foreground/60 transition-[color,background-color] hover:bg-muted hover:text-foreground [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
                   >
                     <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" aria-hidden />
                   </button>

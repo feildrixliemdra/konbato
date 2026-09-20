@@ -8,6 +8,9 @@ import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { ResultActionBar } from '@/components/tools/result-action-bar';
 import { LabeledSlider } from '@/components/tools/labeled-slider';
+import { PanelPrimaryAction, ToolPanel } from '@/components/tools/tool-panel';
+import { ThumbnailFrame } from '@/components/tools/thumbnail-frame';
+import { FieldInput } from '@/components/tools/field-input';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useWorker } from '@/lib/hooks/useWorker';
@@ -15,7 +18,8 @@ import { useToolTask } from '@/lib/hooks/useToolTask';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Tick01Icon } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
-import { ACCENTS, requireTool } from '@/lib/tools';
+import { DURATION, EASE } from '@/lib/motion';
+import { requireTool } from '@/lib/tools';
 import { formatSize } from '@/lib/format';
 import { downloadResults } from '@/lib/download';
 
@@ -176,7 +180,7 @@ export default function ImageCompressPage() {
       title={tool.title}
       description={tool.description}
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
     >
       {results.length === 0 ? (
         <div className="flex flex-col gap-6">
@@ -195,10 +199,7 @@ export default function ImageCompressPage() {
 
             {/* Options Panel */}
             <div className="md:col-span-1">
-              <Card className="flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
-                <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                  Settings
-                </h2>
+              <ToolPanel title="Settings">
 
                 <LabeledSlider
                   id="compress-quality"
@@ -220,48 +221,45 @@ export default function ImageCompressPage() {
                     <div className="flex flex-col gap-1">
                       <label
                         htmlFor="compress-width"
-                        className="text-[10px] text-muted-foreground font-dm-sans"
+                        className="text-xs text-muted-foreground font-dm-sans"
                       >
                         Width (px)
                       </label>
-                      <input
+                      <FieldInput
                         id="compress-width"
                         type="number"
                         placeholder="Auto"
                         value={resizeWidth}
                         onChange={(e) => setResizeWidth(e.target.value)}
                         disabled={task.isProcessing}
-                        className="rounded-lg border border-border/80 bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
                       <label
                         htmlFor="compress-height"
-                        className="text-[10px] text-muted-foreground font-dm-sans"
+                        className="text-xs text-muted-foreground font-dm-sans"
                       >
                         Height (px)
                       </label>
-                      <input
+                      <FieldInput
                         id="compress-height"
                         type="number"
                         placeholder="Auto"
                         value={resizeHeight}
                         onChange={(e) => setResizeHeight(e.target.value)}
                         disabled={task.isProcessing}
-                        className="rounded-lg border border-border/80 bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                   </div>
                 </div>
 
-                <Button
+                <PanelPrimaryAction category={tool.category}
                   onClick={handleCompress}
                   disabled={files.length === 0 || task.isProcessing}
-                  className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                 >
                   {task.isProcessing ? 'Optimizing…' : 'Compress Images'}
-                </Button>
-              </Card>
+                </PanelPrimaryAction>
+              </ToolPanel>
             </div>
           </div>
         </div>
@@ -269,6 +267,7 @@ export default function ImageCompressPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ duration: DURATION.quick, ease: EASE.out }}
           className="flex flex-col gap-6"
         >
           <ResultActionBar
@@ -285,10 +284,10 @@ export default function ImageCompressPage() {
             {results.map((item, idx) => (
               <Card
                 key={idx}
-                className="flex flex-col justify-between gap-4 border-border/60 bg-background/50 p-4 sm:flex-row sm:items-center"
+                className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border/40 bg-muted">
+                  <ThumbnailFrame>
                     <Image
                       src={item.compressedUrl}
                       alt={`Compressed preview of ${item.name}`}
@@ -297,15 +296,15 @@ export default function ImageCompressPage() {
                       sizes="48px"
                       className="object-cover"
                     />
-                  </div>
+                  </ThumbnailFrame>
                   <div className="flex min-w-0 flex-col">
                     <span className="truncate text-xs font-bold font-manrope text-foreground">
                       {item.outputName}
                     </span>
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-dm-sans">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-dm-sans">
                       <span>Original: {formatSize(item.originalSize)}</span>
                       <span aria-hidden>•</span>
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span className="font-semibold text-success">
                         Compressed: {formatSize(item.compressedSize)}
                       </span>
                     </div>
@@ -313,10 +312,18 @@ export default function ImageCompressPage() {
                 </div>
 
                 <div className="flex shrink-0 items-center justify-between gap-6 sm:justify-end">
-                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                    <HugeiconsIcon icon={Tick01Icon} className="size-3" aria-hidden />
-                    Save {item.ratio}%
-                  </span>
+                  {/* A negative ratio is possible (e.g. a PNG re-encoded as PNG),
+                      so the badge reports the real outcome instead of "Save -24%". */}
+                  {item.ratio > 0 ? (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-success/10 px-2 py-1 text-xs font-bold text-success">
+                      <HugeiconsIcon icon={Tick01Icon} className="size-3" aria-hidden />
+                      Save {item.ratio}%
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-warning/10 px-2 py-1 text-xs font-bold text-warning">
+                      {Math.abs(item.ratio)}% larger
+                    </span>
+                  )}
                   <Button size="sm" variant="outline" asChild className="text-xs font-semibold">
                     <a href={item.compressedUrl} download={item.outputName}>
                       Download
@@ -331,7 +338,7 @@ export default function ImageCompressPage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

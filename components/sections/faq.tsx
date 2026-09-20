@@ -6,6 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { SectionHeader } from '@/components/section-header';
 
 const faqs = [
   {
@@ -34,26 +35,70 @@ const faqs = [
   },
 ];
 
+/*
+ * The format matrix.
+ *
+ * This was its own thin centred strip between the audience rows and the
+ * questions. It did not carry enough weight to be a section, and centring it
+ * made it the only centred block left on the page. It is reference material, so
+ * it now sits inside the reference section, under the accordion it belongs
+ * beside.
+ */
+const formats = [
+  { label: 'Image input', values: ['JPG', 'PNG', 'WEBP', 'GIF', 'TIFF'] },
+  { label: 'Image output', values: ['JPG', 'PNG', 'WEBP'] },
+  { label: 'Documents', values: ['PDF'] },
+];
+
 export function FAQ() {
   return (
-    <section className="container max-w-3xl py-12 md:py-24">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold font-manrope">
-          Frequently Asked Questions
-        </h2>
+    <section className="container py-12 md:py-20">
+      <div className="mx-auto max-w-3xl">
+        <SectionHeader
+          variant="stack"
+          kicker="Questions"
+          title="Frequently asked questions"
+          lede="The things people ask before they trust a browser tool with a real file."
+        />
+
+        <Accordion type="single" collapsible className="w-full">
+          {faqs.map((faq, index) => (
+            <AccordionItem key={index} value={`item-${index}`}>
+              <AccordionTrigger className="text-left font-manrope text-lg">
+                {faq.question}
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground font-dm-sans text-base">
+                {faq.answer}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </div>
-      <Accordion type="single" collapsible className="w-full">
-        {faqs.map((faq, index) => (
-          <AccordionItem key={index} value={`item-${index}`}>
-            <AccordionTrigger className="text-left font-manrope text-lg">
-              {faq.question}
-            </AccordionTrigger>
-            <AccordionContent className="text-muted-foreground font-dm-sans text-base">
-              {faq.answer}
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+
+      {/* Reference band. Full width again, so the section steps from a narrow
+          reading column out to a three-up matrix. */}
+      <div className="mt-14 border-t border-border pt-8">
+        <h3 className="text-xs font-semibold font-manrope uppercase tracking-[0.18em] text-muted-foreground">
+          Supported formats
+        </h3>
+        <div className="mt-5 grid gap-6 sm:grid-cols-3">
+          {formats.map((group) => (
+            <div key={group.label}>
+              <p className="text-sm font-semibold font-dm-sans">{group.label}</p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {group.values.map((format) => (
+                  <li
+                    key={format}
+                    className="rounded-md bg-muted/50 px-2 py-1 font-mono text-xs font-medium text-muted-foreground"
+                  >
+                    {format}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

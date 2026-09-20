@@ -76,12 +76,15 @@ export function ThemeToggle() {
   };
 
   return (
+    // `pointer:coarse` grows the control to a comfortable touch target; the
+    // icon stays 20px either way.
     <Button
       variant="ghost"
       size="icon"
       onClick={handleClick}
       aria-label={action}
       title={action}
+      className="[@media(pointer:coarse)]:size-11"
     >
       {/* The wrapper is animated rather than the SVG so it can be GPU accelerated. */}
       <span className="relative flex h-5 w-5 items-center justify-center">

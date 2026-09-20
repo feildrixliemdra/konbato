@@ -7,7 +7,8 @@ import { ToolPageShell } from '@/components/tools/tool-page-shell';
 import { ProcessingOverlay } from '@/components/tools/processing-overlay';
 import { TaskErrorBanner } from '@/components/tools/task-error-banner';
 import { SuccessCard } from '@/components/tools/success-card';
-import { Card } from '@/components/ui/card';
+import { PanelActions, PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
+import { CanvasSurface } from '@/components/tools/canvas-surface';
 import { Button } from '@/components/ui/button';
 import { useWorker } from '@/lib/hooks/useWorker';
 import { useToolTask } from '@/lib/hooks/useToolTask';
@@ -102,19 +103,25 @@ function SortableImage({ id, item, onDelete }: SortableImageProps) {
         isDragging
           ? 'border-primary ring-2 ring-primary/10 shadow-lg scale-105'
           : 'border-border/60'
-      } transition-all duration-200 select-none`}
+      } transition-[border-color,box-shadow,scale] duration-200 select-none`}
     >
-      {/* Top bar with drag handle and delete */}
-      <div className="h-7 border-b border-border/40 bg-muted/20 px-2 flex items-center justify-between">
+      {/* Top bar: the whole bar is the drag handle, not just the icon. An 18px
+          glyph is below a comfortable touch target, and the bar is already the
+          affordance the eye reads. It grows on coarse pointers. */}
+      <div className="flex h-9 items-center justify-between border-b border-border/40 bg-muted/20 px-2 [@media(pointer:coarse)]:h-12">
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground/80 p-0.5"
           aria-label="Drag to reorder"
+          className="flex h-full flex-1 cursor-grab items-center active:cursor-grabbing"
         >
-          <HugeiconsIcon icon={Drag01Icon} className="size-3.5" aria-hidden />
+          <HugeiconsIcon
+            icon={Drag01Icon}
+            className="size-3.5 text-muted-foreground/60"
+            aria-hidden
+          />
         </div>
-        <span className="text-[10px] font-bold text-muted-foreground font-dm-sans">
+        <span className="text-xs font-bold text-muted-foreground font-dm-sans">
           {item.width} x {item.height}
         </span>
         <button
@@ -122,7 +129,7 @@ function SortableImage({ id, item, onDelete }: SortableImageProps) {
             e.stopPropagation();
             onDelete(id);
           }}
-          className="text-muted-foreground/60 hover:text-rose-500 hover:bg-rose-500/10 p-0.5 rounded transition-all"
+          className="text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 p-0.5 rounded transition-[color,background-color] inline-flex items-center justify-center [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
           aria-label={`Remove ${item.name}`}
         >
           <HugeiconsIcon icon={Delete02Icon} className="size-3.5" aria-hidden />
@@ -142,7 +149,7 @@ function SortableImage({ id, item, onDelete }: SortableImageProps) {
       </div>
 
       {/* Footer Info */}
-      <div className="h-6 px-2 bg-muted/10 flex items-center border-t border-border/20 justify-between truncate text-[9px] text-muted-foreground font-dm-sans">
+      <div className="h-6 px-2 bg-muted/10 flex items-center border-t border-border/20 justify-between truncate text-xs text-muted-foreground font-dm-sans">
         <span className="truncate max-w-[70%]" title={item.name}>
           {item.name}
         </span>
@@ -326,7 +333,7 @@ export default function ImageToPDFPage() {
       title={tool.title}
       description={tool.description}
       icon={tool.icon}
-      accent={tool.accent}
+      category={tool.category}
       width="wide"
     >
       <div className="flex flex-col gap-6">
@@ -346,7 +353,7 @@ export default function ImageToPDFPage() {
               <div className="flex items-center justify-between border-b border-border/40 pb-3">
                 <h2 className="flex items-center gap-2 text-sm font-bold font-manrope">
                   <span
-                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.accent].bar}`}
+                    className={`flex h-2 w-2 rounded-full ${ACCENTS[tool.category].bar}`}
                     aria-hidden
                   />
                   Images collation
@@ -357,7 +364,7 @@ export default function ImageToPDFPage() {
               </div>
 
               {/* Light Table Collation Grid */}
-              <div className="rounded-2xl border border-dashed border-border/80 bg-muted/5 min-h-[400px] p-6 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
+              <CanvasSurface>
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -376,21 +383,18 @@ export default function ImageToPDFPage() {
                     </div>
                   </SortableContext>
                 </DndContext>
-              </div>
+              </CanvasSurface>
             </div>
 
             {/* Sidebar Controls */}
             <div className="lg:col-span-1">
-              <Card className="sticky top-6 flex flex-col gap-6 border-border/60 bg-background/50 p-6 backdrop-blur-sm">
-                <h2 className="border-b border-border/40 pb-3 text-sm font-bold font-manrope">
-                  Document Settings
-                </h2>
+              <ToolPanel title="Document settings" sticky>
 
                 <div className="flex flex-col gap-3">
                   <span className="text-xs font-semibold text-foreground/80 font-dm-sans">
                     Settings:
                   </span>
-                  <div className="text-[10px] text-muted-foreground leading-relaxed font-dm-sans border border-border/40 p-3 rounded-lg bg-muted/20 flex flex-col gap-1">
+                  <div className="text-xs text-muted-foreground leading-relaxed font-dm-sans border border-border/40 p-3 rounded-lg bg-muted/20 flex flex-col gap-1">
                     <span>
                       Layout: <strong>Fit Image Size</strong>
                     </span>
@@ -407,7 +411,7 @@ export default function ImageToPDFPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full"
+                    className="w-full [@media(pointer:coarse)]:min-h-11"
                     onClick={() => addImagesInputRef.current?.click()}
                   >
                     Upload Images
@@ -426,24 +430,21 @@ export default function ImageToPDFPage() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
-                  <Button
+                <PanelActions>
+                  <PanelPrimaryAction category={tool.category}
                     onClick={handleCompile}
                     disabled={images.length === 0 || task.isProcessing}
-                    className={`w-full font-semibold font-manrope ${ACCENTS[tool.accent].button}`}
                   >
                     Compile PDF
-                  </Button>
-                  <Button
-                    variant="ghost"
+                  </PanelPrimaryAction>
+                  <PanelSecondaryAction
                     onClick={clearWorkspace}
                     disabled={task.isProcessing}
-                    className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
                     Reset Workspace
-                  </Button>
-                </div>
-              </Card>
+                  </PanelSecondaryAction>
+                </PanelActions>
+              </ToolPanel>
             </div>
           </div>
         ) : (
@@ -462,7 +463,7 @@ export default function ImageToPDFPage() {
                 </Button>
                 <Button
                   asChild
-                  className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.accent].button}`}
+                  className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.category].button}`}
                 >
                   <a href={pdfBlobUrl} download="images_document.pdf">
                     <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
@@ -477,7 +478,7 @@ export default function ImageToPDFPage() {
 
       {task.isProcessing && (
         <ProcessingOverlay
-          accent={tool.accent}
+          category={tool.category}
           message={task.message}
           progress={task.progress}
         />

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Image01Icon,
@@ -67,7 +68,7 @@ export default function ToolsPage() {
                 type="button"
                 onClick={() => setSelectedCategory(cat.name)}
                 aria-pressed={isActive}
-                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition-[color,background-color,box-shadow] [@media(pointer:coarse)]:py-3.5 ${
                   isActive
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -93,7 +94,7 @@ export default function ToolsPage() {
             placeholder="Search tools..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-border/80 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-dm-sans"
+            className="w-full pl-9 pr-4 py-2 text-base sm:text-sm bg-background border border-border/80 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-[border-color,box-shadow] font-dm-sans [@media(pointer:coarse)]:min-h-11"
           />
         </div>
       </div>
@@ -116,10 +117,10 @@ export default function ToolsPage() {
                 aria-label={`Open ${tool.title}`}
                 className="block h-full"
               >
-                <Card className="relative h-full overflow-hidden border border-border/60 bg-background/50 p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-xl hover:shadow-primary/5">
+                <Card className="relative h-full overflow-hidden p-6 transition-[translate,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-raised">
                   <div className="flex items-start justify-between mb-4">
                     <div
-                      className={`inline-flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-105 ${accentTile(tool.accent)}`}
+                      className={`inline-flex h-12 w-12 items-center justify-center rounded-xl transition-[scale] duration-300 group-hover:scale-105 ${accentTile(tool.category)}`}
                     >
                       <HugeiconsIcon icon={tool.icon} className="size-6" aria-hidden />
                     </div>
@@ -132,7 +133,8 @@ export default function ToolsPage() {
                     {tool.description}
                   </p>
 
-                  <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-primary/80 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0">
+                  {/* Visible on touch, where there is no hover to reveal it. */}
+                  <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-primary/80 transition-[opacity,translate] duration-300 [@media(hover:hover)]:translate-y-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:translate-y-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:translate-y-0 [@media(hover:hover)]:group-focus-within:opacity-100">
                     Open Tool
                     <HugeiconsIcon
                       icon={ArrowRight01Icon}
@@ -147,13 +149,45 @@ export default function ToolsPage() {
         </AnimatePresence>
       </motion.div>
 
-      {filteredTools.length === 0 && (
-        <div className="text-center py-24 border border-dashed border-border/60 rounded-2xl bg-muted/5">
-          <p className="text-muted-foreground font-dm-sans">
-            No tools found matching your criteria.
-          </p>
-        </div>
-      )}
+      {/* Empty state.
+          Held back by the cards' exit duration: with mode="popLayout" the
+          leaving cards stay painted at their old coordinates while they fade,
+          so appearing immediately would overlap them. */}
+      <AnimatePresence>
+        {filteredTools.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: { delay: 0.2, duration: 0.2 } }}
+            exit={{ opacity: 0, transition: { duration: 0.1 } }}
+            className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 bg-muted/5 py-24 text-center"
+          >
+            <p className="text-muted-foreground font-dm-sans">
+              {searchQuery.trim() ? (
+                <>
+                  No tools match{' '}
+                  <strong className="font-semibold text-foreground">
+                    &ldquo;{searchQuery.trim()}&rdquo;
+                  </strong>
+                  .
+                </>
+              ) : (
+                'No tools in this category.'
+              )}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="font-semibold font-manrope"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('All');
+              }}
+            >
+              Show all {TOOLS.length} tools
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
