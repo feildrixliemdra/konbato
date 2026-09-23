@@ -51,4 +51,5 @@ node_modules/
 
 # local agent tooling (per-machine settings, not shared)
 /.commandcode/
+/.hermes/
 

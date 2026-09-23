@@ -1,36 +1,55 @@
-# Repository Guidelines
+# AGENTS.md
 
-## Project Structure & Module Organization
+Konbato is a Next.js 16 (App Router) app of 14 image/PDF tools that run **entirely in the browser** — no route handlers, no uploads, no server-side processing. Every route is statically prerendered; heavy work happens in Web Workers (`app/workers/`) over WASM (mupdf) and Canvas/OffscreenCanvas APIs. Product scope lives in `docs/PRD.md`; user-facing copy in `README.md`.
 
-Konbato is a Next.js App Router project. Route files live in `app/`, with tool pages under `app/tools/*/page.tsx` and web workers in `app/workers/`. Shared components live in `components/`; shadcn primitives are in `components/ui/`, while homepage sections are in `components/sections/`. Shared utilities and hooks live in `lib/`. Static assets live in `public/`. Playwright tests and fixtures live in `tests/`.
+## Commands
 
-## Build, Test, and Development Commands
+```bash
+pnpm install
+pnpm dev                 # next dev --webpack, http://localhost:3000
+pnpm build               # next build --webpack
+pnpm start               # serve the production build
+pnpm lint                # eslint (flat config: next core-web-vitals + typescript)
+pnpm exec playwright test                              # full suite, chromium + webkit
+pnpm exec playwright test --project=chromium           # worker-heavy tests: use this
+pnpm exec playwright test tests/ux-regressions.spec.ts # single spec
+PW_DEV_SERVER=1 pnpm exec playwright test              # test against `pnpm run dev` instead of a prod build
+```
 
-- `pnpm install` installs dependencies.
-- `pnpm dev` starts the Next.js dev server with webpack at `http://localhost:3000`.
-- `pnpm build` creates a production build.
-- `pnpm start` serves the production build.
-- `pnpm lint` runs ESLint with Next.js and TypeScript rules.
-- `pnpm exec playwright test` runs Playwright; the config starts the dev server automatically.
+Webpack (not Turbopack) is required: `next.config.ts` enables `asyncWebAssembly`/`topLevelAwait` and maps `node:` imports to browser fallbacks for mupdf and pdfjs-dist. Don't strip that config or switch bundlers.
 
-## Coding Style & Naming Conventions
+## Where things go
 
-Write TypeScript and React function components. Use PascalCase for component exports, camelCase for functions and variables, and kebab-case for route directories such as `app/tools/pdf-merge`. Prefer existing Tailwind/shadcn patterns and the `cn` helper from `lib/utils.ts`. Keep client-only browser APIs inside client components or hooks. When generating UI, ensure it is responsive across mobile and desktop viewports.
+- `app/tools/<slug>/page.tsx` — one route per tool; `'use client'` with `const tool = requireTool('<slug>')`.
+- `lib/tools.ts` — the `TOOLS` registry (slug, href, title, copy, category, icon). Every tool page must be listed here.
+- `lib/engines.ts` — the `ENGINES` registry: which library/browser API a tool uses, its runtime, and whether it runs in a Worker or on the main thread.
+- `app/workers/{image,pdf}.worker.ts` — worker protocol `READY | PROGRESS | SUCCESS | ERROR`, driven from pages via `lib/hooks/useWorker.ts` (`postTask`) and `lib/hooks/useToolTask.ts` (progress/error/completion state).
+- `components/tools/*` — tool-surface primitives (shell, panel, overlay, error banner, upload zone); `components/ui/*` — shadcn primitives; `components/sections/*` — homepage sections; `lib/*` — utils, PDF helpers, download/format helpers.
+- `@/*` resolves to the repo root (there is no `src/`): `@/lib/tools`, `@/components/ui/button`.
 
-## Testing Guidelines
+## Conventions
 
-End-to-end tests use Playwright and live in `tests/*.spec.ts`. Name specs after the behavior or tool, for example `image-tools.spec.ts`. Keep fixtures in `tests/files/` or `tests/images/`. Run `pnpm exec playwright test` before merging tool changes; inspect `playwright-report/` for failures.
+- TypeScript strict, single quotes, PascalCase component exports, camelCase elsewhere, kebab-case route directories.
+- Tailwind v4 — there is no `tailwind.config.*`; theme tokens (`--background`, `--category-image`, `--category-doc`, …) are declared in `app/globals.css` under `@theme inline` and consumed through `cn()` from `lib/utils.ts`.
+- Category accent colors come from `ACCENTS` in `lib/tools.ts` (one hue per Image/PDF category, via `--category-*` tokens) — don't introduce per-tool hues.
+- Keep browser-only APIs inside client components/hooks, and keep new file processing in a worker rather than a React event handler.
+- Failures must reach the user: run tool work through `useToolTask().runTask`, which raises the inline error banner plus a toast. Comments in this codebase explain *why* a decision was made — keep that style and don't strip them.
+- Commits use Conventional Commits scoped by area: `feat(pdf-tools): …`, `fix(image-tools): …`, `refactor(workers): …`, `test: …`, `chore: …`.
 
-## Commit & Pull Request Guidelines
+## Tests
 
-Recent history uses Conventional Commit-style subjects, for example `feat(tools): add more image and PDF utility tools` and `test: add Playwright tool coverage`. Keep subjects imperative and scoped when useful: `feat(pdf-tools): ...`, `fix(image-tools): ...`, `chore: ...`.
+Playwright only (no unit runner). Specs are `tests/*.spec.ts`, run serial where they share state, and query by role/aria/text — there are no `data-testid` hooks, and specs assert exact user-facing copy (headings, "Upload PDF document to split", button labels), so copy changes require updating `tests/image-tools.spec.ts` / `tests/ux-regressions.spec.ts`. Worker-based flows call `test.skip(browserName === 'webkit', …)`, so iterate with `--project=chromium`. Fixtures are committed under `tests/images/` and `tests/files/` and regenerated by `tests/create-test-images.js` / `tests/create-test-pdf.js`.
 
-Pull requests should include a short summary, testing performed, linked issues when applicable, and screenshots or recordings for visible UI changes. Mention worker, dependency, or fixture changes that affect browser behavior.
+`tests/engine-map.spec.ts` reads the source tree and enforces: every `app/tools/<slug>` directory appears in `ENGINES` and vice versa, a `Worker` engine is referenced inside a declared worker module and dispatched to by each tool listed against it, and a `Main thread` engine appears in no worker. Adding or renaming a tool therefore means updating `lib/engines.ts` too. It matches dispatch with the regex `new Worker( new URL('…'`, so keep that exact single-quoted call shape.
 
-## Agent-Specific Instructions
+## Pitfalls
 
-Use the relevant local skill before specialized work: `next-best-practices` for Next.js routing, metadata, server/client boundaries, async APIs, and route handlers; `vercel-react-best-practices` for React performance, data fetching, bundle size, and rerenders; `frontend-design` when creating or reshaping visual direction; `shadcn` when adding, updating, debugging, or composing shadcn components; and `playwright-best-practices` when writing, debugging, or refactoring Playwright tests, including responsive and flaky-test work. For shadcn work, check installed components and docs first.
+- Playwright's `webServer` builds and serves on `:3000` with `reuseExistingServer: false` — a stray dev server on port 3000 fails the suite. Stop it first, or set `PW_DEV_SERVER=1`.
+- `public/pdf.worker.min.mjs` is a byte-identical manual copy of `node_modules/pdfjs-dist/build/pdf.worker.min.mjs` (6.0.227) and is committed; re-copy and re-verify after bumping `pdfjs-dist`. `lib/pdf-utils.ts` points `GlobalWorkerOptions.workerSrc` at that path.
+- PDF workers are instantiated as `{ type: 'module' }` (they use top-level-await WASM init); image workers are not. `useWorker` queues every request until the worker posts `READY` — posting work earlier drops messages silently.
+- `components.json` declares the hooks alias as `@/hooks`, but hooks actually live in `lib/hooks/` — shadcn CLI output importing `@/hooks/*` must be moved and rewritten.
+- Generated and git-ignored: `.next/`, `playwright-report/`, `test-results/`, `tsconfig.tsbuildinfo`. `.commandcode/` is per-machine agent tooling, also ignored — commit neither.
 
-## Security & Configuration Tips
+## Local skills
 
-Do not commit build output, reports, or secrets. Keep browser-heavy processing in workers where practical, and treat uploaded files as untrusted input.
+Repo-pinned skills live in `.agents/skills/` (hashes in `skills-lock.json`) and apply to this project: `next-best-practices`, `vercel-react-best-practices`, `frontend-design`, `shadcn`, `playwright-best-practices`, `find-skills`, `prd`.

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import JSZip from 'jszip';
 import { FileUploadZone } from '@/components/file-upload-zone';
 import { ToolPageShell } from '@/components/tools/tool-page-shell';
 import { ProcessingOverlay } from '@/components/tools/processing-overlay';
@@ -34,6 +35,18 @@ interface PDFPageItem {
 
 interface PDFWorkerResult {
   buffer: ArrayBuffer;
+}
+
+interface SplitResult {
+  url: string;
+  downloadName: string;
+  title: string;
+  description: string;
+}
+
+function baseName(fileName: string): string {
+  const dot = fileName.lastIndexOf('.');
+  return dot > 0 ? fileName.slice(0, dot) : fileName;
 }
 
 // Helpers for Range Parsing and Generation
@@ -107,19 +120,20 @@ export default function PDFSplitPage() {
   const [pages, setPages] = useState<PDFPageItem[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [rangeInput, setRangeInput] = useState<string>('');
-  const [splitBlobUrl, setSplitBlobUrl] = useState<string>('');
+  const [mode, setMode] = useState<'extract' | 'split'>('extract');
+  const [result, setResult] = useState<SplitResult | null>(null);
 
   useEffect(() => {
     return () => {
-      if (splitBlobUrl) {
-        URL.revokeObjectURL(splitBlobUrl);
+      if (result) {
+        URL.revokeObjectURL(result.url);
       }
     };
-  }, [splitBlobUrl]);
+  }, [result]);
 
   const handleFilesSelected = async (selectedFiles: File[]) => {
     if (selectedFiles.length === 0) return;
-    setSplitBlobUrl('');
+    setResult(null);
 
     const loaded = await task.runTask(
       async (report) => {
@@ -214,44 +228,89 @@ export default function PDFSplitPage() {
 
   const handleSplit = async () => {
     if (!file || selectedPages.length === 0) return;
+    const isSplit = mode === 'split';
 
-    const url = await task.runTask(
+    const outcome = await task.runTask(
       async (report) => {
-        // PDF Split uses the same MERGE_SPLIT_ROTATE worker command.
-        // We pass the single file buffer and the selected pages sequence.
-        const payload = {
-          files: [{ name: file.name, buffer: file.buffer.slice(0) }],
-          pages: selectedPages.map((idx) => ({
-            fileIndex: 0,
-            pageIndex: idx,
-            rotation: 0,
-          })),
+        const fileBuffer = file.buffer.slice(0);
+        const sourceFile = { name: file.name, buffer: fileBuffer };
+
+        // Both modes reuse the same MERGE_SPLIT_ROTATE worker command, passing
+        // a single source file and the page subset to keep.
+        const buildSubset = (indices: number[]) => {
+          const payload = {
+            files: [sourceFile],
+            pages: indices.map((idx) => ({
+              fileIndex: 0,
+              pageIndex: idx,
+              rotation: 0,
+            })),
+          };
+          return postTask<typeof payload, PDFWorkerResult>(
+            'MERGE_SPLIT_ROTATE',
+            payload,
+            (pct, msg) => report(pct, msg)
+          );
         };
 
-        const result = await postTask<typeof payload, PDFWorkerResult>(
-          'MERGE_SPLIT_ROTATE',
-          payload,
-          (pct, msg) => report(pct, msg)
-        );
+        if (!isSplit) {
+          report(5, 'Extracting selected pages…');
+          const res = await buildSubset(selectedPages);
+          const blob = new Blob([res.buffer], { type: 'application/pdf' });
+          return {
+            url: URL.createObjectURL(blob),
+            downloadName: `extracted_${file.name}`,
+            title: 'Extraction Complete',
+            description: `Extracted ${selectedPages.length} page${
+              selectedPages.length !== 1 ? 's' : ''
+            } from ${file.name} successfully. Processed locally.`,
+          } satisfies SplitResult;
+        }
 
-        const blob = new Blob([result.buffer], { type: 'application/pdf' });
-        return URL.createObjectURL(blob);
+        // Split mode: one single-page PDF per selected page, zipped together.
+        // Each subset call re-grafts the source document, so this is one worker
+        // round-trip per page; fine for typical documents, though a very large
+        // document pays that cost once per selected page.
+        const zip = new JSZip();
+        for (let i = 0; i < selectedPages.length; i++) {
+          const pageIndex = selectedPages[i];
+          report(
+            Math.round((i / selectedPages.length) * 100),
+            `Splitting page ${i + 1} of ${selectedPages.length}…`
+          );
+          const res = await buildSubset([pageIndex]);
+          zip.file(`page-${pageIndex + 1}.pdf`, res.buffer);
+        }
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        return {
+          url: URL.createObjectURL(zipBlob),
+          downloadName: `${baseName(file.name)}_split.zip`,
+          title: 'Split Complete',
+          description: `Split ${selectedPages.length} page${
+            selectedPages.length !== 1 ? 's' : ''
+          } into ${selectedPages.length} separate PDF${
+            selectedPages.length !== 1 ? 's' : ''
+          }. Processed locally.`,
+        } satisfies SplitResult;
       },
       {
-        initialMessage: 'Extracting selected pages…',
+        initialMessage: isSplit ? 'Preparing split…' : 'Extracting selected pages…',
         errorMessage: 'Failed to split document.',
       }
     );
 
-    if (url.ok) setSplitBlobUrl(url.value);
+    if (outcome.ok) setResult(outcome.value);
   };
 
   const clearWorkspace = () => {
+    if (result) URL.revokeObjectURL(result.url);
     setFile(null);
     setPages([]);
     setSelectedPages([]);
     setRangeInput('');
-    setSplitBlobUrl('');
+    setResult(null);
+    setMode('extract');
     task.reset();
   };
 
@@ -272,7 +331,7 @@ export default function PDFSplitPage() {
             description="Upload PDF document to split"
           />
         </div>
-      ) : !splitBlobUrl ? (
+      ) : !result ? (
         <div className="flex flex-col gap-6">
           <TaskErrorBanner message={task.error} onDismiss={task.clearError} />
           <div className="grid gap-6 md:grid-cols-3">
@@ -373,6 +432,43 @@ export default function PDFSplitPage() {
                   </span>
                 </div>
 
+                {/* Mode toggle */}
+                <div className="flex flex-col gap-2">
+                  <span
+                    id="split-mode-label"
+                    className="text-xs font-semibold text-foreground/80 font-dm-sans"
+                  >
+                    Mode:
+                  </span>
+                  <div role="group" aria-labelledby="split-mode-label" className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={mode === 'extract' ? 'secondary' : 'outline'}
+                      size="xs"
+                      aria-pressed={mode === 'extract'}
+                      onClick={() => setMode('extract')}
+                      className="h-9 text-xs font-semibold [@media(pointer:coarse)]:min-h-11"
+                    >
+                      Extract pages
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={mode === 'split' ? 'secondary' : 'outline'}
+                      size="xs"
+                      aria-pressed={mode === 'split'}
+                      onClick={() => setMode('split')}
+                      className="h-9 text-xs font-semibold [@media(pointer:coarse)]:min-h-11"
+                    >
+                      Split into files
+                    </Button>
+                  </div>
+                  {mode === 'split' && (
+                    <span className="text-xs leading-relaxed text-muted-foreground font-dm-sans">
+                      Creates one single-page PDF per selected page, bundled into a zip.
+                    </span>
+                  )}
+                </div>
+
                 {/* Range Input Box */}
                 <div className="flex flex-col gap-2">
                   <label
@@ -401,8 +497,13 @@ export default function PDFSplitPage() {
                     onClick={handleSplit}
                     disabled={selectedPages.length === 0 || task.isProcessing}
                   >
-                    Extract {selectedPages.length} Page
-                    {selectedPages.length !== 1 ? 's' : ''}
+                    {mode === 'split'
+                      ? `Split into ${selectedPages.length} File${
+                          selectedPages.length !== 1 ? 's' : ''
+                        }`
+                      : `Extract ${selectedPages.length} Page${
+                          selectedPages.length !== 1 ? 's' : ''
+                        }`}
                   </PanelPrimaryAction>
                   <PanelSecondaryAction
                     onClick={clearWorkspace}
@@ -417,10 +518,8 @@ export default function PDFSplitPage() {
         </div>
       ) : (
         <SuccessCard
-          title="Extraction Complete"
-          description={`Extracted ${selectedPages.length} page${
-            selectedPages.length !== 1 ? 's' : ''
-          } from ${file.name} successfully. Processed locally.`}
+          title={result.title}
+          description={result.description}
           actions={
             <>
               <Button
@@ -434,9 +533,9 @@ export default function PDFSplitPage() {
                 asChild
                 className={`flex-1 py-5 text-xs font-semibold ${ACCENTS[tool.category].button}`}
               >
-                <a href={splitBlobUrl} download={`extracted_${file.name}`}>
+                <a href={result.url} download={result.downloadName}>
                   <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" aria-hidden />
-                  Download PDF
+                  {result.downloadName.endsWith('.zip') ? 'Download ZIP' : 'Download PDF'}
                 </a>
               </Button>
             </>

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 // @ts-ignore
 import * as mupdf from 'mupdf';
+import { sniffImageFormat, type RasterFormat } from '../../lib/image-format';
 
 // Helper to destroy MuPDF WebAssembly memory objects safely
 function safeDestroy(obj: any) {
@@ -30,6 +31,25 @@ const PDF_METADATA_KEYS = [
   'info:Trapped',
 ];
 
+/**
+ * Hard ceiling on pages for the all-pages-at-once rasterisation paths (deep
+ * compress and PDF-to-image). Each page's bitmap is held in memory until the
+ * whole batch is transferred at once, so an unbounded document can exhaust the
+ * tab. This is a product decision, not a capability limit: MuPDF would happily
+ * rasterise more.
+ */
+const MAX_RASTER_PAGES = 200;
+
+function tooManyPages(numPages: number): Error | null {
+  if (numPages > MAX_RASTER_PAGES) {
+    return new Error(
+      `This document has ${numPages} pages. To keep your browser stable, ` +
+        `process up to ${MAX_RASTER_PAGES} pages at a time.`
+    );
+  }
+  return null;
+}
+
 function scrubPdfMetadata(doc: any) {
   PDF_METADATA_KEYS.forEach((key) => {
     try {
@@ -54,20 +74,6 @@ async function pngToJpeg(pngBytes: Uint8Array, quality: number): Promise<ArrayBu
   bitmap.close();
   const jpegBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: quality / 100 });
   return await jpegBlob.arrayBuffer();
-}
-
-type RasterFormat = 'png' | 'jpeg' | 'gif' | 'bmp' | 'tiff' | 'webp' | 'unknown';
-
-/** Magic-byte sniffing — file.type is unreliable for dropped/renamed files. */
-function sniffImageFormat(buffer: ArrayBuffer): RasterFormat {
-  const b = new Uint8Array(buffer);
-  if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'png';
-  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'jpeg';
-  if (b.length >= 4 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'gif';
-  if (b.length >= 2 && b[0] === 0x42 && b[1] === 0x4d) return 'bmp';
-  if (b.length >= 3 && ((b[0] === 0x49 && b[1] === 0x49 && b[2] === 0x2a) || (b[0] === 0x4d && b[1] === 0x4d && b[2] === 0x00))) return 'tiff';
-  if (b.length >= 12 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'webp';
-  return 'unknown';
 }
 
 /** Formats MuPDF embeds directly, so the bytes are passed through untouched. */
@@ -172,6 +178,86 @@ function insertPageWithImage(doc: any, atIndex: number, imageBuffer: ArrayBuffer
 
   // Create page and insert into document
   const pageObj = doc.addPage([0, 0, width, height], 0, resources, contents);
+  doc.insertPage(atIndex, pageObj);
+}
+
+/**
+ * Standard paper sizes in PDF points (1/72 inch). Sizes differ from `pxToPt`
+ * because they are physical dimensions, not image pixels.
+ */
+const PAGE_PRESETS: Record<string, { width: number; height: number }> = {
+  a4: { width: 595.28, height: 841.89 },
+  letter: { width: 612, height: 792 },
+};
+
+/** Scales an image pixel dimension into points at 96 DPI (1px = 0.75pt). */
+function pxToPt(px: number): number {
+  return px * 0.75;
+}
+
+/**
+ * Adds one page and draws the image on it.
+ *
+ * `original` sizes the page to the image's natural size (the previous default).
+ * Any preset sizes the page to the paper and draws the image with a "contain"
+ * fit, centred — so a portrait photo sits inside an A4 sheet instead of being
+ * stretched to it. Orientation only matters for presets: `auto` follows the
+ * image, `portrait`/`landscape` force the sheet.
+ */
+function insertImagePage(
+  doc: any,
+  atIndex: number,
+  imageBuffer: ArrayBuffer,
+  imageWidthPx: number,
+  imageHeightPx: number,
+  pageSize: string,
+  orientation: string
+) {
+  const iw = pxToPt(imageWidthPx);
+  const ih = pxToPt(imageHeightPx);
+
+  let pw: number;
+  let ph: number;
+  let fitScale = 1;
+  let tx = 0;
+  let ty = 0;
+
+  if (pageSize === 'original') {
+    pw = iw;
+    ph = ih;
+  } else {
+    const preset = PAGE_PRESETS[pageSize] ?? PAGE_PRESETS.a4;
+    const landscape =
+      orientation === 'landscape' ||
+      (orientation === 'auto' && imageWidthPx > imageHeightPx);
+    pw = landscape ? Math.max(preset.width, preset.height) : Math.min(preset.width, preset.height);
+    ph = landscape ? Math.min(preset.width, preset.height) : Math.max(preset.width, preset.height);
+
+    fitScale = Math.min(pw / iw, ph / ih);
+    tx = (pw - iw * fitScale) / 2;
+    ty = (ph - ih * fitScale) / 2;
+  }
+
+  const img = new (mupdf as any).Image(imageBuffer);
+  let imgObj;
+  try {
+    imgObj = doc.addImage(img);
+  } finally {
+    safeDestroy(img);
+  }
+
+  const resources = doc.newDictionary();
+  const xobjectDict = doc.newDictionary();
+  xobjectDict.put('Img', imgObj);
+  resources.put('XObject', xobjectDict);
+
+  const dw = iw * fitScale;
+  const dh = ih * fitScale;
+  // PDF content-stream coordinates have their origin at the bottom-left, so
+  // the offset centres the (possibly scaled) image on the page.
+  const contents = `q ${dw} 0 0 ${dh} ${tx} ${ty} cm /Img Do Q`;
+
+  const pageObj = doc.addPage([0, 0, pw, ph], 0, resources, contents);
   doc.insertPage(atIndex, pageObj);
 }
 
@@ -296,6 +382,8 @@ self.onmessage = async (e: MessageEvent) => {
       
       try {
         const numPages = doc.countPages();
+        const tooMany = tooManyPages(numPages);
+        if (tooMany) throw tooMany;
         const scale = dpi / 72; // MuPDF rendering matrix scale factor (72 points = 1 inch)
         
         for (let i = 0; i < numPages; i++) {
@@ -349,6 +437,8 @@ self.onmessage = async (e: MessageEvent) => {
       const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf');
       try {
         const numPages = doc.countPages();
+        const tooMany = tooManyPages(numPages);
+        if (tooMany) throw tooMany;
         const results = [];
         const isJpeg = format === 'image/jpeg';
         
@@ -457,7 +547,7 @@ self.onmessage = async (e: MessageEvent) => {
       );
 
     } else if (type === 'IMAGE_TO_PDF') {
-      const { images } = payload;
+      const { images, pageSize = 'original', orientation = 'auto' } = payload;
       self.postMessage({ id, type: 'PROGRESS', payload: { progress: 10, message: 'Initializing PDF...' } });
       
       const outDoc = new (mupdf as any).PDFDocument();
@@ -471,11 +561,15 @@ self.onmessage = async (e: MessageEvent) => {
             payload: { progress: 15 + pagePct, message: `Compiling image ${i + 1} of ${images.length}...` } 
           });
           
-          // Sizing target: 1px corresponds to 0.75 points assuming standard 96 DPI screen
-          const ptWidth = imgData.width * 0.75;
-          const ptHeight = imgData.height * 0.75;
-          
-          insertPageWithImage(outDoc, i, imgData.buffer, ptWidth, ptHeight);
+          insertImagePage(
+            outDoc,
+            i,
+            imgData.buffer,
+            imgData.width,
+            imgData.height,
+            pageSize,
+            orientation
+          );
         }
         
         self.postMessage({ id, type: 'PROGRESS', payload: { progress: 90, message: 'Creating PDF file...' } });

@@ -262,6 +262,25 @@ test.describe('Tools app coverage', () => {
     await expectDownloadLink(page, 'Download');
   });
 
+  test('Image Compress keeps a PNG as PNG (no silent JPEG)', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based tests on Webkit');
+    await page.goto('/tools/image-compress');
+
+    await expect(page.getByRole('heading', { name: 'Image Compress', exact: true })).toBeVisible();
+    await uploadFile(page, TEST_IMAGES.png);
+
+    await page.getByRole('button', { name: 'Compress Images' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Compression Complete' })).toBeVisible({
+      timeout: 60000,
+    });
+    // Regression: a lossless/transparent input must not be silently re-encoded
+    // as lossy JPEG. The output keeps the .png extension.
+    await expect(page.getByText('optimized_test-pixel.png')).toBeVisible();
+    await expect(page.getByText('optimized_test-pixel.jpg')).toHaveCount(0);
+    await expectDownloadLink(page, 'Download');
+  });
+
   test('PDF Organizer exports the selected pages in the arranged order', async ({
     page,
     browserName,
@@ -323,6 +342,25 @@ test.describe('Tools app coverage', () => {
     await page.getByRole('button', { name: 'Extract 2 Pages' }).click();
 
     await expectProcessingOrComplete(page, 'Extracting selected pages...', 'Extraction Complete');
+  });
+
+  test('Split PDF splits the selected pages into separate files', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based PDF processing on Webkit');
+    test.setTimeout(90000);
+    await page.goto('/tools/pdf-split');
+
+    await expect(page.getByRole('heading', { name: 'Split PDF', exact: true })).toBeVisible();
+    await uploadFile(page, TEST_FILES.pdf, 'Select Pages to Keep');
+
+    await expect(page.getByText('Select Pages to Keep')).toBeVisible({ timeout: 30000 });
+
+    // Switch to the "split into files" mode.
+    await page.getByRole('button', { name: 'Split into files' }).click();
+    await expect(page.getByRole('button', { name: 'Split into 2 Files' })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'Split into 2 Files' }).click();
+
+    await expectProcessingOrComplete(page, /Splitting page/, 'Split Complete');
   });
 
   test('Compress PDF starts processing an uploaded PDF', async ({ page, browserName }) => {
@@ -427,6 +465,28 @@ test.describe('Tools app coverage', () => {
     await page.getByRole('button', { name: 'Compile PDF' }).click();
 
     await expectProcessingOrComplete(page, 'Compiling images into PDF pages...', 'PDF Compiled');
+  });
+
+  test('Image to PDF honours a chosen A4 page size', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based PDF processing on Webkit');
+    test.setTimeout(90000);
+    await page.goto('/tools/image-to-pdf');
+
+    await expect(page.getByRole('heading', { name: 'Image to PDF', exact: true })).toBeVisible();
+    await uploadFile(page, TEST_IMAGES.png, 'Images collation');
+
+    await expect(page.getByText('Images collation')).toBeVisible({ timeout: 30000 });
+
+    // Choose an A4 sheet: the image should be fit and centred, not stretched.
+    await page.getByLabel('Page size').click();
+    await page.getByRole('option', { name: 'A4' }).click();
+    await expect(page.getByText(/Images are fit to the page and centred/)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Compile PDF' }).click();
+    await expect(page.getByRole('heading', { name: 'PDF Compiled' })).toBeVisible({
+      timeout: 60000,
+    });
+    await expectDownloadLink(page, 'Download PDF');
   });
 
   // WebP is re-encoded by the worker (MuPDF has no WebP decoder) and TIFF is

@@ -10,6 +10,13 @@ import { SuccessCard } from '@/components/tools/success-card';
 import { PanelActions, PanelPrimaryAction, PanelSecondaryAction, ToolPanel } from '@/components/tools/tool-panel';
 import { CanvasSurface } from '@/components/tools/canvas-surface';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useWorker } from '@/lib/hooks/useWorker';
 import { useToolTask } from '@/lib/hooks/useToolTask';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -169,6 +176,8 @@ export default function ImageToPDFPage() {
 
   const [images, setImages] = useState<ImageFile[]>([]);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string>('');
+  const [pageSize, setPageSize] = useState<'original' | 'a4' | 'letter'>('original');
+  const [orientation, setOrientation] = useState<'auto' | 'portrait' | 'landscape'>('auto');
   const imageUrlsRef = useRef<Set<string>>(new Set());
   const addImagesInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -300,9 +309,12 @@ export default function ImageToPDFPage() {
 
         report(0, 'Compiling images into PDF pages…');
 
-        const response = await postTask<{ images: typeof imagesPayload }, PDFWorkerResult>(
+        const response = await postTask<
+          { images: typeof imagesPayload; pageSize: string; orientation: string },
+          PDFWorkerResult
+        >(
           'IMAGE_TO_PDF',
-          { images: imagesPayload },
+          { images: imagesPayload, pageSize, orientation },
           (pct, msg) => report(pct, msg)
         );
 
@@ -390,16 +402,64 @@ export default function ImageToPDFPage() {
             <div className="lg:col-span-1">
               <ToolPanel title="Document settings" sticky>
 
-                <div className="flex flex-col gap-3">
-                  <span className="text-xs font-semibold text-foreground/80 font-dm-sans">
-                    Settings:
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="pdf-page-size"
+                    className="text-xs font-semibold text-foreground/80 font-dm-sans"
+                  >
+                    Page size:
+                  </label>
+                  <Select
+                    value={pageSize}
+                    onValueChange={(value) =>
+                      setPageSize(value as 'original' | 'a4' | 'letter')
+                    }
+                    disabled={task.isProcessing}
+                  >
+                    <SelectTrigger id="pdf-page-size" className="h-10 w-full">
+                      <SelectValue placeholder="Select page size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="original">Fit Image Size</SelectItem>
+                      <SelectItem value="a4">A4</SelectItem>
+                      <SelectItem value="letter">Letter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <span
+                    id="pdf-orientation-label"
+                    className="text-xs font-semibold text-foreground/80 font-dm-sans"
+                  >
+                    Orientation:
                   </span>
-                  <div className="text-xs text-muted-foreground leading-relaxed font-dm-sans border border-border/40 p-3 rounded-lg bg-muted/20 flex flex-col gap-1">
-                    <span>
-                      Layout: <strong>Fit Image Size</strong>
-                    </span>
-                    <span>Generates custom page dimensions matching the uploaded images.</span>
+                  <div
+                    role="group"
+                    aria-labelledby="pdf-orientation-label"
+                    className="grid grid-cols-3 gap-2"
+                  >
+                    {(['auto', 'portrait', 'landscape'] as const).map((value) => (
+                      <Button
+                        key={value}
+                        type="button"
+                        variant={orientation === value ? 'secondary' : 'outline'}
+                        size="xs"
+                        aria-pressed={orientation === value}
+                        onClick={() => setOrientation(value)}
+                        disabled={task.isProcessing}
+                        className="h-9 text-xs font-semibold capitalize [@media(pointer:coarse)]:min-h-11"
+                      >
+                        {value}
+                      </Button>
+                    ))}
                   </div>
+                  {pageSize !== 'original' && (
+                    <span className="text-xs leading-relaxed text-muted-foreground font-dm-sans">
+                      Images are fit to the page and centred. Orientation only applies when a
+                      paper size is chosen.
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-3">
