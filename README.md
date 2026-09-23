@@ -1,131 +1,164 @@
-# Konbato 🛠️
+# Konbato
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-https%3A%2F%2Fkonbato.vercel.app%2F-brightgreen?style=for-the-badge)](https://konbato.vercel.app/)
+**Private image and PDF tools that run entirely in your browser.** No uploads, no accounts, no file-size paywalls.
 
-Konbato is a Next.js app for converting, compressing, and editing images and PDFs **entirely in the browser**. It is built around one job: make common file tasks fast without uploading private files to a server.
+[![Live App](https://img.shields.io/badge/live-konbato.vercel.app-brightgreen?style=flat-square)](https://konbato.vercel.app/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#license)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black?style=flat-square)](https://nextjs.org)
+[![Processing: 100% client-side](https://img.shields.io/badge/processing-100%25%20client--side-blue?style=flat-square)](#privacy)
 
----
+## Contents
 
-## ⚡ Key Features
+- [Why Konbato](#why-konbato)
+- [Features](#features)
+- [Privacy](#privacy)
+- [Getting started](#getting-started)
+- [Commands](#commands)
+- [Architecture](#architecture)
+- [Tech stack](#tech-stack)
+- [Testing](#testing)
+- [Browser support](#browser-support)
+- [Roadmap](#roadmap)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
 
-### 📄 PDF Utilities
-- **Organizer**: Combine PDFs, reorder, rotate, remove, and selectively export pages in one workspace.
-- **Merge**: Combine multiple PDF files in any order.
-- **Split**: Extract specific pages or split a PDF into separate files.
-- **Rotate**: Fix the orientation of pages on the fly.
-- **Reorder**: Drag-and-drop pages to restructure your documents.
-- **Compress**: Shrink PDF file sizes using client-side optimization.
-- **Metadata Remove**: Clean author, creator, creation date, and other identifying metadata.
-- **PDF to Image**: Rasterize pages to PNG/JPEG images.
-- **Image to PDF**: Convert images into a beautifully formatted PDF document.
+## Why Konbato
 
-### 🖼️ Image Utilities
-- **Compress**: High-performance client-side image compression.
-- **Convert**: Format conversion (PNG, JPEG, WebP).
-- **Resize & Crop**: Precise resizing and aspect-ratio cropping.
-- **Remove Background**: Clean subject separation and transparency generation.
-- **Metadata Remove**: Strip EXIF, geolocation, and camera details.
+Most file tools upload your document to a server, hold it there, and meter you on size. Konbato does the opposite: every tool is a static page that processes your file on your own device using WebAssembly, Web Workers, and Canvas APIs.
 
----
+- **Your bytes never leave the device.** No upload endpoint exists — there is no server-side file handling to trust or to leak.
+- **Nothing to sign up for.** Open a tool, drop a file, download the result.
+- **No artificial limits.** The ceiling is your browser's memory, not a paywall.
 
-## 🛠️ Technology Stack
+The full product reasoning — problem statement, competitive landscape, scope, and assumptions — lives in [`docs/PRD.md`](docs/PRD.md).
 
-- **Core**: Next.js (App Router), React, TypeScript
-- **Styling**: Tailwind CSS & shadcn/ui
-- **Concurrency**: Web Workers (`app/workers/`) for offloading heavy processing from the main UI thread.
-- **WebAssembly**: High-performance processing libraries compiled to WASM (e.g., MuPDF) running locally.
+## Features
 
----
+### PDF tools
 
-## 🚀 Running Locally
+| Tool | What it does |
+| --- | --- |
+| [PDF Organizer](https://konbato.vercel.app/tools/pdf-organizer) | Combine PDFs, reorder pages, rotate, remove, and selectively export in one workspace |
+| [Merge PDF](https://konbato.vercel.app/tools/pdf-merge) | Combine multiple PDF documents into a single organized file |
+| [Split PDF](https://konbato.vercel.app/tools/pdf-split) | Extract specific pages, or split into separate single-page files delivered as a ZIP |
+| [Compress PDF](https://konbato.vercel.app/tools/pdf-compress) | Reduce size via vector metadata purge or canvas rasterization |
+| [Rotate PDF](https://konbato.vercel.app/tools/pdf-rotate) | Rotate specific pages by 90-degree steps |
+| [PDF Page Reorder](https://konbato.vercel.app/tools/pdf-reorder) | Drag pages into a new sequence and export |
+| [PDF Metadata Remover](https://konbato.vercel.app/tools/pdf-metadata-remove) | Clear common PDF info fields and save a scrubbed copy |
+| [PDF to Image](https://konbato.vercel.app/tools/pdf-to-image) | Rasterize pages to PNG or JPEG |
+| [Image to PDF](https://konbato.vercel.app/tools/image-to-pdf) | Compile PNG, JPEG, WebP, GIF, TIFF, and BMP images into a PDF, with the original image size or an A4/Letter page, portrait or landscape |
 
-Get the development server up and running on your local machine:
+### Image tools
+
+| Tool | What it does |
+| --- | --- |
+| [Image Compress](https://konbato.vercel.app/tools/image-compress) | Optimize file size without losing visual quality |
+| [Image Converter](https://konbato.vercel.app/tools/image-convert) | Convert between JPG, PNG, WebP, GIF, and TIFF |
+| [Image Resize & Crop](https://konbato.vercel.app/tools/image-resize-crop) | Crop by preset or numeric bounds, then resize into PNG, JPG, or WebP |
+| [Remove Background](https://konbato.vercel.app/tools/image-remove-bg) | Isolate subjects at full resolution with a local segmentation model |
+| [Image Metadata Remover](https://konbato.vercel.app/tools/image-metadata-remove) | Strip EXIF, geolocation, and camera details by re-encoding |
+
+## Privacy
+
+The guarantee is narrow and deliberate: **your file bytes are never transmitted.** All parsing, rendering, and encoding happens in the tab you already have open.
+
+Two things are worth stating precisely, because "client-side" is often used loosely:
+
+- **Static assets are downloaded; your files are not.** The PDF engine fetches its WebAssembly bundle, and Remove Background downloads a ~25 MB model weights file once, then caches it. Those requests carry no user data.
+- **The claim is tested, not just asserted.** [`tests/network-privacy.spec.ts`](tests/network-privacy.spec.ts) runs a full tool flow with the network intercepted and fails if a single request goes anywhere other than `localhost`.
+
+Because nothing is uploaded, there is also nothing stored: no accounts, no cloud, no retention window.
+
+## Getting started
+
+### Requirements
+
+- **Node.js** 20.9 or newer (Next.js 16's minimum).
+- **pnpm** — the repo is locked to a `pnpm-lock.yaml`.
+- A modern browser with WebAssembly and Web Worker support (see [Browser support](#browser-support)).
+
+### Install and run
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Run the development server
-pnpm dev
+pnpm dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Then open a tool, drop a file, and download the result.
 
-### Other Commands
-- **Linting**: `pnpm lint`
-- **Production Build**: `pnpm build`
-- **Serve Production**: `pnpm start`
-- **E2E Tests**: `pnpm exec playwright test`
+## Commands
 
----
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Start the dev server on `http://localhost:3000` |
+| `pnpm build` | Production build (all routes prerender statically) |
+| `pnpm start` | Serve the production build |
+| `pnpm lint` | Run ESLint |
+| `pnpm exec playwright test` | Run the E2E suite (Chromium + WebKit) |
+| `pnpm exec playwright test --project=chromium` | Worker-heavy flows — iterate here |
+| `PW_DEV_SERVER=1 pnpm exec playwright test` | Test against `pnpm dev` instead of a production build |
 
-## 🎯 Target Audience & Value Proposition
+## Architecture
 
-- **Primary User**: Anyone who needs to convert, compress, or edit a file right now—no account, no waiting, no trust required.
-- **The Emotional Promise**: *You are never handing your files to a stranger.* File processing happens completely on your machine.
-- **Secondary Users**: Designers optimizing assets, students assembling PDFs, office workers trimming attachments, and developers in a hurry.
+Every route is statically prerendered — there are no route handlers, no API endpoints, and no upload path. Heavy work is moved off the main thread into Web Workers that speak a small `READY | PROGRESS | SUCCESS | ERROR` protocol.
 
----
+```
+app/tools/<slug>/page.tsx   One route per tool; drives its worker via useToolTask
+app/workers/               image.worker.ts and pdf.worker.ts (WASM + Canvas work)
+lib/tools.ts               Registry of the 14 tools (slug, copy, category)
+lib/engines.ts             Which engine each tool uses, and where it runs
+components/tools/          Tool surfaces: shell, panels, upload zone, error banner
+docs/PRD.md                Product scope and reasoning
+tests/                     Playwright specs and committed fixtures
+```
 
-## ⚖️ Why This Problem?
+Adding a tool means a page under `app/tools/<slug>/`, an entry in `lib/tools.ts`, and an entry in `lib/engines.ts` — `tests/engine-map.spec.ts` fails the build if the registries and the directory drift apart.
 
-Dominant tools like *ilovepdf*, *Smallpdf*, and *Convertio* are server-upload-first by design—built before modern WebAssembly and Web Workers existed. This creates real issues:
-- Files sit on third-party servers for hours.
-- Free tiers are ad-heavy and file-size capped.
-- Confidential documents (tax returns, contracts, medical records) are routinely uploaded to random SaaS companies.
+> The project builds with **webpack, not Turbopack** (`next dev --webpack`). The WASM integrations for MuPDF and pdf.js depend on that config; don't switch bundlers.
 
-**Why now is the time to solve this:**
-- **Proven Demand**: Services like `ilovepdf` get millions of visits monthly.
-- **Advanced Capabilities**: Modern browser APIs, Web Workers, and WebAssembly can process files at native-like speeds right inside the viewport.
-- **Privacy Focus**: With strict regulations (GDPR, HIPAA), users and businesses are increasingly hesitant to upload private files.
+## Tech stack
 
----
+| Layer | Choice |
+| --- | --- |
+| Framework | Next.js 16 (App Router), React 19, TypeScript (strict) |
+| Styling | Tailwind CSS v4, shadcn/ui, Hugeicons |
+| PDF engine | MuPDF (WASM) and pdf.js |
+| Image engine | Canvas / OffscreenCanvas, `utif` for TIFF, `@imgly/background-removal` for segmentation |
+| Concurrency | Web Workers, with `JSZip` and `@dnd-kit` on the main thread |
+| Tests | Playwright |
 
-## 🔍 Existing Alternatives
+## Testing
 
-| Tool             | Model         | Client-side?       | Limitation                        |
-| ---------------- | ------------- | ------------------ | --------------------------------- |
-| **ilovepdf**     | Freemium SaaS | ❌ Upload required | Files on server; size limits; ads |
-| **Smallpdf**     | Freemium SaaS | ❌ Upload required | Aggressive paywalls               |
-| **Convertio**    | Freemium SaaS | ❌ Upload required | Strict free-tier limits           |
-| **PDF.js**       | Library       | ✅                 | Render-only; no editing           |
-| **FFmpeg.wasm**  | Library       | ✅                 | No UI; developer tool             |
+Playwright is the only test runner — there is no unit-test framework.
 
-**The Konbato Gap**: There is no polished, all-in-one, client-side file tool suite. Squoosh proved the concept for images in 2018; Konbato extends that to PDFs, images, and beyond, with a premium consumer-grade UI.
+```bash
+pnpm exec playwright test                            # full suite
+pnpm exec playwright test tests/network-privacy.spec.ts   # one spec
+```
 
----
+Specs query by role, aria label, and exact user-facing copy, so renaming a heading or button label usually means updating a spec too. Worker-heavy flows skip WebKit, so iterate with `--project=chromium`. Test fixtures live in `tests/images/` and `tests/files/` and are regenerated by the scripts beside them.
 
-## 🗺️ Scope
+## Browser support
 
-* **In scope**: Browser-side image conversion, compression, resizing, cropping, background removal, metadata removal, and PDF page organization, merge, split, rotate, reorder, compress, metadata removal, PDF-to-image, and image-to-PDF workflows.
-* **Out of scope**: Server-side processing, user accounts, cloud storage, forensic sanitization guarantees, office document conversion, and video tools. Keeping these out ensures privacy, focus, and adherence to browser memory limits.
+Konbato needs a browser with WebAssembly, Web Workers, and (for some tools) `OffscreenCanvas`. The E2E suite covers Chromium and WebKit; everything else should work but is not exercised in CI.
 
----
+**Offline use is not supported yet.** Service-worker caching is deliberately deferred (see the roadmap), so the app requires a network connection on first load.
 
-## 💡 Key Assumptions
+## Roadmap
 
-| Assumption | Why it was made | Risk if wrong |
-| ---------- | --------------- | ------------- |
-| **Users prefer a private workflow** | Confidential documents are processed daily under strict guidelines (GDPR/HIPAA). | If privacy isn't valued, users might prefer server-side tools with infinite processing power. |
-| **Modern browser environment** | WASM and Web Workers require relatively modern browsers (Chrome 94+, Firefox 115+, Safari 15.2+). | Sub-5% of global traffic on older browsers - an acceptable cutoff. |
-| **Service Worker caching** | Caching assets ensures instant loading and offline capability. | Slow load times on repeat visits, offline failures, or metered data usage. |
+- [x] Prove the privacy claim with an automated no-egress test
+- [ ] Improve memory management for very large files
+- [ ] Tune multi-page rendering under memory pressure
+- [ ] Offline/PWA mode via a service worker
+- [ ] Dark/light theming polish and broader a11y coverage
 
----
+## License
 
-## 💬 User Discovery & Feedback Loops
+Released under the [MIT License](LICENSE).
 
-1. **"Walk me through the last time you used a tool like ilovepdf. What were you doing, and what annoyed you?"** — Focuses priority on actual friction points (e.g., file-size limits, ads, security anxiety).
-2. **"If this tool was unavailable tomorrow, what would you do instead?"** — Reveals direct competition (e.g., Python scripts for power users, email for non-technical users).
-3. **"Have you ever decided not to convert a file because you were uncomfortable uploading it?"** — Gauges whether privacy is a primary value driver.
+## Acknowledgements
 
----
-
-## 🏆 Success & Next Steps
-
-Konbato is successful when users can complete common image and PDF tasks without uploads, crashes, or confusion. 
-
-**Next Steps**:
-1. Run local network tests proving no bytes are transmitted to any server.
-2. Improve browser memory management for extremely large files.
-3. Enhance performance of multi-page rendering under heavy memory load.
-
+- [MuPDF](https://mupdf.com/) and [pdf.js](https://mozilla.github.io/pdf.js/) — the PDF engines.
+- [img.ly background-removal](https://github.com/imgly/background-removal-js) — local subject segmentation.
+- [Squoosh](https://squoosh.app/) — proof that serious image processing belongs in the browser.
+- [shadcn/ui](https://ui.shadcn.com/) and [Hugeicons](https://hugeicons.com/) — UI primitives and iconography.
