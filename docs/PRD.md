@@ -102,6 +102,7 @@ graph TD
 - PDF rotate saves rotated pages.
 - PDF to image exports page images.
 - Image to PDF compiles uploaded images into a readable PDF.
+- PDF watermark stamps a configurable text or image watermark (9 positions or tiled, with size, color, opacity, and rotation) onto every page, with a live preview, flattened so it cannot be removed.
 
 ### Non-Goals
 

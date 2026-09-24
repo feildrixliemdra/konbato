@@ -47,6 +47,7 @@ The full product reasoning — problem statement, competitive landscape, scope, 
 | [PDF Metadata Remover](https://konbato.vercel.app/tools/pdf-metadata-remove) | Clear common PDF info fields and save a scrubbed copy |
 | [PDF to Image](https://konbato.vercel.app/tools/pdf-to-image) | Rasterize pages to PNG or JPEG |
 | [Image to PDF](https://konbato.vercel.app/tools/image-to-pdf) | Compile PNG, JPEG, WebP, GIF, TIFF, and BMP images into a PDF, with the original image size or an A4/Letter page, portrait or landscape |
+| [Add Watermark](https://konbato.vercel.app/tools/pdf-watermark) | Stamp text or image watermarks across pages with a live preview — flattened so they can't be removed |
 
 ### Image tools
 
@@ -105,7 +106,7 @@ Every route is statically prerendered — there are no route handlers, no API en
 ```
 app/tools/<slug>/page.tsx   One route per tool; drives its worker via useToolTask
 app/workers/               image.worker.ts and pdf.worker.ts (WASM + Canvas work)
-lib/tools.ts               Registry of the 14 tools (slug, copy, category)
+lib/tools.ts               Registry of the 15 tools (slug, copy, category)
 lib/engines.ts             Which engine each tool uses, and where it runs
 components/tools/          Tool surfaces: shell, panels, upload zone, error banner
 docs/PRD.md                Product scope and reasoning

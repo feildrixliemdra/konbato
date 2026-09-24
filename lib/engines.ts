@@ -59,6 +59,7 @@ export const ENGINES: Engine[] = [
       'pdf-metadata-remove',
       'pdf-to-image',
       'image-to-pdf',
+      'pdf-watermark',
     ],
   },
   {
@@ -75,6 +76,7 @@ export const ENGINES: Engine[] = [
       'image-metadata-remove',
       'image-to-pdf',
       'pdf-to-image',
+      'pdf-watermark',
     ],
   },
   {

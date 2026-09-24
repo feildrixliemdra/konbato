@@ -11,6 +11,7 @@ import {
   Shield01Icon,
   ArrangeIcon,
   DashboardSquare01Icon,
+  Stamp01Icon,
 } from '@hugeicons/core-free-icons';
 
 export type ToolCategory = 'Image' | 'PDF';
@@ -189,6 +190,16 @@ export const TOOLS: Tool[] = [
     description: 'Convert PDF pages into PNG or JPEG images locally.',
     category: 'PDF',
     icon: Image01Icon,
+  },
+  {
+    slug: 'pdf-watermark',
+    href: '/tools/pdf-watermark',
+    title: 'Add Watermark',
+    shortLabel: 'Watermark PDF',
+    description:
+      'Stamp text or image watermarks across PDF pages with a live preview, flattened so they cannot be removed.',
+    category: 'PDF',
+    icon: Stamp01Icon,
   },
   {
     slug: 'image-to-pdf',

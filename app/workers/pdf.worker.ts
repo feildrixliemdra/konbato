@@ -2,6 +2,7 @@
 // @ts-ignore
 import * as mupdf from 'mupdf';
 import { sniffImageFormat, type RasterFormat } from '../../lib/image-format';
+import { drawWatermark } from '../../lib/watermark-draw';
 
 // Helper to destroy MuPDF WebAssembly memory objects safely
 function safeDestroy(obj: any) {
@@ -259,6 +260,43 @@ function insertImagePage(
 
   const pageObj = doc.addPage([0, 0, pw, ph], 0, resources, contents);
   doc.insertPage(atIndex, pageObj);
+}
+
+interface WatermarkPayloadSpec {
+  kind: 'text' | 'image';
+  text: string;
+  fontSizePt: number;
+  color: string;
+  imageBuffer?: ArrayBuffer; // present for image mode
+  sizePct: number;
+  opacity: number;
+  rotation: number;
+  position: 'tiled' | 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+}
+
+/**
+ * Rasterises one page's PNG, draws the watermark with the shared function, and
+ * re-encodes as JPEG for `insertPageWithImage`. `scale` (px per point) is the
+ * raster DPI ÷ 72, so the point-based font size maps to the rendered pixels.
+ */
+async function watermarkPagePixmap(
+  pngBytes: Uint8Array,
+  drawSpec: { kind: 'text' | 'image'; text: string; fontSizePt: number; color: string; image: CanvasImageSource | null; sizePct: number; opacity: number; rotation: number; position: WatermarkPayloadSpec['position'] },
+  scale: number
+): Promise<ArrayBuffer> {
+  const blob = new Blob([pngBytes as any], { type: 'image/png' });
+  const bitmap = await createImageBitmap(blob);
+  try {
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get 2D OffscreenCanvas context');
+    ctx.drawImage(bitmap, 0, 0);
+    drawWatermark(ctx, drawSpec as any, canvas.width, canvas.height, scale);
+    const jpegBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
+    return await jpegBlob.arrayBuffer();
+  } finally {
+    bitmap.close();
+  }
 }
 
 self.onmessage = async (e: MessageEvent) => {
@@ -582,6 +620,83 @@ self.onmessage = async (e: MessageEvent) => {
         }, [transferBuffer]);
       } finally {
         safeDestroy(outDoc);
+      }
+
+    } else if (type === 'WATERMARK_PDF') {
+      const { buffer, spec } = payload as { buffer: ArrayBuffer; spec: WatermarkPayloadSpec };
+      self.postMessage({ id, type: 'PROGRESS', payload: { progress: 5, message: 'Reading document…' } });
+
+      // Decode the logo once, up front, so every page reuses the same bitmap.
+      const imageBitmap =
+        spec.kind === 'image' && spec.imageBuffer
+          ? await createImageBitmap(new Blob([spec.imageBuffer]))
+          : null;
+
+      const drawSpec = {
+        kind: spec.kind,
+        text: spec.text,
+        fontSizePt: spec.fontSizePt,
+        color: spec.color,
+        image: imageBitmap,
+        sizePct: spec.sizePct,
+        opacity: spec.opacity,
+        rotation: spec.rotation,
+        position: spec.position,
+      };
+
+      const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf');
+      const outDoc = new (mupdf as any).PDFDocument();
+      try {
+        const numPages = doc.countPages();
+        const tooMany = tooManyPages(numPages);
+        if (tooMany) throw tooMany;
+        // Fixed 150 DPI keeps output readable without bloating file size.
+        const scale = 150 / 72;
+
+        for (let i = 0; i < numPages; i++) {
+          const pagePct = Math.round((i / numPages) * 80);
+          self.postMessage({
+            id,
+            type: 'PROGRESS',
+            payload: { progress: 10 + pagePct, message: `Watermarking page ${i + 1} of ${numPages}…` }
+          });
+
+          let page;
+          let pixmap;
+          try {
+            page = doc.loadPage(i);
+            const bounds = page.getBounds();
+            const width = bounds[2] - bounds[0];
+            const height = bounds[3] - bounds[1];
+
+            pixmap = page.toPixmap(
+              (mupdf as any).Matrix.scale(scale, scale),
+              (mupdf as any).ColorSpace.DeviceRGB,
+              false,
+              true
+            );
+            const pngBytes = pixmap.asPNG();
+
+            const jpegBuffer = await watermarkPagePixmap(pngBytes, drawSpec, scale);
+            insertPageWithImage(outDoc, i, jpegBuffer, width, height);
+          } finally {
+            safeDestroy(page);
+            safeDestroy(pixmap);
+          }
+        }
+
+        self.postMessage({ id, type: 'PROGRESS', payload: { progress: 90, message: 'Compiling watermarked PDF…' } });
+        const outBuffer = outDoc.saveToBuffer('compress,compress-images,garbage=2');
+        const transferBuffer = copyPdfBuffer(outBuffer);
+        (self as any).postMessage({
+          id,
+          type: 'SUCCESS',
+          payload: { buffer: transferBuffer }
+        }, [transferBuffer]);
+      } finally {
+        safeDestroy(doc);
+        safeDestroy(outDoc);
+        if (imageBitmap) imageBitmap.close();
       }
 
     } else {
