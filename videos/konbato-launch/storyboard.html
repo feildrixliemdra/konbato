@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Konbato — site tour · storyboard v2</title>
+<style>
+  @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2")}
+  @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-13971731025ec697-s.p.woff2") format("woff2")}
+  @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+  @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+  :root{
+    --ink:#080C0F; --cream:#FAFCFD; --tile:#EFF2F5; --tile-strong:#E2E7EB;
+    --coral:#0069BD; --navy:#091015; --navy-soft:#111920; --navy-elev:#1A232A;
+    --hairline:color-mix(in srgb, var(--ink) 12%, transparent);
+    --sheet:#f2f3f5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--sheet);color:var(--ink);
+       font-family:Manrope,system-ui,sans-serif;padding:40px 32px 72px}
+  header{max-width:1600px;margin:0 auto 20px}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+  .dek{font-family:"DM Sans",sans-serif;color:#4b5563;font-size:15px;margin:0}
+  .tag{display:inline-block;margin-top:14px;padding:6px 11px;border:1px solid var(--hairline);
+       border-radius:6px;font-family:"JetBrains Mono",monospace;font-size:11px;
+       letter-spacing:.1em;text-transform:uppercase;color:#374151;background:#fff}
+  .rev{max-width:1600px;margin:0 auto 22px;background:#fff;border:1px solid var(--hairline);
+       border-left:3px solid var(--coral);border-radius:8px;padding:12px 16px}
+  .rev h2{margin:0 0 6px;font-size:12px;font-family:"JetBrains Mono",monospace;
+          letter-spacing:.14em;text-transform:uppercase;color:var(--coral)}
+  .rev ul{margin:0;padding-left:18px;font-family:"DM Sans",sans-serif;font-size:13px;
+          line-height:1.65;color:#374151}
+  .rev code{font-family:"JetBrains Mono",monospace;font-size:12px;background:var(--tile);padding:1px 4px;border-radius:3px}
+  .actbar{max-width:1600px;margin:0 auto 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+          font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;
+          text-transform:uppercase;color:#6b7280}
+  .grid{max-width:1600px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+  .card{background:#fff;border:1px solid var(--hairline);border-radius:10px;overflow:hidden;
+        box-shadow:0 1px 3px rgba(8,12,15,.06)}
+  .note{padding:10px 12px 0;font-family:"DM Sans",sans-serif;font-size:12px;line-height:1.5;color:#4b5563}
+  .note b{color:var(--ink)}
+  .lab{display:flex;justify-content:space-between;align-items:baseline;padding:9px 12px 4px;
+       font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+  .lab .n{font-weight:700;color:var(--ink)}
+  .lab .r{color:#8b95a1}
+  .chip{margin:0 12px 12px;display:inline-block;padding:3px 8px;border:1px solid var(--hairline);
+        border-radius:999px;font-family:"JetBrains Mono",monospace;font-size:9.5px;
+        letter-spacing:.12em;text-transform:uppercase;color:#5b6673}
+  /* ---- the cells: real scale, real brand treatment, no motion ---- */
+  .cell{aspect-ratio:16/9;container-type:inline-size;position:relative;overflow:hidden;
+        font-family:Manrope,sans-serif;display:flex;flex-direction:column;justify-content:center}
+  .cell.light{background:var(--cream);color:var(--ink)}
+  .cell.dark{background:var(--navy);color:var(--cream)}
+  .pad{padding:4.4cqw;height:100%;display:flex;flex-direction:column;justify-content:center}
+  .pad.top{display:grid;grid-template-rows:1fr auto}
+  .pad.top > div:first-child{display:flex;flex-direction:column;justify-content:center;align-self:center}
+  .pad.top > div:last-child{align-self:end}
+  .pad.mid{justify-content:center}
+  .kick{font-family:"JetBrains Mono",monospace;font-size:1.45cqw;font-weight:500;
+        letter-spacing:.16em;text-transform:uppercase;color:var(--coral);margin:0 0 2.4cqw;
+        display:flex;align-items:center;gap:.7cqw}
+  .kick .sp{font-size:1.7cqw;line-height:1}
+  .disp{font-size:7.1cqw;font-weight:400;line-height:1.06;letter-spacing:-.022em;margin:0}
+  .disp.sm{font-size:4.7cqw}
+  .disp.xs{font-size:3.4cqw;line-height:1.14;letter-spacing:-.016em}
+  .mono{font-family:"JetBrains Mono",monospace;font-size:1.4cqw;letter-spacing:.02em}
+  .mono.up{letter-spacing:.16em;text-transform:uppercase}
+  .sub{font-family:"DM Sans",sans-serif;font-size:2cqw;line-height:1.5;margin:2.2cqw 0 0;max-width:78cqw}
+  .dim{font-family:"DM Sans",sans-serif;color:color-mix(in srgb,var(--ink) 58%,transparent)}
+  /* plain block standing in for a captured screenshot's VISIBLE CROP */
+  .shot{background:var(--tile-strong);border:1px solid var(--hairline);border-radius:.9cqw;
+        display:flex;flex-direction:column;justify-content:center;gap:1.1cqw;padding:3cqw;
+        position:relative;overflow:hidden}
+  .shot .fn{font-family:"JetBrains Mono",monospace;font-size:1.25cqw;letter-spacing:.04em;
+            color:color-mix(in srgb,var(--ink) 55%,transparent)}
+  .shot .rt{font-size:2.4cqw;font-weight:600;letter-spacing:-.015em}
+  .shot .cr{font-family:"JetBrains Mono",monospace;font-size:1.1cqw;letter-spacing:.16em;
+            text-transform:uppercase;color:color-mix(in srgb,var(--ink) 45%,transparent)}
+  .dark .shot{background:var(--navy-elev);border-color:color-mix(in srgb,var(--cream) 14%,transparent)}
+  .dark .shot .fn{color:color-mix(in srgb,var(--cream) 58%,transparent)}
+  .dark .shot .cr{color:color-mix(in srgb,var(--cream) 45%,transparent)}
+  .btn{display:inline-block;background:var(--coral);color:#fff;border-radius:.7cqw;
+       padding:1.5cqw 3cqw;font-family:"DM Sans",sans-serif;font-size:1.9cqw;font-weight:500}
+  .rule{height:1px;background:var(--hairline);margin:2.6cqw 0}
+  .dark .rule{background:color-mix(in srgb,var(--cream) 14%,transparent)}
+  .row{display:flex;justify-content:space-between;gap:2cqw;font-family:"JetBrains Mono",monospace;
+       font-size:1.4cqw;letter-spacing:.02em}
+  .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:2.4cqw}
+  .cols > div{border-top:1px solid var(--hairline);padding-top:1.6cqw}
+  .dark .cols > div{border-top-color:color-mix(in srgb,var(--cream) 14%,transparent)}
+  .stnum{font-family:"JetBrains Mono",monospace;font-size:1.35cqw;color:var(--coral);letter-spacing:.1em}
+  .stname{font-size:2.3cqw;font-weight:600;margin:.9cqw 0 .6cqw;letter-spacing:-.01em}
+  .sttag{font-family:"JetBrains Mono",monospace;font-size:1.15cqw;letter-spacing:.14em;
+         text-transform:uppercase;color:color-mix(in srgb,var(--ink) 50%,transparent)}
+  .pill{display:inline-block;border:1px solid var(--hairline);border-radius:999px;
+        padding:.5cqw 1.3cqw;font-family:"JetBrains Mono",monospace;font-size:1.2cqw;letter-spacing:.1em}
+  .chipset{display:flex;gap:1.2cqw;margin-top:2cqw;flex-wrap:wrap}
+  /* data path card — v2: minimum type raised, OUTSIDE copy shortened, cross mark neutral */
+  .dp{border:1px solid color-mix(in srgb,var(--cream) 14%,transparent);border-radius:.9cqw;
+      padding:2.2cqw;background:var(--navy-soft)}
+  .dp .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.7cqw}
+  .dp .hdr .b{background:var(--coral);color:#fff;border-radius:999px;padding:.5cqw 1.3cqw;
+      font-family:"JetBrains Mono",monospace;font-size:1.3cqw;letter-spacing:.06em}
+  .dp .zone{border:1px solid color-mix(in srgb,var(--cream) 14%,transparent);border-radius:.6cqw;
+      padding:1.6cqw 1.8cqw}
+  .dp .zl{font-family:"JetBrains Mono",monospace;font-size:1.3cqw;letter-spacing:.18em;
+      color:color-mix(in srgb,var(--cream) 62%,transparent);margin:0 0 .9cqw}
+  .dp .fl{font-family:"JetBrains Mono",monospace;font-size:1.4cqw;margin:0}
+  .dp .cross{text-align:center;font-family:"JetBrains Mono",monospace;font-size:1.3cqw;
+      letter-spacing:.16em;color:var(--cream);padding:1.4cqw 0 .5cqw}
+  .dp .cross .x{color:color-mix(in srgb,var(--cream) 70%,transparent);font-weight:700}
+  .dp .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4cqw;margin-top:1.7cqw;
+      padding-top:1.5cqw;border-top:1px dashed color-mix(in srgb,var(--cream) 20%,transparent)}
+  .dp .stats .k{font-family:"JetBrains Mono",monospace;font-size:1.2cqw;letter-spacing:.13em;
+      color:color-mix(in srgb,var(--cream) 62%,transparent);margin:0}
+  .dp .stats .v{font-family:"JetBrains Mono",monospace;font-size:2.1cqw;margin:.35cqw 0 0}
+  .prog{height:.7cqw;background:color-mix(in srgb,var(--cream) 14%,transparent);border-radius:999px;overflow:hidden;margin:1.1cqw 0}
+  .prog i{display:block;height:100%;width:62%;background:var(--coral)}
+  .dp .outside{font-family:"DM Sans",sans-serif;font-size:1.35cqw;line-height:1.5;margin:0;
+      color:color-mix(in srgb,var(--cream) 74%,transparent)}
+  /* seam map + tokens cells */
+  .filler{display:flex;flex-direction:column;justify-content:center;gap:1.6cqw}
+  .seams{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2cqw}
+  .seam{border:1px solid var(--hairline);border-radius:.5cqw;padding:1.2cqw;
+        font-family:"JetBrains Mono",monospace;font-size:1.1cqw;letter-spacing:.06em;background:var(--tile)}
+  .seam b{display:block;font-size:1.35cqw;margin-bottom:.4cqw;letter-spacing:.1em}
+  .sw{display:flex;gap:1cqw;align-items:center;font-family:"JetBrains Mono",monospace;font-size:1.1cqw;letter-spacing:.06em}
+  .sw i{width:2.2cqw;height:2.2cqw;border-radius:.35cqw;border:1px solid var(--hairline);display:block}
+  .bans{font-family:"DM Sans",sans-serif;font-size:1.3cqw;line-height:1.6;color:color-mix(in srgb,var(--ink) 72%,transparent)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Konbato — site tour</h1>
+  <p class="dek">A silent tour that carries one argument: nothing is ever uploaded, so you can hand it the file you would not hand to a server.</p>
+  <span class="tag">v2 · 1920 × 1080 · 45s · 9 frames · silent · site tour</span>
+</header>
+
+<div class="rev">
+  <h2>Changes from v1</h2>
+  <ul>
+    <li><b>01</b> — the display now breaks <code>Convert &amp; edit files / securely in your browser</code>; v1's rag left line 2 at 57% of line 1. The meta row is bottom-aligned instead of stranding a dead band under it.</li>
+    <li><b>03 · 04 · 07 (+02)</b> — every screenshot block is now labelled as a <b>visible crop</b> of a 1920×1080 capture, not a letterboxed whole asset. v1's wide blocks read as 2.35:1 and misrepresented what fills them.</li>
+    <li><b>06</b> — the OUTSIDE paragraph was the smallest type on the sheet and borderline at video size: shortened, and every size in the data-path card raised to a <code>1.2cqw</code> floor. The <b>✕</b> on the crossed rule was red — a fourth hue, off-palette, and alarming on a reassuring line — and is now neutral cream.</li>
+    <li><b>09</b> — the URL was set in the same blue as the button, splitting the accent. It is now ink, so the button is the frame's only voltage, and the trust strip sits closer to it.</li>
+  </ul>
+</div>
+
+<div class="actbar">
+  <span>Act I · promise &amp; proof &nbsp;00–20</span>
+  <span style="opacity:.4">|</span>
+  <span>Act II · flow &amp; the chamber &nbsp;20–32</span>
+  <span style="opacity:.4">|</span>
+  <span>Act III · PDF, mechanism, ask &nbsp;32–45</span>
+</div>
+
+<div class="grid">
+
+  <!-- ============ 01 ============ -->
+  <div class="card">
+    <div class="cell light" id="frame-01">
+      <div class="pad top">
+        <div>
+          <p class="kick"><span class="sp">✱</span> 15 tools · no account · no upload step</p>
+          <p class="disp">Convert &amp; edit files<br>securely in your browser</p>
+          <p class="mono up" style="margin:2.6cqw 0 0;color:var(--coral)">No upload step exists, so there is nothing to leak</p>
+        </div>
+        <div>
+          <div class="rule" style="margin:0 0 1.6cqw"></div>
+          <div class="row"><span>https://konbato.com</span><span class="dim">01 / 09</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lab"><span class="n">01 · COVER</span><span class="r">frame-01.html · 0–4s</span></div>
+    <p class="note"><b>The headline holds, then the mono line presses up under it.</b> Typography only — the eyebrow opens first, the display lands on the line, the mono claim follows as the voltage. Seam out leftward into the real page.</p>
+    <span class="chip">cut · film opens</span>
+  </div>
+
+  <!-- ============ 02 ============ -->
+  <div class="card">
+    <div class="cell light" id="frame-02">
+      <div class="pad mid" style="gap:2cqw">
+        <p class="mono up dim" style="margin:0">01 / home</p>
+        <div class="shot" style="flex:1;justify-content:center">
+          <span class="fn">assets/scroll-000.png</span>
+          <span class="cr">visible crop — hero</span>
+          <span class="rt">Convert &amp; edit files securely<br>in your browser</span>
+          <span class="mono dim" style="font-size:1.3cqw">−85% smaller &nbsp;·&nbsp; 0 bytes uploaded &nbsp;·&nbsp; the live conversion card</span>
+        </div>
+      </div>
+    </div>
+    <div class="lab"><span class="n">02 · THE SITE AS IT IS</span><span class="r">frame-02.html · 4–9s</span></div>
+    <p class="note"><b>The capture pushes in first and never stops.</b> One slow continuous move past the real hero so the interface is visited rather than displayed. No type over the headline — the page's own words are the copy.</p>
+    <span class="chip">zoom-through</span>
+  </div>
+
+  <!-- ============ 03 ============ -->
+  <div class="card">
+    <div class="cell light" id="frame-03">
+      <div class="pad mid" style="gap:2cqw">
+        <p class="kick" style="margin:0"><span class="sp">✱</span> on this device</p>
+        <div class="shot" style="flex:1;justify-content:center">
+          <span class="fn">assets/tool-image-result.png</span>
+          <span class="cr">visible crop — tool surface</span>
+          <span class="rt">Image Compress — a real run, finished</span>
+          <span class="mono dim" style="font-size:1.3cqw">Files are processed 100% locally on your machine.</span>
+        </div>
+        <div class="row" style="align-items:baseline">
+          <span class="mono up" style="color:var(--coral);font-weight:700">0 bytes uploaded</span>
+          <span class="mono dim">158.53 KB → 87.44 KB</span>
+        </div>
+      </div>
+    </div>
+    <div class="lab"><span class="n">03 · AN IMAGE, ON YOUR DEVICE</span><span class="r">frame-03.html · 9–14s</span></div>
+    <p class="note"><b>The eyebrow snaps in, then the real tool surface rises.</b> An actual tool after an actual run — the product's own local-processing sentence standing next to a finished result. Seam pushes left; this is the claim made concrete on the file type most viewers have in hand.</p>
+    <span class="chip">push-slide left</span>
+  </div>
+
+  <!-- ============ 04 ============ -->
+  <div class="card">
+    <div class="cell light" id="frame-04">
+      <div class="pad mid">
+        <p class="kick"><span class="sp">✱</span> registry</p>
+        <p class="disp sm">15 tools, two categories</p>
+        <p class="mono up" style="margin:1.6cqw 0 0;color:var(--coral)">5 image · 10 pdf</p>
+        <div class="rule"></div>
+        <div class="shot" style="flex:1;justify-content:center">
+          <span class="fn">assets/full-page.png</span>
+          <span class="cr">travelling crop — one continuous move down the plate</span>
+          <span class="rt">everything konbato can do</span>
+          <span class="mono dim" style="font-size:1.3cqw">no sign-in and no upload step</span>
+        </div>
+      </div>
+    </div>
+    <div class="lab"><span class="n">04 · EVERYTHING IT DOES</span><span class="r">frame-04.html · 14–20s</span></div>
+    <p class="note"><b>The counts land as the plate starts moving down.</b> One continuous travel through both halves of the list — never a cut, never stitched viewport shots. Seam is a plain dissolve because the background does not change.</p>
+    <span class="chip">crossfade</span>
+  </div>
+
+  <!-- ============ 05 ============ -->
+  <div class="card">
+    <div class="cell light" id="frame-05">
+      <div class="pad mid">
+        <p class="kick"><span class="sp">✱</span> how it works</p>
+        <p class="disp sm">Three steps, no round trip</p>
+        <div class="cols" style="margin-top:3.2cqw">
+          <div><p class="stnum">01</p><p class="stname">Open a file</p><p class="sttag" style="color:var(--coral)">no upload</p></div>
+          <div><p class="stnum">02</p><p class="stname">Work on it</p><p class="sttag">on-device</p></div>
+          <div><p class="stnum">03</p><p class="stname">Take it back</p><p class="sttag">immediate</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="lab"><span class="n">05 · THREE STEPS</span><span class="r">frame-05.html · 20–24s</span></div>
+    <p class="note"><b>One lateral pan starts on 01 and does not stop until 03 is centred.</b> The page's own numbered columns are already stations on a canvas, so the camera visits them in order and holds on the last. Seam pushes left again, keeping the direction rule.</p>
+    <span class="chip">push-slide left</span>
+  </div>
+
+  <!-- ============ 06 — the centrepiece ============ -->
+  <div class="card">
+    <div class="cell dark" id="frame-06">
+      <div class="pad" style="display:grid;grid-template-columns:1fr 1.25fr;gap:3.4cqw;align-items:center">
+        <div>
+          <p class="kick"><span class="sp">✱</span> privacy first</p>
+          <p class="disp sm">Your files,<br>your device</p>
+          <div style="margin-top:2.6cqw">
+            <p class="mono" style="margin:0 0 1.2cqw;font-size:1.6cqw">No server uploads</p>
+            <p class="mono" style="margin:0 0 1.2cqw;font-size:1.6cqw">Nothing to breach</p>
+            <p class="mono" style="margin:0;font-size:1.6cqw">No queue, no throttle</p>
+          </div>
+        </div>
+        <div class="dp">
+          <div class="hdr">
+            <span class="mono up" style="font-size:1.3cqw;margin:0">data path</span>
+            <span class="b">0 bytes of your file sent</span>
+          </div>
+          <div class="zone">
+            <p class="zl">THIS DEVICE</p>
+            <p class="fl">IMG_2481.heic &nbsp;4.2 MB</p>
+            <div class="prog"><i></i></div>
+            <p class="fl">IMG_2481.webp &nbsp;610 KB</p>
+          </div>
+          <div class="cross"><span class="x">✕</span> YOUR FILE NEVER CROSSES</div>
+          <div class="zone" style="opacity:.8">
+            <p class="zl">OUTSIDE</p>
+            <p class="outside">App code and engine binaries, cached like any other asset. None of it is your file.</p>
+          </div>
+          <div class="stats">
+            <div><p class="k">CLIENT-SIDE</p><p class="v">100%</p></div>
+            <div><p class="k">FILE BYTES SENT</p><p class="v">0</p></div>
+            <div><p class="k">DATA RETAINED</p><p class="v">None</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lab"><span class="n">06 · YOUR FILES, YOUR DEVICE</span><span class="r">frame-06.html · 24–32s</span></div>
+    <p class="note"><b>Three claims land solo, one at a time, then the data-path card resolves last and holds.</b> The longest hold in the film — this is the whole argument in one card, so the final state must sit still long enough to read. The seam blurs because the ground genuinely flips from light to dark.</p>
+    <span class="chip">blur-crossfade</span>
+  </div>
+
+  <!-- ============ 07 ============ -->
+  <div class="card">
+    <div class="cell light" id="frame-07">
+      <div class="pad mid" style="gap:1.8cqw">
+        <p class="kick" style="margin:0"><span class="sp">✱</span> confidential work</p>
+        <p class="disp xs" style="max-width:74cqw">Scrub embedded metadata from a file before it leaves your hands.</p>
+        <div class="shot" style="flex:1;justify-content:center">
+          <span class="fn">assets/tool-pdf-workspace.png</span>
+          <span class="cr">visible crop — page workspace</span>
+          <span class="rt">PDF Organizer — a real 3-page document, loaded</span>
+          <span class="mono dim" style="font-size:1.3cqw">page previews rendered in the browser</span>
+        </div>
+        <div class="chipset">
+          <span class="pill">IMAGE METADATA REMOVER</span>
+          <span class="pill">PDF METADATA REMOVER</span>
+        </div>
+      </div>
+    </div>
+    <div class="lab"><span class="n">07 · A PDF, ON YOUR DEVICE</span><span class="r">frame-07.html · 32–37s</span></div>
+    <p class="note"><b>The line lands first, then the workspace comes up under it.</b> An actual PDF tool holding an actual document — the beat that answers "but what about a PDF I would not send anywhere?". The seam blurs again: this frame is light after a dark chamber.</p>
+    <span class="chip">blur-crossfade</span>
+  </div>
+
+  <!-- ============ 08 ============ -->
+  <div class="card">
+    <div class="cell light" id="frame-08">
+      <div class="pad mid">
+        <p class="kick"><span class="sp">✱</span> under the hood</p>
+        <p class="disp sm">Built for performance</p>
+        <div class="cols" style="margin-top:3cqw">
+          <div><p class="stnum">01</p><p class="stname" style="font-size:1.9cqw">Read</p><p class="sttag">main thread</p></div>
+          <div><p class="stnum">02</p><p class="stname" style="font-size:1.9cqw">Dispatch</p><p class="sttag">main thread</p></div>
+          <div><p class="stnum" style="color:var(--coral)">03</p><p class="stname" style="font-size:1.9cqw">Process</p><p class="sttag" style="color:var(--coral)">worker</p></div>
+        </div>
+        <div class="rule" style="margin:2.2cqw 0"></div>
+        <div class="row"><span>04 return</span><span class="mono dim">mupdf · WebAssembly · in your browser</span></div>
+      </div>
+    </div>
+    <div class="lab"><span class="n">08 · WHY IT CAN BE LOCAL</span><span class="r">frame-08.html · 37–41s</span></div>
+    <p class="note"><b>Stages light in order, 01 through 04, and the lane tag on each settles last.</b> The reason nothing is uploaded is that the engines <em>are</em> in the page — so the frame reads as a machine reporting, not a list of adjectives. Plain dissolve back into the close.</p>
+    <span class="chip">crossfade</span>
+  </div>
+
+  <!-- ============ 09 ============ -->
+  <div class="card">
+    <div class="cell light" id="frame-09">
+      <div class="pad mid" style="text-align:center;align-items:center">
+        <p class="disp sm" style="max-width:60cqw">Ready to convert?</p>
+        <p class="sub" style="margin:2cqw auto 0;max-width:62cqw;font-size:1.75cqw">Open a tool, drop a file in, and watch what happens when nothing has to leave your machine first.</p>
+        <div style="margin:3cqw 0 1.8cqw"><span class="btn">Browse the tools</span></div>
+        <p class="mono up dim" style="margin:0">free · no account · nothing to install</p>
+        <p class="mono" style="margin:1.4cqw 0 0">https://konbato.com</p>
+      </div>
+    </div>
+    <div class="lab"><span class="n">09 · READY TO CONVERT?</span><span class="r">frame-09.html · 41–45s</span></div>
+    <p class="note"><b>The end band fades up whole and the wordmark completes last.</b> The site's own closing sentence already restates the film's argument, so the tour ends where the site ends — on one ask, with the URL as the final line rather than a second accent.</p>
+    <span class="chip">crossfade · film ends</span>
+  </div>
+
+  <!-- ============ seam map ============ -->
+  <div class="card">
+    <div class="cell light" id="seam-map">
+      <div class="pad filler">
+        <p class="kick"><span class="sp">✱</span> seam map</p>
+        <div class="seams">
+          <div class="seam"><b>1 → 2</b>zoom-through</div>
+          <div class="seam"><b>2 → 3</b>push-slide LEFT</div>
+          <div class="seam"><b>3 → 4</b>crossfade</div>
+          <div class="seam"><b>4 → 5</b>push-slide LEFT</div>
+          <div class="seam"><b>5 → 6</b>blur-crossfade <span style="color:var(--coral)">▲ light→dark</span></div>
+          <div class="seam"><b>6 → 7</b>blur-crossfade <span style="color:var(--coral)">▼ dark→light</span></div>
+          <div class="seam"><b>7 → 8</b>crossfade</div>
+          <div class="seam"><b>8 → 9</b>crossfade</div>
+        </div>
+        <p class="bans" style="margin-top:1.8cqw"><b style="font-family:Manrope">One direction rule:</b> lateral seams always travel LEFT. <b style="font-family:Manrope">One dark turn:</b> the chamber at 24s is the only ground flip, so it reads as a real turn rather than a palette switch.</p>
+      </div>
+    </div>
+    <div class="lab"><span class="n">SEAM MAP</span><span class="r">every seam on one strip</span></div>
+    <p class="note">Four named types only — <b>crossfade</b> as the default, <b>push-slide</b> for consecutive detail beats, <b>zoom-through</b> at the one section boundary, <b>blur-crossfade</b> where the grounds clash.</p>
+    <span class="chip">4 types · repeated</span>
+  </div>
+
+  <!-- ============ tokens ============ -->
+  <div class="card">
+    <div class="cell light" id="tokens">
+      <div class="pad filler">
+        <p class="kick"><span class="sp">✱</span> tokens &amp; bans</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1cqw 2.6cqw">
+          <span class="sw"><i style="background:#FAFCFD"></i>cream #FAFCFD — ground</span>
+          <span class="sw"><i style="background:#080C0F"></i>ink #080C0F — voice</span>
+          <span class="sw"><i style="background:#0069BD"></i>coral #0069BD — the one voltage</span>
+          <span class="sw"><i style="background:#091015"></i>navy #091015 — the chamber</span>
+          <span class="sw"><i style="background:#EFF2F5"></i>tile #EFF2F5 — half-step</span>
+          <span class="sw"><i style="background:#E2E7EB"></i>tile-strong #E2E7EB</span>
+        </div>
+        <div class="rule" style="margin:1.8cqw 0 1.4cqw"></div>
+        <p class="bans">
+          <b>Manrope</b> display · <b>DM Sans</b> body · <b>JetBrains Mono</b> kickers, labels, figures.<br>
+          <b>Bans:</b> no second accent hue; no heavy shadow, glow or gradient on content; no restating a fact the capture already shows; no re-drawing a captured page as HTML; no slideshow rhythm (a fresh card per beat) and no screensaver motion (movement that says nothing).
+        </p>
+      </div>
+    </div>
+    <div class="lab"><span class="n">TOKENS</span><span class="r">from frame.md · code-editorial, remixed</span></div>
+    <p class="note">Palette mapped from the captured brand by role: the site's own canvas, ink, and its single blue as the voltage. The dark band is the site's <b>chamber</b> token, dark in every appearance by its own design.</p>
+    <span class="chip">one accent per frame</span>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<template>
+  <style>
+    /* ---- brand faces: staged locally, asset paths project-root relative ---- */
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-438aa629764e75f3-s.woff2") format("woff2");unicode-range:u+0460-052f,u+1c80-1c8a,u+20b4,u+2de0-2dff,u+a640-a69f,u+fe2e-fe2f}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-875ae681bfde4580-s.woff2") format("woff2");unicode-range:u+0301,u+0400-045f,u+0490-0491,u+04b0-04b1,u+2116}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-51251f8b9793cdb3-s.woff2") format("woff2");unicode-range:u+0370-0377,u+037a-037f,u+0384-038a,u+038c,u+038e-03a1,u+03a3-03ff}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-e857b654a2caa584-s.woff2") format("woff2");unicode-range:u+0102-0103,u+0110-0111,u+0128-0129,u+0168-0169,u+01a0-01a1,u+01af-01b0,u+0300-0301,u+0303-0304,u+0308-0309,u+0323,u+0329,u+1ea0-1ef9,u+20ab}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-cc978ac5ee68c2b6-s.woff2") format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+    @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-7ab938503e4547a1-s.woff2") format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+    @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-13971731025ec697-s.p.woff2") format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+    /* frame root — styled by #root (never a class on the data-composition-id element) */
+    #root {
+      --f03-ink: #080c0f;
+      --f03-cream: #fafcfd;
+      --f03-tile: #eff2f5;
+      --f03-coral: #0069bd;
+      --f03-hairline: color-mix(in srgb, #080c0f 12%, transparent);
+      --f03-dim: color-mix(in srgb, #080c0f 58%, transparent);
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      container-type: size;
+      font-family: Manrope, system-ui, sans-serif;
+      color: var(--f03-ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    #root,
+    #root * {
+      box-sizing: border-box;
+    }
+
+    /* full-bleed ground rides on its own clip layer, never on #root */
+    .f03-ground {
+      position: absolute;
+      inset: 0;
+      background: var(--f03-cream);
+    }
+
+    .f03-stage {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2cqw;
+      padding: 4.4cqw;
+    }
+
+    /* ---- eyebrow: kicker-spike (✱ coral, JetBrains Mono uppercase) ---- */
+    .f03-kick {
+      display: flex;
+      align-items: center;
+      gap: 0.7cqw;
+      margin: 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.45cqw;
+      font-weight: 500;
+      line-height: 1.2;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--f03-coral);
+    }
+    .f03-sp {
+      font-size: 1.7cqw;
+      line-height: 1;
+    }
+    .f03-sp,
+    .f03-w {
+      display: inline-block;
+      opacity: 0;
+      will-change: transform;
+    }
+
+    /* ---- hero: the real tool surface, held in a hairline plate ---- */
+    .f03-plate {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--f03-hairline);
+      border-radius: 0.9cqw;
+      background: var(--f03-tile);
+      box-shadow:
+        0 1px 3px rgba(8, 12, 15, 0.08),
+        0 4px 16px rgba(8, 12, 15, 0.04);
+      transform-origin: 50% 50%;
+      will-change: transform, opacity;
+    }
+    /* Visible crop of the 1920x1080 capture, not a letterboxed whole asset: the
+       image is scaled to the plate's width (x0.912) and anchored so the plate shows
+       source rows 74–914 — just under the site header down through the tool's own
+       local-processing line in the page footer. Both cut edges land in clean gaps
+       (header rule at 64 above, last footer link row ink ends at 895 below), and the
+       card clips the rest. Nothing inside it scrolls. */
+    .f03-shot {
+      position: absolute;
+      left: 0;
+      top: -3.515cqw;
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ---- authored figures row: the frame's single accent moment ---- */
+    .f03-figs {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 2cqw;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.4cqw;
+      letter-spacing: 0.02em;
+    }
+    .f03-fig-local {
+      display: inline-block;
+      color: var(--f03-coral);
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0;
+      will-change: transform, opacity;
+    }
+    .f03-fig-size {
+      display: inline-block;
+      color: var(--f03-dim);
+      opacity: 0;
+      will-change: transform, opacity;
+    }
+  </style>
+
+  <div data-hf-id="hf-437q" id="root" data-composition-id="03-image" data-width="1920" data-height="1080" data-duration="5.5">
+    <div data-hf-id="hf-x8oq" id="f03-image-ground" class="clip f03-ground" data-start="0" data-duration="5.5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-l749" id="f03-image-stage" class="clip f03-stage" data-start="0" data-duration="5.5" data-track-index="1">
+      <p data-hf-id="hf-x1st" class="f03-kick" id="f03-image-kick">
+        <span data-hf-id="hf-cxwy" class="f03-sp" id="f03-image-sp">✱</span><span data-hf-id="hf-cp96" class="f03-words"><span data-hf-id="hf-jl5v" class="f03-w" id="f03-image-w1">on</span> <span data-hf-id="hf-0ytp" class="f03-w" id="f03-image-w2">this</span> <span data-hf-id="hf-vyt6" class="f03-w" id="f03-image-w3">device</span></span>
+      </p>
+
+      <div data-hf-id="hf-khfd" class="f03-plate" id="f03-image-plate" data-layout-allow-overflow="">
+        <img data-hf-id="hf-0icj" class="f03-shot" id="f03-image-shot" src="assets/tool-image-result.png" width="1920" height="1080" data-layout-allow-overflow="" alt="The Konbato Image Compress tool after a real run: Compression Complete, optimized_konbato-photo.jpg, original 158.53 KB to compressed 87.44 KB, save 45 percent.">
+      </div>
+
+      <div data-hf-id="hf-nwcu" class="f03-figs" id="f03-image-figs">
+        <span data-hf-id="hf-yyg2" class="f03-fig-local" id="f03-image-fig-local">0 bytes uploaded</span>
+        <span data-hf-id="hf-t3sw" class="f03-fig-size" id="f03-image-fig-size">158.53 KB → 87.44 KB</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var COMP_ID = "03-image";
+
+      function build() {
+        var tl = gsap.timeline({ paused: true });
+        var F = 1 / 60;
+
+        /* ---------- Phase 1 · local 0.00–1.50 — waterfall-entry cascade ----------
+           The eyebrow only: nothing of the tool is on screen yet. Each element is
+           revealed by tl.set (opacity is binary 0→1 on an arrival, never a fade)
+           and whips up from below on power4.out; the wave accelerates — the next
+           element starts within ±2 frames of the previous settle. */
+        var t0 = 0.12;
+        tl.set("#f03-image-sp", { opacity: 1, y: 70 }, t0);
+        tl.to("#f03-image-sp", { y: 0, duration: 0.19, ease: "power4.out" }, t0);
+
+        var t1 = t0 + 0.19 + 2 * F;
+        tl.set("#f03-image-w1", { opacity: 1, y: 48 }, t1);
+        tl.to("#f03-image-w1", { y: 0, duration: 0.15, ease: "power4.out" }, t1);
+
+        var t2 = t1 + 0.15 - F;
+        tl.set("#f03-image-w2", { opacity: 1, y: 44 }, t2);
+        tl.to("#f03-image-w2", { y: 0, duration: 0.14, ease: "power4.out" }, t2);
+
+        var t3 = t2 + 0.14 - F;
+        tl.set("#f03-image-w3", { opacity: 1, y: 52 }, t3);
+        tl.to("#f03-image-w3", { y: 0, duration: 0.15, ease: "power4.out" }, t3);
+
+        /* ---------- Phase 2 · local 1.50–3.20 — spring-pop-entrance ----------
+           The real tool surface rises into place: a slight scale-down (0.94) plus a
+           short rise, settling on power3.out — a long tail, no overshoot. The working
+           area dominates the plate; the authored type holds the margin around it. */
+        tl.fromTo(
+          "#f03-image-plate",
+          { scale: 0.94, opacity: 0, y: 30 },
+          { scale: 1, opacity: 1, y: 0, duration: 0.7, ease: "power3.out" },
+          1.5,
+        );
+
+        /* ---------- Phase 3 · local 3.20–4.20 — the two authored figures ----------
+           They land together on a ~0.15s stagger and STOP. Deliberately never a
+           counting tween: the plate beneath them is a still, so a running number
+           would claim a live measurement. */
+        tl.fromTo(
+          "#f03-image-fig-local",
+          { opacity: 0, y: 9 },
+          { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+          3.25,
+        );
+        tl.fromTo(
+          "#f03-image-fig-size",
+          { opacity: 0, y: 9 },
+          { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+          3.4,
+        );
+
+        /* ---------- Phase 4 · local 4.20–5.00 — held read ----------
+           sine-wave-loop at the low end: 2px of jitter on the held surface, nothing
+           else. No push, no breathing. Begins where the entrance settled, so the
+           sin(0) offset is zero and there is no jump off the entry tail. */
+        tl.to(
+          "#f03-image-plate",
+          { y: -2, duration: 0.38, ease: "sine.inOut", yoyo: true, repeat: 1 },
+          4.2,
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[COMP_ID] = tl;
+        tl.seek(0);
+      }
+
+      if (window.gsap) {
+        build();
+        return;
+      }
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js";
+      s.onload = build;
+      document.head.appendChild(s);
+    })();
+  </script>
+</template>

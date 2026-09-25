@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "preferences": {
+    "destination": {
+      "value": "youtube",
+      "confirmed_in": [
+        "konbato-launch"
+      ],
+      "updated_at": "2026-09-24T09:14:15.614Z"
+    },
+    "aspect": {
+      "value": "1920x1080",
+      "confirmed_in": [
+        "konbato-launch"
+      ],
+      "updated_at": "2026-09-24T09:14:15.692Z"
+    },
+    "language": {
+      "value": "en",
+      "confirmed_in": [
+        "konbato-launch"
+      ],
+      "updated_at": "2026-09-24T09:14:15.777Z"
+    },
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "konbato-launch"
+      ],
+      "updated_at": "2026-09-24T09:14:15.858Z"
+    },
+    "storyboard": {
+      "value": "yes",
+      "confirmed_in": [
+        "konbato-launch"
+      ],
+      "updated_at": "2026-09-24T09:14:15.933Z"
+    },
+    "style_preset.product-launch-video": {
+      "value": "code-editorial",
+      "confirmed_in": [
+        "konbato-launch"
+      ],
+      "updated_at": "2026-09-24T09:14:16.012Z"
+    }
+  },
+  "sightings": {}
+}

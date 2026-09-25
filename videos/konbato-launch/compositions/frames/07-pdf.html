@@ -1,0 +1,333 @@
+<template>
+  <style>
+    /* ── fonts (staged locally; never a network fetch) ───────────────────── */
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-438aa629764e75f3-s.woff2") format("woff2");unicode-range:u+0460-052f,u+1c80-1c8a,u+20b4,u+2de0-2dff,u+a640-a69f,u+fe2e-fe2f}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-875ae681bfde4580-s.woff2") format("woff2");unicode-range:u+0301,u+0400-045f,u+0490-0491,u+04b0-04b1,u+2116}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-51251f8b9793cdb3-s.woff2") format("woff2");unicode-range:u+0370-0377,u+037a-037f,u+0384-038a,u+038c,u+038e-03a1,u+03a3-03ff}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-e857b654a2caa584-s.woff2") format("woff2");unicode-range:u+0102-0103,u+0110-0111,u+0128-0129,u+0168-0169,u+01a0-01a1,u+01af-01b0,u+0300-0301,u+0303-0304,u+0308-0309,u+0323,u+0329,u+1ea0-1ef9,u+20ab}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-cc978ac5ee68c2b6-s.woff2") format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+    @font-face{font-family:DM Sans;font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-7ab938503e4547a1-s.woff2") format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+    @font-face{font-family:DM Sans;font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-13971731025ec697-s.p.woff2") format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+    @font-face{font-family:JetBrains Mono;font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+    @font-face{font-family:JetBrains Mono;font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+    /* ── frame root: sized by the host slot, never hardcoded ─────────────── */
+    /* styled by #root (never a class on the data-composition-id element). The
+       root rule stays deliberately thin so it can only ever be benign. */
+    #root {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      container-type: size;
+    }
+    #root,
+    #root * {
+      box-sizing: border-box;
+    }
+
+    /* the palette is declared on the frame's own layers — the tokens can't leak
+       out of this composition and they survive any class-scoped rewrite */
+    .hf07-ground,
+    .hf07-stage {
+      --ink: #080C0F;
+      --cream: #FAFCFD;
+      --tile: #EFF2F5;
+      --coral: #0069BD;
+      --hairline: rgba(8, 12, 15, 0.12);
+      --ink-62: rgba(8, 12, 15, 0.62);
+      box-sizing: border-box;
+    }
+
+    /* full-bleed ground — a dedicated clip layer, never the #root */
+    .hf07-ground {
+      position: absolute;
+      inset: 0;
+      background: var(--cream);
+    }
+
+    .hf07-stage {
+      position: absolute;
+      inset: 0;
+      padding: 3.75cqw 4.2cqw 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      font-family: Manrope, sans-serif;
+      font-weight: 400;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── eyebrow — kicker-spike ─────────────────────────────────────────── */
+    .hf07-kick {
+      margin: 0 0 1.5625cqw;
+      display: flex;
+      align-items: center;
+      gap: 0.7cqw;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.45cqw;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--coral);
+    }
+    .hf07-spike {
+      font-size: 1.7cqw;
+      line-height: 1;
+    }
+
+    /* ── headline — the page's own confidential-work line, frame's largest ── */
+    .hf07-head {
+      margin: 0 0 2.1875cqw;
+      max-width: 78cqw;
+      font-family: Manrope, sans-serif;
+      font-size: 4.6cqw;
+      font-weight: 400;
+      line-height: 1.06;
+      letter-spacing: -0.022em;
+      color: var(--ink);
+    }
+    .hf07-ln {
+      display: block;
+      white-space: nowrap;
+    }
+    .hf07-w {
+      display: inline-block;
+      opacity: 0;
+    }
+
+    /* ── the real workspace, held to its crop ───────────────────────────── */
+    .hf07-plate {
+      position: relative;
+      width: 100%;
+      height: 22.5cqw;
+      flex: 0 0 auto;
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--tile);
+      box-shadow:
+        0 1px 3px rgba(8, 12, 15, 0.08),
+        0 4px 16px rgba(8, 12, 15, 0.04);
+      transform-origin: 50% 50%;
+    }
+    .hf07-shot {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 39.5%;
+    }
+
+    /* ── foot: the two tool chips + the single coral accent ─────────────── */
+    .hf07-foot {
+      margin-top: 1.354cqw;
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 2cqw;
+    }
+    .hf07-chips {
+      display: flex;
+      align-items: center;
+      gap: 0.9cqw;
+    }
+    .hf07-chip {
+      display: inline-block;
+      padding: 0.42cqw 0.73cqw;
+      border: 1px solid var(--hairline);
+      border-radius: 9999px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.2cqw;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-62);
+      background: transparent;
+    }
+    .hf07-accent {
+      width: max-content;
+      max-width: 46cqw;
+      text-align: right;
+    }
+    .hf07-accent-rule {
+      display: block;
+      height: 1px;
+      width: 100%;
+      background: var(--coral);
+      transform-origin: 0% 50%;
+      margin-bottom: 0.625cqw;
+    }
+    .hf07-accent-line {
+      margin: 0;
+      white-space: nowrap;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.35cqw;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--coral);
+    }
+    .hf07-aw {
+      display: inline-block;
+      opacity: 0;
+    }
+  </style>
+
+  <div data-hf-id="hf-2iah" id="root" data-composition-id="07-pdf" data-width="1920" data-height="1080" data-duration="5.5">
+    <div data-hf-id="hf-hbt3" class="clip hf07-ground" data-start="0" data-duration="5.5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-5loc" class="hf07-stage">
+      <p data-hf-id="hf-n46d" class="hf07-kick" id="hf07-kick">
+        <span data-hf-id="hf-aogk" class="hf07-spike">✱</span>
+        <span data-hf-id="hf-dyl1" class="hf07-kick-label">CONFIDENTIAL WORK</span>
+      </p>
+
+      <p data-hf-id="hf-xob9" class="hf07-head" id="hf07-head">
+        <span data-hf-id="hf-ua77" class="hf07-ln"><span data-hf-id="hf-ad0r" class="hf07-w" id="hf07-w1">Scrub</span>
+          <span data-hf-id="hf-nyz5" class="hf07-w" id="hf07-w2">embedded</span>
+          <span data-hf-id="hf-iut3" class="hf07-w" id="hf07-w3">metadata</span>
+          <span data-hf-id="hf-21et" class="hf07-w" id="hf07-w4">from</span>
+          <span data-hf-id="hf-i5sn" class="hf07-w" id="hf07-w5">a</span>
+          <span data-hf-id="hf-xv6x" class="hf07-w" id="hf07-w6">file</span></span>
+        <span data-hf-id="hf-6t5v" class="hf07-ln"><span data-hf-id="hf-033l" class="hf07-w" id="hf07-w7">before</span>
+          <span data-hf-id="hf-f4p8" class="hf07-w" id="hf07-w8">it</span>
+          <span data-hf-id="hf-br1w" class="hf07-w" id="hf07-w9">leaves</span>
+          <span data-hf-id="hf-cxff" class="hf07-w" id="hf07-w10">your</span>
+          <span data-hf-id="hf-bdxx" class="hf07-w" id="hf07-w11">hands</span><span data-hf-id="hf-corg" class="hf07-w" id="hf07-w12">.</span></span>
+      </p>
+
+      <div data-hf-id="hf-dppu" class="hf07-plate" id="hf07-plate">
+        <img data-hf-id="hf-cjw1" class="hf07-shot" src="assets/tool-pdf-workspace.png" width="1920" height="1080" alt="The live PDF Organizer holding a real three-page document, with its page previews rendered in the browser">
+      </div>
+
+      <div data-hf-id="hf-r7k6" class="hf07-foot">
+        <div data-hf-id="hf-1b8r" class="hf07-chips">
+          <span data-hf-id="hf-41xs" class="hf07-chip" id="hf07-chip1">IMAGE METADATA REMOVER</span>
+          <span data-hf-id="hf-o9qa" class="hf07-chip" id="hf07-chip2">PDF METADATA REMOVER</span>
+        </div>
+        <div data-hf-id="hf-imik" class="hf07-accent">
+          <span data-hf-id="hf-i797" class="hf07-accent-rule" id="hf07-accent-rule"></span>
+          <p data-hf-id="hf-h0b1" class="hf07-accent-line" id="hf07-accent-line"><span data-hf-id="hf-llns" class="hf07-aw">A</span> <span data-hf-id="hf-qzgg" class="hf07-aw">DOCUMENT</span>
+            <span data-hf-id="hf-2jtc" class="hf07-aw">THAT</span> <span data-hf-id="hf-rckl" class="hf07-aw">NEVER</span>
+            <span data-hf-id="hf-wiz1" class="hf07-aw">LEAVES</span> <span data-hf-id="hf-2nz2" class="hf07-aw">YOUR</span>
+            <span data-hf-id="hf-k40i" class="hf07-aw">MACHINE</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var COMP_ID = "07-pdf";
+
+      function build() {
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+
+        /* Scene 1 (0.0–1.0s) — the return of the turn: the light page resolves
+           out of the blur, and the eyebrow lands in the blue as it settles. */
+        tl.fromTo(
+          ".hf07-stage",
+          { opacity: 0.2, scale: 1.045, filter: "blur(22px)" },
+          {
+            opacity: 1,
+            scale: 1,
+            filter: "blur(0px)",
+            duration: 0.95,
+            ease: "power2.out",
+            /* once the light has resolved, drop the inline filter so the rest of
+               the frame rasterizes without a filter layer */
+            clearProps: "filter",
+          },
+          0,
+        );
+        tl.fromTo(
+          "#hf07-kick",
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
+          0.34,
+        );
+
+        /* Scene 2 (1.0–3.2s) — the page's own confidential-work line arrives as a
+           staggered arrival cascade (waterfall-entry): binary opacity via tl.set,
+           each word whipping in from below, gaps shrinking, the last word split
+           into fragments, the punctuation lightest and fastest. */
+        var cascade = [
+          { sel: "#hf07-w1", t: 1.02, y: 78, d: 0.2 },
+          { sel: "#hf07-w2", t: 1.187, y: 48, d: 0.155 },
+          { sel: "#hf07-w3", t: 1.317, y: 46, d: 0.15 },
+          { sel: "#hf07-w4", t: 1.442, y: 44, d: 0.145 },
+          { sel: "#hf07-w5", t: 1.562, y: 36, d: 0.115 },
+          { sel: "#hf07-w6", t: 1.652, y: 46, d: 0.15 },
+          { sel: "#hf07-w7", t: 1.777, y: 45, d: 0.145 },
+          { sel: "#hf07-w8", t: 1.897, y: 34, d: 0.115 },
+          { sel: "#hf07-w9", t: 1.987, y: 46, d: 0.15 },
+          { sel: "#hf07-w10", t: 2.112, y: 44, d: 0.14 },
+          { sel: "#hf07-w11", t: 2.227, y: 62, d: 0.175 },
+          { sel: "#hf07-w12", t: 2.377, y: 56, d: 0.12 },
+        ];
+        cascade.forEach(function (w) {
+          tl.set(w.sel, { opacity: 1, y: w.y }, w.t);
+          tl.to(w.sel, { y: 0, duration: w.d, ease: "power4.out" }, w.t);
+        });
+
+        /* Scene 3 (3.2–4.6s) — the real PDF workspace rises into place on a
+           spring-pop entrance: a slight scale-down onto a long-tail settle. The
+           three page previews inside it stay uncovered — they are the evidence. */
+        tl.fromTo(
+          "#hf07-plate",
+          { opacity: 0, scale: 0.945, y: 46 },
+          { opacity: 1, scale: 1, y: 0, duration: 0.9, ease: "power3.out" },
+          3.2,
+        );
+
+        /* Scene 4 (4.6–5.0s) — the two chips fade in left to right, and the frame's
+           single accent moment: the coral rule draws on, the line arrives. */
+        tl.fromTo(
+          "#hf07-chip1",
+          { opacity: 0, y: 14 },
+          { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" },
+          4.56,
+        );
+        tl.fromTo(
+          "#hf07-chip2",
+          { opacity: 0, y: 14 },
+          { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" },
+          4.66,
+        );
+        tl.fromTo(
+          "#hf07-accent-rule",
+          { scaleX: 0 },
+          { scaleX: 1, duration: 0.38, ease: "power2.out" },
+          4.6,
+        );
+        gsap.utils.toArray(".hf07-aw").forEach(function (el, i) {
+          var t = 4.66 + i * 0.034;
+          tl.set(el, { opacity: 1, y: 22 }, t);
+          tl.to(el, { y: 0, duration: 0.125, ease: "power4.out" }, t);
+        });
+        tl.to({}, { duration: 0.01 }, 4.99); /* hold to the frame's full length */
+
+        window.__timelines[COMP_ID] = tl;
+        tl.seek(0);
+      }
+
+      /* the host mounts with gsap already in the document; this only stands one up
+         if the file is ever opened on its own */
+      if (window.gsap) {
+        build();
+        return;
+      }
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js";
+      s.onload = build;
+      document.head.appendChild(s);
+    })();
+  </script>
+</template>

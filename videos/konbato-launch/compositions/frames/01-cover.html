@@ -1,0 +1,171 @@
+<template>
+  <!-- 01-cover · Konbato launch · cover: "nothing to leak" · 0–4s
+       Blueprint: kinetic-type-beats (Adapt) — one restrained build across four beats onto a held
+       finale; camera locked, typography only (no screenshot, no logo mark).
+       Motions: waterfall-entry (eyebrow arrival cascade) · dynamic-content-sequencing (the display
+       lands as two explicit lines ~0.18s apart) · sine-wave-loop (low-register jitter on the hold).
+       Voltage: #0069BD appears ONCE, on the mono claim line. -->
+  <style>
+    /* fonts ship with the project — the runtime clones this style into index.html at the project
+       root, so the src paths are project-root relative (assets/fonts/), never ../ */
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2")}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+    /* root: sized by the host (100%), canvas from data-width/data-height, never hardcoded px */
+    #root{
+      position:absolute;inset:0;width:100%;height:100%;overflow:hidden;box-sizing:border-box;
+      container-type:size;
+      --ink:#080C0F;--cream:#FAFCFD;--voltage:#0069BD;
+      --hairline:rgba(8,12,15,.12);
+    }
+    #root *{margin:0;padding:0;box-sizing:border-box}
+
+    /* full-bleed cream ground lives on a clip layer, not on #root */
+    #root [id="f01-ground"]{position:absolute;inset:0;background:var(--cream)}
+
+    /* the page's own margin: 4.4cqw (~84px @1920); headline optically centred, meta on the floor */
+    #root [id="f01-stage"]{
+      position:absolute;inset:0;display:grid;grid-template-rows:1fr auto;padding:4.4cqw;
+    }
+    #root [id="f01-headline"]{align-self:center;display:flex;flex-direction:column}
+
+    /* — eyebrow: JetBrains Mono kicker, ink, one size (not the hero); ✱ leads the cascade — */
+    #root [id="f01-eyebrow"]{
+      display:flex;align-items:center;gap:.84cqw;
+      font-family:"JetBrains Mono";font-size:1.45cqw;font-weight:500;letter-spacing:.16em;
+      line-height:1;color:var(--ink);margin-bottom:2.4cqw;
+    }
+    #root [id="f01-eyebrow"] > span{display:inline-block;opacity:0}
+    #root [id="f01-eyebrow"] > span:first-child{font-size:1.7cqw}
+
+    /* — display: Manrope 400, sentence case, negative-tracked; two explicit lines — */
+    #root [id="f01-display"]{
+      font-family:Manrope;font-weight:400;font-size:7.1cqw;line-height:1.06;
+      letter-spacing:-.022em;color:var(--ink);
+    }
+    #root [id="f01-display"] > span{display:block;opacity:0}
+
+    /* — the mono claim: the frame's one voltage moment — */
+    #root [id="f01-claim"]{
+      font-family:"JetBrains Mono";font-weight:400;font-size:1.4cqw;line-height:1.3;
+      color:var(--voltage);margin-top:2.6cqw;white-space:nowrap;letter-spacing:.16em;opacity:0;
+    }
+
+    /* — back-edge chrome: hairline rule + mono index strip, anchored to the floor — */
+    #root [id="f01-rule"]{height:1px;background:var(--hairline);margin-bottom:1.6cqw;opacity:0}
+    #root [id="f01-meta"]{
+      display:flex;justify-content:space-between;gap:2cqw;
+      font-family:"JetBrains Mono";font-size:1.4cqw;letter-spacing:.02em;line-height:1;
+      color:var(--ink);opacity:0;
+    }
+    #root [id="f01-index"]{color:rgba(8,12,15,.58)}
+  </style>
+
+  <div data-hf-id="hf-w348" id="root" data-composition-id="01-cover" data-start="0" data-duration="4.4" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-mgan" class="clip" id="f01-ground" data-start="0" data-duration="4.4" data-track-index="0"></div>
+
+    <div data-hf-id="hf-li5d" id="f01-stage">
+      <div data-hf-id="hf-1g39" id="f01-headline">
+        <p data-hf-id="hf-1v7t" id="f01-eyebrow"><span data-hf-id="hf-zak0">✱</span><span data-hf-id="hf-0xr3">15</span><span data-hf-id="hf-9ac0">TOOLS</span><span data-hf-id="hf-1bmq">·</span><span data-hf-id="hf-ux9y">NO</span><span data-hf-id="hf-ei0w">ACCOUNT</span><span data-hf-id="hf-8hs6">·</span><span data-hf-id="hf-bal6">NO</span><span data-hf-id="hf-feso">UPLOAD</span><span data-hf-id="hf-psln">STEP</span></p>
+        <p data-hf-id="hf-4npm" id="f01-display"><span data-hf-id="hf-h7qi" id="f01-line-1">Convert &amp; edit files</span><span data-hf-id="hf-we4p" id="f01-line-2">securely in your browser</span></p>
+        <p data-hf-id="hf-f63b" id="f01-claim">NO UPLOAD STEP EXISTS, SO THERE IS NOTHING TO LEAK</p>
+      </div>
+      <div data-hf-id="hf-hxez" id="f01-chrome">
+        <div data-hf-id="hf-cdu3" id="f01-rule"></div>
+        <div data-hf-id="hf-18v2" id="f01-meta"><span data-hf-id="hf-rsft" id="f01-url">https://konbato.com</span><span data-hf-id="hf-t64n" id="f01-index">01 / 09</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var eyebrow = document.getElementById("f01-eyebrow");
+      var tokens = eyebrow ? eyebrow.children : [];
+      var headline = document.getElementById("f01-headline");
+      var line1 = document.getElementById("f01-line-1");
+      var line2 = document.getElementById("f01-line-2");
+      var claim = document.getElementById("f01-claim");
+      var rule = document.getElementById("f01-rule");
+      var meta = document.getElementById("f01-meta");
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---- Scene 1 (0.0–~1.0s) · eyebrow arrival cascade — waterfall-entry
+         Binary 0→1 opacity via tl.set (never a fade), one direction (up from below), travel +
+         duration scaled by weight, each token starting before the previous settles. ---- */
+      var CASCADE = [
+        { t: 0.000, y: 48, dur: 0.18 }, // ✱  anchor — heaviest: furthest travel, longest settle
+        { t: 0.120, y: 40, dur: 0.14 }, // 15   the ✱ leads by ~0.12s
+        { t: 0.227, y: 40, dur: 0.14 }, // TOOLS
+        { t: 0.334, y: 32, dur: 0.10 }, // ·    light punctuation snaps
+        { t: 0.401, y: 40, dur: 0.14 }, // NO
+        { t: 0.508, y: 40, dur: 0.14 }, // ACCOUNT
+        { t: 0.615, y: 32, dur: 0.10 }, // ·
+        { t: 0.682, y: 40, dur: 0.14 }, // NO
+        { t: 0.789, y: 40, dur: 0.14 }, // UPLOAD
+        { t: 0.896, y: 36, dur: 0.12 }  // STEP
+      ];
+      for (var i = 0; i < CASCADE.length; i++) {
+        var el = tokens[i];
+        if (!el) continue;
+        tl.set(el, { opacity: 1, y: CASCADE[i].y }, CASCADE[i].t);
+        tl.to(el, { y: 0, duration: CASCADE[i].dur, ease: "power4.out" }, CASCADE[i].t);
+      }
+
+      /* ---- Scene 2 (1.1–3.0s) · the display lands as two explicit lines, ~0.18s apart,
+         each on the same long tail — the only large element in the frame. ---- */
+      tl.fromTo(line1, { opacity: 0, y: 66 }, { opacity: 1, y: 0, duration: 0.95, ease: "power3.out" }, 1.15);
+      tl.fromTo(line2, { opacity: 0, y: 66 }, { opacity: 1, y: 0, duration: 0.95, ease: "power3.out" }, 1.33);
+
+      /* ---- Scene 3 (3.0–3.6s) · the mono claim presses up under it in the voltage blue.
+         Tracking is NOT tweened: letterSpacing reflows text and snaps to integer device
+         pixels, so it stutters under the seek-by-frame capture engine. It is held at its
+         final .16em in CSS and the claim reveals on transform only. ---- */
+      tl.fromTo(
+        claim,
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" },
+        3.0
+      );
+
+      /* ---- Scene 4 (3.6–4.0s) · the hairline rule draws from the left; the back-edge chrome
+         row fades in behind it. Held read from here. ---- */
+      tl.fromTo(
+        rule,
+        { opacity: 0, scaleX: 0, transformOrigin: "left center" },
+        { opacity: 1, scaleX: 1, duration: 0.36, ease: "power2.out" },
+        3.6
+      );
+      tl.fromTo(meta, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 3.64);
+
+      /* ---- held read · low-register jitter (sine-wave-loop, onUpdate form, translate only —
+         no breathing, no drift). Starts at the hero's settle, sin(0)=0 so there is no jump,
+         and the single cycle lands back at rest on the last frame. ---- */
+      var IDLE_START = 2.4;
+      var IDLE_DUR = 1.6;
+      var CYCLES = 1;
+      var Y_AMP = 2;
+      var Y_AMP_2 = 0.6;
+      var OCTAVE_RATIO = 3;
+      var phase = { p: 0 };
+      tl.to(
+        phase,
+        {
+          p: Math.PI * 2 * CYCLES,
+          duration: IDLE_DUR,
+          ease: "none",
+          onUpdate: function () {
+            var s = Math.sin(phase.p) * Y_AMP + Math.sin(phase.p * OCTAVE_RATIO) * Y_AMP_2;
+            headline.style.transform = "translateY(" + s.toFixed(3) + "px)";
+          }
+        },
+        IDLE_START
+      );
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["01-cover"] = tl;
+      tl.seek(0);
+    })();
+  </script>
+</template>

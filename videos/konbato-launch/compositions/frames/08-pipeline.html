@@ -1,0 +1,354 @@
+<template>
+  <style>
+    /* ── Fonts — staged locally by the workflow (project-root relative paths) ── */
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-438aa629764e75f3-s.woff2") format("woff2");unicode-range:u+0460-052f,u+1c80-1c8a,u+20b4,u+2de0-2dff,u+a640-a69f,u+fe2e-fe2f}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-875ae681bfde4580-s.woff2") format("woff2");unicode-range:u+0301,u+0400-045f,u+0490-0491,u+04b0-04b1,u+2116}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-51251f8b9793cdb3-s.woff2") format("woff2");unicode-range:u+0370-0377,u+037a-037f,u+0384-038a,u+038c,u+038e-03a1,u+03a3-03ff}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-e857b654a2caa584-s.woff2") format("woff2");unicode-range:u+0102-0103,u+0110-0111,u+0128-0129,u+0168-0169,u+01a0-01a1,u+01af-01b0,u+0300-0301,u+0303-0304,u+0308-0309,u+0323,u+0329,u+1ea0-1ef9,u+20ab}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-cc978ac5ee68c2b6-s.woff2") format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+    @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-7ab938503e4547a1-s.woff2") format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+    @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-13971731025ec697-s.p.woff2") format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+    /* ── Root: styled by #root (never a class), sized 100% — canvas comes from data-width/height ──
+       The frame's full-bleed ground is the .clip child below, NOT this element. ── */
+    #root{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      container-type:size;
+      color:#080C0F;
+      font-family:Manrope, sans-serif;
+      --f08-ink:#080C0F;
+      --f08-cream:#FAFCFD;
+      --f08-coral:#0069BD;
+      --f08-hair:rgba(8,12,15,0.12);
+      --f08-muted:rgba(8,12,15,0.60);
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* full-bleed ground — its own clip layer; positioned explicitly so it never
+       depends on the host's shared .clip box to paint the full frame */
+    .f08-bg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      background:var(--f08-cream);
+    }
+
+    .f08-pad{
+      position:absolute;
+      inset:0;
+      padding:4.2cqw 4.2cqw 6.3cqw;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+
+    /* ── eyebrow — kicker-spike: JetBrains Mono uppercase, coral ✱ prefix ── */
+    .f08-kicker{
+      display:flex;
+      align-items:center;
+      gap:0.7cqw;
+      margin:0 0 2.2cqw;
+      font-family:"JetBrains Mono", monospace;
+      font-weight:400;
+      font-size:1.45cqw;
+      line-height:1;
+      letter-spacing:0.16em;
+      text-transform:uppercase;
+      color:var(--f08-coral);
+    }
+    .f08-spike{display:inline-block; font-size:1.7cqw; line-height:1; opacity:0;}
+    .f08-kicker-txt{display:inline-block; opacity:0;}
+
+    /* ── heading — Manrope 400, sentence case, negative-tracked ── */
+    .f08-head{
+      margin:0;
+      font-family:Manrope, sans-serif;
+      font-weight:400;
+      font-size:4.7cqw;
+      line-height:1.06;
+      letter-spacing:-0.018em;
+      color:var(--f08-ink);
+    }
+    .f08-w{display:inline-block; opacity:0;}
+
+    /* ── the chain ── */
+    .f08-chain{margin-top:3.8cqw;}
+
+    .f08-grid{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:2.4cqw;
+    }
+
+    .f08-stage{position:relative; padding-top:1.9cqw;}
+
+    /* unlit rail — drawn in first; the lit rail draws over it as the stage lights */
+    .f08-rail,
+    .f08-rail-lit{
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:1px;
+      transform-origin:left center;
+      transform:scaleX(0);
+    }
+    .f08-rail{background:var(--f08-hair);}
+    .f08-rail-lit{background:var(--f08-ink);}
+    .f08-rail-lit--accent{background:var(--f08-coral);}
+
+    .f08-body{opacity:0; transform-origin:50% 50%;}
+
+    .f08-num{
+      margin:0;
+      font-family:"JetBrains Mono", monospace;
+      font-weight:400;
+      font-size:1.35cqw;
+      line-height:1.2;
+      letter-spacing:0.1em;
+      color:var(--f08-muted);
+    }
+    .f08-name{
+      margin:0.9cqw 0 0;
+      font-family:Manrope, sans-serif;
+      font-weight:500;
+      font-size:2.1cqw;
+      line-height:1.15;
+      letter-spacing:-0.01em;
+      color:var(--f08-ink);
+    }
+    .f08-lane{
+      margin:1cqw 0 0;
+      font-family:"JetBrains Mono", monospace;
+      font-weight:400;
+      font-size:1.2cqw;
+      line-height:1.2;
+      letter-spacing:0.16em;
+      text-transform:uppercase;
+      color:var(--f08-muted);
+      opacity:0;
+    }
+
+    /* 03 Process — the one stage that runs in the browser, the frame's single accent */
+    .f08-stage--accent .f08-num,
+    .f08-stage--accent .f08-name,
+    .f08-stage--accent .f08-lane{color:var(--f08-coral);}
+
+    /* ── the rule under the chain — a 1px hairline (the only separator, per the
+       design truth) that draws in, with the thin progress fill advancing over it ── */
+    .f08-track{
+      position:relative;
+      width:100%;
+      height:3px;
+      margin:3cqw 0;
+    }
+    .f08-rule{
+      position:absolute;
+      left:0;
+      top:1px;
+      width:100%;
+      height:1px;
+      background:var(--f08-hair);
+      transform-origin:left center;
+      transform:scaleX(0);
+    }
+    .f08-fill{
+      position:absolute;
+      left:0;
+      top:0;
+      width:100%;
+      height:3px;
+      border-radius:999px;
+      background:var(--f08-ink);
+      transform-origin:left center;
+      transform:scaleX(0);
+    }
+
+    /* ── tail row: 04 Return (the chain closing) + the engine receipt ── */
+    .f08-tail{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:3cqw;
+    }
+    .f08-tail-left{display:flex; align-items:baseline; gap:1.2cqw;}
+    .f08-tail-body{display:flex; align-items:baseline; gap:0.55cqw;}
+    .f08-tail .f08-num{margin:0;}
+    .f08-tail .f08-name{margin:0; font-size:2.1cqw;}
+
+    .f08-engine{
+      display:flex;
+      align-items:baseline;
+      gap:0.55cqw;
+      margin:0;
+      font-family:"JetBrains Mono", monospace;
+      font-weight:400;
+      font-size:1.4cqw;
+      line-height:1.2;
+      letter-spacing:0.02em;
+      color:var(--f08-muted);
+    }
+    .f08-e{display:inline-block; white-space:nowrap; opacity:0;}
+  </style>
+
+  <div data-hf-id="hf-nzvj" id="root" data-composition-id="08-pipeline" data-start="0" data-duration="4.5" data-width="1920" data-height="1080">
+    <!-- full-bleed ground: the frame's own clip layer, never the #root -->
+    <div data-hf-id="hf-98jf" class="clip f08-bg" data-start="0" data-duration="4.5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-efri" class="f08-pad">
+      <p data-hf-id="hf-2qzz" class="f08-kicker">
+        <span data-hf-id="hf-vg6w" class="f08-spike" aria-hidden="true">✱</span><span data-hf-id="hf-bf4b" class="f08-kicker-txt">UNDER THE HOOD</span>
+      </p>
+
+      <h1 data-hf-id="hf-8w0z" class="f08-head"><span data-hf-id="hf-n6y0" class="f08-w f08-w1">Built</span> <span data-hf-id="hf-snfa" class="f08-w f08-w2">for</span> <span data-hf-id="hf-lv6s" class="f08-w f08-w3">performance</span></h1>
+
+      <div data-hf-id="hf-1z56" class="f08-chain">
+        <div data-hf-id="hf-1es3" class="f08-grid">
+          <div data-hf-id="hf-wye7" class="f08-stage">
+            <span data-hf-id="hf-j71n" class="f08-rail f08-rail-1"></span>
+            <span data-hf-id="hf-zlcj" class="f08-rail-lit f08-rail-lit-1"></span>
+            <div data-hf-id="hf-z8ow" class="f08-body f08-body-1">
+              <p data-hf-id="hf-aagn" class="f08-num">01</p>
+              <p data-hf-id="hf-qypp" class="f08-name">Read</p>
+              <p data-hf-id="hf-7tq0" class="f08-lane f08-lane-1">Main thread</p>
+            </div>
+          </div>
+
+          <div data-hf-id="hf-8b6n" class="f08-stage">
+            <span data-hf-id="hf-8bk0" class="f08-rail f08-rail-2"></span>
+            <span data-hf-id="hf-uzfs" class="f08-rail-lit f08-rail-lit-2"></span>
+            <div data-hf-id="hf-7wkr" class="f08-body f08-body-2">
+              <p data-hf-id="hf-9w5m" class="f08-num">02</p>
+              <p data-hf-id="hf-ysir" class="f08-name">Dispatch</p>
+              <p data-hf-id="hf-z0rt" class="f08-lane f08-lane-2">Main thread</p>
+            </div>
+          </div>
+
+          <div data-hf-id="hf-frqs" class="f08-stage f08-stage--accent">
+            <span data-hf-id="hf-batl" class="f08-rail f08-rail-3"></span>
+            <span data-hf-id="hf-hcsk" class="f08-rail-lit f08-rail-lit-3 f08-rail-lit--accent"></span>
+            <div data-hf-id="hf-3ygq" class="f08-body f08-body-3">
+              <p data-hf-id="hf-9hul" class="f08-num">03</p>
+              <p data-hf-id="hf-1hki" class="f08-name">Process</p>
+              <p data-hf-id="hf-eq3p" class="f08-lane f08-lane-3">Worker</p>
+            </div>
+          </div>
+        </div>
+
+        <div data-hf-id="hf-dn70" class="f08-track"><span data-hf-id="hf-mfng" class="f08-rule"></span><span data-hf-id="hf-860t" class="f08-fill"></span></div>
+
+        <div data-hf-id="hf-2uix" class="f08-tail">
+          <div data-hf-id="hf-cd71" class="f08-tail-left">
+            <div data-hf-id="hf-d79v" class="f08-body f08-body-4 f08-tail-body">
+              <p data-hf-id="hf-c9zs" class="f08-num">04</p>
+              <p data-hf-id="hf-ibtz" class="f08-name">Return</p>
+            </div>
+            <p data-hf-id="hf-dg67" class="f08-lane f08-lane-4">Main thread</p>
+          </div>
+
+          <p data-hf-id="hf-lavu" class="f08-engine">
+            <span data-hf-id="hf-ysut" class="f08-e f08-e1">mupdf ·</span>
+            <span data-hf-id="hf-wc8i" class="f08-e f08-e2">WebAssembly ·</span>
+            <span data-hf-id="hf-xaf4" class="f08-e f08-e3">In your browser</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    window.__timelines = window.__timelines || {};
+    const tl = gsap.timeline({ paused: true });
+
+    /* ══ Phase 1 · 0.00–0.80s — eyebrow + heading: staggered arrival cascade ══
+       waterfall-entry: binary reveal via tl.set (never a fade), one direction
+       (from below), each element starting within ±1–2 frames of the previous
+       settle. Weights vary: the ✱ spike and the eyebrow snap in tight, the
+       heading words are the anchors and travel furthest. */
+    var CASCADE = [
+      { sel: ".f08-spike",      at: 0.10, rise: 30, dur: 0.12 }, // brand mark: 0.92 → 1
+      { sel: ".f08-kicker-txt", at: 0.19, rise: 42, dur: 0.14 }, // light: snaps in
+      { sel: ".f08-w1",         at: 0.36, rise: 64, dur: 0.17 }, // anchor: furthest travel
+      { sel: ".f08-w2",         at: 0.50, rise: 50, dur: 0.15 }, // light word
+      { sel: ".f08-w3",         at: 0.62, rise: 60, dur: 0.18 }  // normal word, longest settle
+    ];
+    CASCADE.forEach(function (w, i) {
+      tl.set(w.sel, { opacity: 0 }, 0); // collapsed state stated explicitly at t=0 (seek-safe)
+      var from = { opacity: 1, y: w.rise };
+      var to = { y: 0, duration: w.dur, ease: "power4.out" };
+      if (i === 0) { from.scale = 0.92; to.scale = 1; }
+      tl.set(w.sel, from, w.at);
+      tl.to(w.sel, to, w.at);
+    });
+
+    /* ══ Phase 2 · 1.12–1.72s — the machine's frame stands by (unlit structure) ══
+       Nothing is pre-lit: the rails and the empty track draw in, then the stages
+       light one by one along them. */
+    [".f08-rail-1", ".f08-rail-2", ".f08-rail-3"].forEach(function (sel, i) {
+      tl.fromTo(sel, { scaleX: 0 }, { scaleX: 1, duration: 0.34, ease: "power3.out" }, 1.12 + i * 0.07);
+    });
+    tl.fromTo(".f08-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.40, ease: "power3.out" }, 1.32);
+
+    /* ══ Phase 3 · 1.70–3.25s — the four stages light in order, left to right ══
+       ~0.35s apart: rail ignites, body spring-pops, its lane tag settles after.
+       03 Process (Worker) is the frame's single accent — it draws a breath longer. */
+    var STAGE_AT = [1.70, 2.05, 2.40, 2.75];
+    var RAIL_LIT = [".f08-rail-lit-1", ".f08-rail-lit-2", ".f08-rail-lit-3"]; // 04 sits under the rule
+    var BODY = [".f08-body-1", ".f08-body-2", ".f08-body-3", ".f08-body-4"];
+    var LANE = [".f08-lane-1", ".f08-lane-2", ".f08-lane-3", ".f08-lane-4"];
+
+    // the progress fill advances under the chain while the stages light — the
+    // frame reads as a machine reporting, not four labels appearing
+    tl.fromTo(".f08-fill", { scaleX: 0 }, { scaleX: 1, duration: 1.45, ease: "none" }, 1.72);
+
+    STAGE_AT.forEach(function (at, i) {
+      var accent = i === 2;
+      if (RAIL_LIT[i]) {
+        tl.fromTo(
+          RAIL_LIT[i],
+          { scaleX: 0 },
+          { scaleX: 1, duration: accent ? 0.60 : 0.42, ease: "power3.out" },
+          at
+        );
+      }
+      // spring-pop-entrance — smooth long-tail settle, no overshoot
+      tl.fromTo(
+        BODY[i],
+        { scale: 0, opacity: 0, y: 10 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.50, ease: "power3.out" },
+        at
+      );
+      // the lane tag settles after its stage
+      tl.fromTo(
+        LANE[i],
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: accent ? 0.42 : 0.34, ease: "power3.out" },
+        at + (accent ? 0.24 : 0.20)
+      );
+    });
+
+    /* ══ Phase 4 · 3.26–3.90s — the receipt: the engine line settles last ══
+       Long-tail, then the frame holds still to the end. */
+    [".f08-e1", ".f08-e2", ".f08-e3"].forEach(function (sel, i) {
+      tl.fromTo(
+        sel,
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.42, ease: "power3.out" },
+        3.26 + i * 0.11
+      );
+    });
+
+    window.__timelines["08-pipeline"] = tl;
+    tl.seek(0);
+  })();
+</script>
+</template>

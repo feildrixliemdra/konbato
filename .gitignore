@@ -53,3 +53,13 @@ node_modules/
 /.commandcode/
 /.hermes/
 
+# video build output — all regenerable from the project source
+/videos/*/.thumbnails/
+/videos/*/snapshots/
+/videos/*/.hyperframes/
+/videos/*/renders/
+/videos/*/capture/
+
+# skills-installer mirror; canonical copy + hashes live in .agents/skills/
+/.claude/
+

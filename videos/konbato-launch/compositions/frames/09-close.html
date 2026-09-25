@@ -1,0 +1,187 @@
+<template>
+  <style>
+    /* ============================================================
+       09-close — "Ready to convert?"  ·  4s  ·  1920x1080
+       Sub-composition: everything (styles + scripts) inside <template>.
+       Ground is cream (#FAFCFD); the button is the frame's ONE coral
+       moment, so the URL settles in ink, not in the accent.
+       ============================================================ */
+
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2")}
+    @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-13971731025ec697-s.p.woff2") format("woff2")}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+    /* Root styled by #root (never a class on the data-composition-id element). */
+    #root{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      box-sizing:border-box;
+      container-type:size;              /* frame-relative units resolve against the frame */
+      color:#080C0F;
+      font-family:Manrope,system-ui,sans-serif;
+      font-weight:400;
+      text-align:center;
+      -webkit-font-smoothing:antialiased;
+    }
+    /* Scoped: every authored element carries the f09- id prefix. */
+    [id^="f09-"]{box-sizing:border-box;}
+
+    /* Full-bleed ground rides on a class="clip" child, never on #root. */
+    [id="f09-ground"]{
+      position:absolute;
+      inset:0;
+      background:#FAFCFD;
+    }
+
+    /* The closing card: one centred stack, centred in the top 83% of the
+       canvas so nothing crosses the caption keep-out (y <= 900 @1080). */
+    [id="f09-band"]{
+      position:absolute;
+      inset:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding-bottom:17cqh;
+    }
+
+    [id="f09-head"]{
+      font-family:Manrope,system-ui,sans-serif;
+      font-weight:400;
+      font-size:4.7cqw;
+      line-height:1.06;
+      letter-spacing:-0.022em;
+      color:#080C0F;
+      margin:0;
+      max-width:60cqw;
+    }
+
+    [id="f09-sub"]{
+      font-family:"DM Sans",sans-serif;
+      font-weight:400;
+      font-size:1.75cqw;
+      line-height:1.5;
+      color:#080C0F;
+      margin:2cqw auto 0;
+      max-width:62cqw;
+    }
+
+    /* Button + trust strip read as ONE cluster, not a footnote pair —
+       but "one cluster" is not "touching". The flex column needs an explicit gap,
+       or the two boxes abut at 0px and the strip reads as a caption welded to the
+       button instead of the reassurance line under it. Sized so the whole lower
+       stack keeps one cadence (button→strip 40px, strip→url 40px) and the CTA's
+       own lead-in stays the largest gap in the frame. */
+    [id="f09-cluster"]{
+      margin:3cqw 0 .7cqw;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:2.1cqw;
+    }
+
+    [id="f09-btn"]{
+      display:inline-block;
+      background:#0069BD;
+      color:#FAFCFD;
+      border:none;
+      border-radius:8px;
+      padding:1.5cqw 3cqw;
+      font-family:"DM Sans",sans-serif;
+      font-weight:500;
+      font-size:1.9cqw;
+      line-height:1;
+      letter-spacing:0;
+      white-space:nowrap;
+    }
+
+    [id="f09-trust"]{
+      font-family:"JetBrains Mono",monospace;
+      font-weight:400;
+      font-size:1.4cqw;
+      line-height:1.4;
+      letter-spacing:0.16em;
+      text-transform:uppercase;
+      color:color-mix(in srgb,#080C0F 58%,transparent);
+      margin:0;
+    }
+
+    [id="f09-url"]{
+      font-family:"JetBrains Mono",monospace;
+      font-weight:400;
+      font-size:1.4cqw;
+      line-height:1.4;
+      letter-spacing:0.02em;
+      color:#080C0F;                     /* ink — the button keeps the only coral */
+      margin:1.4cqw 0 0;
+    }
+  </style>
+
+  <div data-hf-id="hf-1y9f" id="root" data-composition-id="09-close" data-start="0" data-width="1920" data-height="1080" data-duration="4">
+
+    <div data-hf-id="hf-z8k5" id="f09-ground" class="clip" data-start="0" data-duration="4" data-track-index="0"></div>
+
+    <div data-hf-id="hf-idx0" id="f09-band" class="clip" data-start="0" data-duration="4" data-track-index="1">
+      <p data-hf-id="hf-2mzi" id="f09-head">Ready to convert?</p>
+      <p data-hf-id="hf-nplo" id="f09-sub">Open a tool, drop a file in, and watch what happens when nothing has to leave your machine first.</p>
+      <div data-hf-id="hf-jwlx" id="f09-cluster">
+        <span data-hf-id="hf-z4vg" id="f09-btn">Browse the tools</span>
+        <p data-hf-id="hf-kchf" id="f09-trust">free · no account · nothing to install</p>
+      </div>
+      <p data-hf-id="hf-3z6f" id="f09-url">https://konbato.com</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    // IIFE: sub-composition scripts execute in the HOST page's global scope
+    // (the runtime clones the template contents into the host document), so a
+    // top-level `const tl` collides with the host / a sibling frame and throws
+    // "Identifier 'tl' has already been declared" — which silently leaves this
+    // frame unregistered and static. Keep every declaration in this scope.
+    (() => {
+      window.__timelines = window.__timelines || {};
+
+      // One paused timeline, registered under the root's data-composition-id.
+      // House register: long-tail settles (power3.out), no overshoot — this is
+      // the calm breather after eight frames of revelation.
+      const tl = gsap.timeline({ paused: true, defaults: { duration: 0.6, ease: "power3.out" } });
+
+      const band = document.getElementById("f09-band");
+      const head = document.getElementById("f09-head");
+      const sub = document.getElementById("f09-sub");
+      const btn = document.getElementById("f09-btn");
+      const trust = document.getElementById("f09-trust");
+      const url = document.getElementById("f09-url");
+
+      // Scene 1 (0.0-0.8s) — the end band fades up WHOLE: one move on the whole
+      // card, no assembly. The ground does not change, so no blur: a plain calm
+      // crossfade-in. (sub / button / trust / url are still at opacity 0 here.)
+      tl.fromTo(band, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: "sine.inOut" }, 0);
+
+      // Scene 2 (0.8-2.6s) — the heading rises into place on a long tail…
+      tl.fromTo(head, { y: 30 }, { y: 0, duration: 1.2, ease: "power3.out" }, 0.8);
+      // …then the site's own closing sentence fades in under it, given room
+      // rather than decorated (it restates the whole film in the site's words).
+      tl.fromTo(sub, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }, 1.85);
+
+      // Scene 3 (2.6-3.4s) — the button settles: a short scale 0.96 -> 1.0 on a
+      // long tail, deliberately NO overshoot (power eases cannot overshoot).
+      tl.fromTo(btn, { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.62, ease: "power3.out" }, 2.62);
+      // …and the trust strip follows close under it, reading as one cluster.
+      tl.fromTo(trust, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.55, ease: "power2.out" }, 2.78);
+
+      // Scene 4 (3.4-4.0s) — the URL settles last, in ink rather than the accent
+      // blue, so the button stays the frame's single accent moment. Hold to the
+      // end: the harness crossfade is the exit, so no exit tween is authored.
+      tl.fromTo(url, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 3.42);
+
+      tl.seek(0);
+      window.__timelines["09-close"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,84 @@
+npm notice run npx
+npm notice run hyperframes capture https://konbato.vercel.app/ -o ./capture --json
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"browser","status":"started","remainingMs":null}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"browser","status":"completed","remainingMs":null}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"navigation","status":"started","remainingMs":null}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"navigation","status":"completed","remainingMs":null}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"core-extraction","status":"started","remainingMs":null}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"core-extraction","status":"completed","remainingMs":89704}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"fonts","status":"started","remainingMs":89704}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"fonts","status":"completed","remainingMs":87584}
+Font metadata extracted: DM Sans 9pt (variable) × 2, Manrope (variable) × 6
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"assets","status":"started","remainingMs":87531}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"assets","status":"completed","remainingMs":87069}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"vision","status":"started","remainingMs":87063}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"vision","status":"completed","remainingMs":87062}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"contact-sheets","status":"started","remainingMs":87058}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"contact-sheets","status":"completed","remainingMs":85587}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"scaffold","status":"started","remainingMs":85587}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"scaffold","status":"completed","remainingMs":85579}
+HYPERFRAMES_CAPTURE_PHASE {"schema":"hyperframes.capture.phase.v1","phase":"complete","status":"completed","remainingMs":85579}
+{
+  "ok": true,
+  "projectDir": "C:\\Users\\Feildrix\\Project\\konbato\\videos\\konbato-launch\\capture",
+  "url": "https://konbato.vercel.app/",
+  "httpStatus": 200,
+  "title": "Konbato - Convert & Edit Files Securely in Your Browser",
+  "screenshots": 11,
+  "assets": 33,
+  "dropped": {
+    "size-floor": 0,
+    "budget-exhausted": 0,
+    "cap-reached": 20,
+    "unavailable": 0
+  },
+  "detectedSections": 10,
+  "fonts": [
+    "Manrope",
+    "DM Sans"
+  ],
+  "fontsDetailed": [
+    {
+      "family": "Manrope",
+      "weights": [
+        600,
+        700
+      ],
+      "variable": true,
+      "weightRange": [
+        200,
+        800
+      ]
+    },
+    {
+      "family": "DM Sans",
+      "weights": [
+        400,
+        500,
+        600
+      ],
+      "variable": true,
+      "weightRange": [
+        100,
+        1000
+      ]
+    }
+  ],
+  "animations": {
+    "webAnimations": 0,
+    "cssDeclarations": 104,
+    "scrollTargets": 74,
+    "cdpAnimations": 40,
+    "canvases": 0
+  },
+  "warnings": [
+    "20 referenced asset(s) are not in this capture (20 cap-reached). A thin capture with no drops is a thin page; this one was truncated."
+  ],
+  "lastPhase": {
+    "schema": "hyperframes.capture.phase.v1",
+    "phase": "complete",
+    "status": "completed",
+    "remainingMs": 85579
+  }
+}
+EXIT=0

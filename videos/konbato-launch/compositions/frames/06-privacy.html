@@ -1,0 +1,331 @@
+<template>
+  <!--
+    06-privacy — "Your files, your device" · THE CHAMBER · 8s
+    Sub-composition. Root: #root[data-composition-id="06-privacy"], 1920x1080, 8s.
+    Ground: navy #091015 chamber + a dimmed, blurred crop of the real site plate
+    (assets/scroll-047.png) — no glow, no bloom, no atmosphere behind the card.
+    Beats: 0.0–1.0 ground resolve + eyebrow · 1.0–5.2 three claims land solo via
+    in-place discrete token cycles · 5.2–7.0 the data-path card resolves in parts
+    ~0.45s apart · 7.0–8.0 completely still (nothing authored there).
+    Design law carried in: the ✕ on the crossed rule is NEUTRAL (cream), never
+    red; the smallest card type holds >= ~23px at 1920 (1.2cqw = 23.04px).
+    Brand glyphs (✱ spike, ✕ cross) are drawn as inline SVG because the shipped
+    woff2 subset carries neither U+2731 nor U+2715 — text would tofu/fall back.
+    All state changes are property tweens or zero-duration sets: the renderer
+    seeks frame-by-frame with events suppressed, so no callback may drive state.
+  -->
+  <style>
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2")}
+    @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-13971731025ec697-s.p.woff2") format("woff2")}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+    #root{
+      position:relative;width:100%;height:100%;overflow:hidden;
+      container-type:size;
+      color:#FAFCFD;
+      font-family:Manrope,"DM Sans",sans-serif;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* ── ground: the chamber ───────────────────────────────────────────── */
+    .k06-ground{position:absolute;inset:0;overflow:hidden}
+    .k06-ground-fill{position:absolute;inset:0;background:#091015}
+    .k06-plate{position:absolute;inset:0;overflow:hidden}
+    .k06-plate-crop{position:absolute;inset:0;transform:scale(1.6);transform-origin:100% 100%}
+    .k06-plate-img{
+      display:block;width:100%;height:100%;object-fit:cover;object-position:100% 100%;
+      opacity:0;filter:blur(26px) saturate(.9);
+    }
+    .k06-veil{
+      position:absolute;inset:0;opacity:0;
+      background:linear-gradient(180deg,
+        rgba(9,16,21,.68) 0%,
+        rgba(9,16,21,.30) 46%,
+        rgba(9,16,21,.40) 100%);
+    }
+
+    /* ── stage ─────────────────────────────────────────────────────────── */
+    .k06-stage{
+      position:absolute;inset:0;
+      display:grid;grid-template-columns:1fr 1.25fr;gap:3.4cqw;
+      align-items:center;
+      padding:3.6cqw 4.4cqw 20cqh;
+    }
+
+    /* ── left column: the fixed anchor + the three claims ──────────────── */
+    .k06-left{min-width:0}
+    .k06-kick{
+      display:flex;align-items:center;gap:.7cqw;margin:0 0 2.4cqw;opacity:0;
+      font-family:"JetBrains Mono",monospace;font-size:1.45cqw;font-weight:500;
+      line-height:1.2;letter-spacing:.16em;text-transform:uppercase;color:#0069BD;
+    }
+    .k06-spike{display:block;width:1.55cqw;height:1.55cqw;flex:0 0 auto;color:#0069BD}
+    .k06-head{
+      margin:0;font-size:4.7cqw;font-weight:400;line-height:1.06;letter-spacing:-.022em;
+      color:#FAFCFD;opacity:0;
+    }
+    .k06-claims{display:flex;flex-direction:column;gap:1.2cqw;margin-top:2.6cqw}
+    /* the row is a 1-cell stack: its token states sit in the same box and are
+       swapped by zero-duration sets — the in-place discrete token cycle. */
+    .k06-claim{
+      display:grid;margin:0;opacity:0;
+      font-family:"JetBrains Mono",monospace;font-size:1.6cqw;font-weight:400;
+      line-height:1.25;letter-spacing:.02em;color:#FAFCFD;
+    }
+    .k06-tok{grid-area:1 / 1;justify-self:start;white-space:nowrap;opacity:0}
+
+    /* ── the data-path card ────────────────────────────────────────────── */
+    .k06-card{
+      min-width:0;opacity:0;
+      border:1px solid rgba(250,252,253,.14);border-radius:.9cqw;
+      background:#111920;padding:2.2cqw;
+    }
+    .k06-card-hdr{display:flex;justify-content:space-between;align-items:center;gap:1.4cqw;margin-bottom:1.7cqw}
+    .k06-card-lbl{
+      margin:0;opacity:0;
+      font-family:"JetBrains Mono",monospace;font-size:1.3cqw;font-weight:500;
+      line-height:1.2;letter-spacing:.18em;text-transform:uppercase;color:#FAFCFD;
+    }
+    .k06-pill{
+      display:inline-block;flex:0 0 auto;opacity:0;
+      background:#0069BD;color:#FFFFFF;border-radius:9999px;padding:.5cqw 1.3cqw;
+      font-family:"JetBrains Mono",monospace;font-size:1.3cqw;font-weight:500;
+      line-height:1.05;letter-spacing:.06em;white-space:nowrap;
+    }
+    .k06-zone{border:1px solid rgba(250,252,253,.14);border-radius:.6cqw;padding:1.6cqw 1.8cqw}
+    .k06-zone-a{opacity:0}
+    .k06-zone-b{opacity:0}
+    .k06-zl{
+      margin:0 0 .9cqw;opacity:0;
+      font-family:"JetBrains Mono",monospace;font-size:1.3cqw;font-weight:500;
+      line-height:1.2;letter-spacing:.18em;color:rgba(250,252,253,.62);
+    }
+    .k06-fl{
+      display:flex;justify-content:space-between;align-items:baseline;gap:1.4cqw;margin:0;
+      font-family:"JetBrains Mono",monospace;font-size:1.4cqw;font-weight:400;
+      line-height:1.3;letter-spacing:.02em;color:#FAFCFD;
+    }
+    .k06-fl-a1{opacity:0}
+    .k06-fl-a2{opacity:0}
+    .k06-prog{
+      height:.7cqw;margin:1.1cqw 0;border-radius:9999px;overflow:hidden;opacity:0;
+      background:rgba(250,252,253,.14);
+    }
+    .k06-prog i{display:block;width:100%;height:100%;background:#0069BD;transform-origin:left center}
+    .k06-cross{display:flex;align-items:center;gap:1.1cqw;padding:1.4cqw 0 .5cqw;opacity:0}
+    .k06-cross-line{flex:1 1 auto;height:0;border-top:1px dashed rgba(250,252,253,.20)}
+    .k06-cross-lbl{
+      flex:0 0 auto;white-space:nowrap;opacity:0;
+      font-family:"JetBrains Mono",monospace;font-size:1.3cqw;font-weight:400;
+      line-height:1.2;letter-spacing:.16em;color:#FAFCFD;
+    }
+    .k06-crossx{display:inline-block;width:1.05cqw;height:1.05cqw;vertical-align:-.16em;color:rgba(250,252,253,.70)}
+    .k06-outside{
+      margin:0;opacity:0;
+      font-family:"DM Sans",sans-serif;font-size:1.35cqw;font-weight:400;line-height:1.5;
+      color:rgba(250,252,253,.74);
+    }
+    .k06-stats{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:1.4cqw;opacity:0;
+      margin-top:1.7cqw;padding-top:1.5cqw;border-top:1px dashed rgba(250,252,253,.20);
+    }
+    .k06-stat{opacity:0}
+    .k06-k{
+      margin:0;
+      font-family:"JetBrains Mono",monospace;font-size:1.2cqw;font-weight:500;
+      line-height:1.2;letter-spacing:.13em;color:rgba(250,252,253,.62);
+    }
+    .k06-v{
+      margin:.35cqw 0 0;
+      font-family:"JetBrains Mono",monospace;font-size:2.1cqw;font-weight:400;
+      line-height:1.15;letter-spacing:.01em;color:#FAFCFD;
+    }
+  </style>
+
+  <div data-hf-id="hf-oxci" id="root" data-composition-id="06-privacy" data-width="1920" data-height="1080" data-duration="8.6">
+
+    <div data-hf-id="hf-f5sx" class="clip k06-ground" data-start="0" data-duration="8.6" data-track-index="0">
+      <div data-hf-id="hf-wn4n" class="k06-ground-fill"></div>
+      <div data-hf-id="hf-kd8i" class="k06-plate">
+        <div data-hf-id="hf-ud75" class="k06-plate-crop">
+          <img data-hf-id="hf-0z8z" class="k06-plate-img" src="assets/scroll-047.png" alt="">
+        </div>
+      </div>
+      <div data-hf-id="hf-omqe" class="k06-veil"></div>
+    </div>
+
+    <div data-hf-id="hf-ot73" class="clip k06-stage" data-start="0" data-duration="8.6" data-track-index="1">
+
+      <div data-hf-id="hf-w57t" class="k06-left">
+        <p data-hf-id="hf-63rr" class="k06-kick">
+          <svg data-hf-id="hf-qasl" class="k06-spike" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <g data-hf-id="hf-g1zz" fill="currentColor">
+              <rect data-hf-id="hf-vvpu" x="10.4" y="2" width="3.2" height="20" rx="1.6" />
+              <rect data-hf-id="hf-zghx" x="10.4" y="2" width="3.2" height="20" rx="1.6" transform="rotate(60 12 12)" />
+              <rect data-hf-id="hf-w710" x="10.4" y="2" width="3.2" height="20" rx="1.6" transform="rotate(-60 12 12)" />
+            </g>
+          </svg>Privacy first
+        </p>
+
+        <h2 data-hf-id="hf-nkmw" class="k06-head">Your files,<br data-hf-id="hf-x5px">your device</h2>
+
+        <div data-hf-id="hf-j3k1" class="k06-claims">
+          <p data-hf-id="hf-7wwf" class="k06-claim k06-claim-1">
+            <span data-hf-id="hf-7avs" class="k06-tok" id="fr06-c1-b">server uploads</span>
+            <span data-hf-id="hf-m8fs" class="k06-tok" id="fr06-c1-a">uploads</span>
+            <span data-hf-id="hf-blyk" class="k06-tok" id="fr06-c1-c">No server uploads</span>
+          </p>
+          <p data-hf-id="hf-x1es" class="k06-claim k06-claim-2">
+            <span data-hf-id="hf-fogk" class="k06-tok" id="fr06-c2-b">to breach</span>
+            <span data-hf-id="hf-hf68" class="k06-tok" id="fr06-c2-a">breach</span>
+            <span data-hf-id="hf-wkl6" class="k06-tok" id="fr06-c2-c">Nothing to breach</span>
+          </p>
+          <p data-hf-id="hf-00od" class="k06-claim k06-claim-3">
+            <span data-hf-id="hf-4s3o" class="k06-tok" id="fr06-c3-b">no throttle</span>
+            <span data-hf-id="hf-1avo" class="k06-tok" id="fr06-c3-a">throttle</span>
+            <span data-hf-id="hf-barb" class="k06-tok" id="fr06-c3-c">No queue, no throttle</span>
+          </p>
+        </div>
+      </div>
+
+      <div data-hf-id="hf-4pcc" class="k06-card">
+        <div data-hf-id="hf-0925" class="k06-card-hdr">
+          <p data-hf-id="hf-3d7p" class="k06-card-lbl">Data path</p>
+          <span data-hf-id="hf-bd65" class="k06-pill">0 bytes of your file sent</span>
+        </div>
+
+        <div data-hf-id="hf-qkye" class="k06-zone k06-zone-a">
+          <p data-hf-id="hf-k1xr" class="k06-zl k06-zl-a">THIS DEVICE</p>
+          <p data-hf-id="hf-zrbs" class="k06-fl k06-fl-a1"><span data-hf-id="hf-yso9">IMG_2481.heic</span><span data-hf-id="hf-pdmy">4.2 MB</span></p>
+          <div data-hf-id="hf-44he" class="k06-prog"><i data-hf-id="hf-wt6k"></i></div>
+          <p data-hf-id="hf-amtf" class="k06-fl k06-fl-a2"><span data-hf-id="hf-u7p0">IMG_2481.webp</span><span data-hf-id="hf-kz1x">610 KB</span></p>
+        </div>
+
+        <div data-hf-id="hf-qdq2" class="k06-cross">
+          <span data-hf-id="hf-pzng" class="k06-cross-line"></span>
+          <span data-hf-id="hf-g74d" class="k06-cross-lbl">
+            <svg data-hf-id="hf-s9dj" class="k06-crossx" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <g data-hf-id="hf-1n6n" fill="currentColor">
+                <rect data-hf-id="hf-b2uu" x="10.6" y="1" width="2.8" height="22" rx="1.4" transform="rotate(45 12 12)" />
+                <rect data-hf-id="hf-67mj" x="10.6" y="1" width="2.8" height="22" rx="1.4" transform="rotate(-45 12 12)" />
+              </g>
+            </svg>
+            YOUR FILE NEVER CROSSES
+          </span>
+          <span data-hf-id="hf-isl0" class="k06-cross-line"></span>
+        </div>
+
+        <div data-hf-id="hf-mmud" class="k06-zone k06-zone-b">
+          <p data-hf-id="hf-yt4n" class="k06-zl k06-zl-b">OUTSIDE</p>
+          <p data-hf-id="hf-r6xs" class="k06-outside">App code and engine binaries, cached like any other asset. None of it is your file.</p>
+        </div>
+
+        <div data-hf-id="hf-w6mv" class="k06-stats">
+          <div data-hf-id="hf-u3nw" class="k06-stat"><p data-hf-id="hf-tpb5" class="k06-k">CLIENT-SIDE</p><p data-hf-id="hf-kfp3" class="k06-v">100%</p></div>
+          <div data-hf-id="hf-s3dw" class="k06-stat"><p data-hf-id="hf-cx95" class="k06-k">FILE BYTES SENT</p><p data-hf-id="hf-xtvf" class="k06-v">0</p></div>
+          <div data-hf-id="hf-qwgt" class="k06-stat"><p data-hf-id="hf-qeoo" class="k06-k">DATA RETAINED</p><p data-hf-id="hf-uib3" class="k06-v">None</p></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var TOTAL = 8;
+      var tl = gsap.timeline({ paused: true });
+
+      // discrete state change: an instant, seek-safe swap (no callbacks — the
+      // renderer seeks with events suppressed, so zero-duration sets carry it)
+      function cut(target, vars, at) {
+        var v = {};
+        for (var k in vars) v[k] = vars[k];
+        v.duration = 0;
+        v.immediateRender = false;
+        return tl.to(target, v, at);
+      }
+
+      /* ── Scene 1 · 0.0–1.0 — the chamber resolves through a blur ────── */
+      tl.fromTo(".k06-ground-fill", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 0);
+      tl.fromTo(
+        ".k06-plate-img",
+        { opacity: 0, filter: "blur(26px) saturate(0.9)" },
+        { opacity: 0.16, filter: "blur(6px) saturate(0.9)", duration: 0.9, ease: "power2.out" },
+        0,
+      );
+      tl.fromTo(".k06-veil", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.out" }, 0.06);
+
+      tl.fromTo(".k06-kick", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0.3);
+      tl.fromTo(".k06-head", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.55, ease: "power2.out" }, 0.55);
+
+      /* ── Scene 2 · 1.0–5.2 — three claims land solo, in place ─────────
+         Each claim materialises through its own in-place token cycle: the
+         tail token lands first, then the next token snaps in front of it,
+         then the whole line. Every state is a hard cut — discrete, never a
+         fade between states (rule: discrete-text-sequence).               */
+      var STEP = 0.09;
+      var CLAIMS = [
+        { row: ".k06-claim-1", at: 1.0, toks: ["#fr06-c1-a", "#fr06-c1-b", "#fr06-c1-c"] },
+        { row: ".k06-claim-2", at: 2.4, toks: ["#fr06-c2-a", "#fr06-c2-b", "#fr06-c2-c"] },
+        { row: ".k06-claim-3", at: 3.8, toks: ["#fr06-c3-a", "#fr06-c3-b", "#fr06-c3-c"] },
+      ];
+
+      CLAIMS.forEach(function (c) {
+        tl.fromTo(c.row, { opacity: 0 }, { opacity: 1, duration: 0.14, ease: "power2.out" }, c.at);
+        c.toks.forEach(function (sel, i) {
+          var t = c.at + i * STEP;
+          cut(sel, { opacity: 1 }, t);
+          if (i < c.toks.length - 1) cut(sel, { opacity: 0 }, t + STEP);
+        });
+      });
+
+      // the claim before it steps back — still present, not gone
+      tl.to(".k06-claim-1", { opacity: 0.35, duration: 0.35, ease: "power2.out" }, 2.4);
+      tl.to(".k06-claim-2", { opacity: 0.35, duration: 0.35, ease: "power2.out" }, 3.8);
+      // the proof arrives → the whole argument comes back up to full contrast
+      tl.to([".k06-claim-1", ".k06-claim-2"], { opacity: 1, duration: 0.3, stagger: 0.06, ease: "power2.out" }, 5.05);
+
+      /* ── Scene 3 · 5.2–7.0 — the data-path card resolves in parts ────── */
+      // part 1 — the card shell, its header, and the THIS DEVICE zone
+      tl.fromTo(".k06-card", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 5.2);
+      tl.fromTo(".k06-card-lbl", { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, 5.26);
+      // the frame's single accent moment — the claim the whole video exists to make
+      tl.fromTo(".k06-pill", { opacity: 0, scale: 0.82 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 5.34);
+
+      tl.fromTo(".k06-zone-a", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 5.22);
+      tl.fromTo(".k06-zl-a", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 5.3);
+      tl.fromTo(".k06-fl-a1", { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.32, ease: "power2.out" }, 5.36);
+      tl.fromTo(".k06-prog", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 5.44);
+      // stat-bars-and-fills — width:100% in CSS, scaleX from a left origin
+      tl.fromTo(".k06-prog i", { scaleX: 0 }, { scaleX: 0.62, duration: 0.55, ease: "power2.out" }, 5.52);
+      tl.fromTo(".k06-fl-a2", { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.32, ease: "power2.out" }, 5.6);
+
+      // part 2 — the crossed rule (dashed hairline, ✕ held neutral cream — no red)
+      tl.fromTo(".k06-cross", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 5.65);
+      tl.fromTo(".k06-cross-lbl", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.38, ease: "back.out(1.5)" }, 5.78);
+
+      // part 3 — the OUTSIDE zone
+      tl.fromTo(".k06-zone-b", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 6.1);
+      tl.fromTo(".k06-zl-b", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 6.18);
+      tl.fromTo(".k06-outside", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 6.24);
+
+      // part 4 — the three stats arrive last, and then nothing moves again
+      tl.fromTo(".k06-stats", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 6.55);
+      tl.fromTo(
+        ".k06-stat",
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.28, stagger: 0.08, ease: "power2.out" },
+        6.55,
+      );
+
+      /* ── 7.0–8.0 — completely still. Nothing is authored in that window. */
+
+      window.__timelines["06-privacy"] = tl;
+      tl.seek(0);
+    })();
+  </script>
+</template>

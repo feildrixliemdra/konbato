@@ -1,0 +1,141 @@
+<template>
+  <!--
+    02-hero — "The site as it is" · THE CAPTURE · 5s
+    Sub-composition. Root: #root[data-composition-id="02-hero"], 1920x1080, 5s.
+
+    The real captured homepage (assets/scroll-000.png) is the hero, full-bleed, with no
+    device frame and no browser chrome: the page IS the surface — adding chrome would
+    restyle something that is already a real screenshot. Layered depth: the cream ground,
+    the plate card shadowing it, and the mono chrome row `01 / HOME` floating above at
+    low opacity. Nothing is laid over the headline — the page's own type is the product's
+    voice. The site's own argument (−85% smaller · 0 bytes uploaded) is visible in the
+    live conversion card, straight off the page.
+
+    ZERO reveals: this is the film's continuous-motion breather. The single thing that
+    happens is ONE camera push on the whole frame — scale 1.0 → 1.09 with a counter-
+    translateY to −40px, decelerating across all five seconds rather than ramping then
+    stopping; it must never come to rest (the moment a capture rests, it reads as a
+    slide), so the drift clock spans the full duration and is still moving at the cut.
+    Rule: multi-phase-camera (steady-push), one writer composing every camera channel.
+
+    Crop note — the plate box is ~2.1:1 and the capture is 16:9, so the plate shows
+    source rows 0…~911: nav, eyebrow, headline, subhead + the blue CTA, and the
+    conversion row. The bottom edge lands in the page's own white gap, never mid-line.
+  -->
+  <style>
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+    @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+    /* the frame root is styled by #root — never a class on the data-composition-id element */
+    #root{
+      position:relative;width:100%;height:100%;overflow:hidden;
+      container-type:size;                 /* every frame unit below is cqw */
+      color:#080C0F;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* ── ground: the warm cream floor, painted on its own clip layer ─────── */
+    .f02-ground{position:absolute;inset:0;background:#FAFCFD}
+
+    /* ── the camera: wraps the WHOLE scene (one viewpoint, one writer) ───── */
+    .f02-camera{
+      position:absolute;inset:0;
+      box-sizing:border-box;
+      display:flex;flex-direction:column;gap:2cqw;
+      padding:4.4cqw;
+      transform-origin:50% 50%;
+      will-change:transform;
+    }
+
+    /* ── the mono chrome row: the index layer, floating above the ground ── */
+    .f02-chrome{
+      flex:0 0 auto;margin:0;white-space:nowrap;
+      font-family:"JetBrains Mono";
+      font-size:1.4cqw;font-weight:400;line-height:1.5;
+      letter-spacing:.16em;text-transform:uppercase;
+      color:rgba(8,12,15,.52);
+    }
+
+    /* ── the plate: the real capture as a hairline card over the ground ─── */
+    .f02-plate{
+      position:relative;flex:1 1 auto;min-height:0;
+      box-sizing:border-box;overflow:hidden;
+      border:1px solid rgba(8,12,15,.12);
+      border-radius:12px;
+      background:#EFF2F5;
+      box-shadow:0 1px 3px rgba(8,12,15,.08), 0 4px 16px rgba(8,12,15,.04);
+    }
+    /* the capture is taller than the plate, so it is top-aligned and clipped at the
+       plate's bottom edge (deliberate — see the crop note above) */
+    .f02-shot{position:absolute;top:0;left:0;display:block;width:100%;height:auto}
+  </style>
+
+  <div data-hf-id="hf-usmk" id="root" data-composition-id="02-hero" data-width="1920" data-height="1080" data-duration="5.5">
+
+    <div data-hf-id="hf-w3k0" class="clip f02-ground" data-start="0" data-duration="5.5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-c31x" class="f02-camera" data-layout-allow-overflow="">
+      <p data-hf-id="hf-xgu9" class="f02-chrome">01 / HOME</p>
+      <div data-hf-id="hf-5lnz" class="f02-plate">
+        <img data-hf-id="hf-cjfm" class="f02-shot" data-layout-allow-overflow="" src="assets/scroll-000.png" alt="The captured Konbato homepage: the hero headline, the blue Start converting button, and the live conversion card">
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var TOTAL = 5; // = data-duration; the push is paced to this, never stretched
+
+      var cam = document.querySelector(".f02-camera");
+
+      /* multi-phase-camera · steady-push
+         Channel 1 — the push:   scale 1.0  → 1.09   (decelerating, whole duration)
+         Channel 2 — the counter-translateY:     0 → −40px (the framing drifts up the
+                     page as the camera closes in, so the headline stays the target)
+         Channel 3 — the drift clock: one slow sine cycle over the full duration; it is
+                     what keeps the camera live on the last frame (a push that settles
+                     into stillness turns a capture into a slide). */
+      var push = { scale: 1, ty: 0 }; // phase channels — never read by CSS
+      var drift = { p: 0 };           // drift clock (radians)
+
+      var DRIFT_CYCLES = 1;
+      var DRIFT_AMP_X = 2.5;
+      var DRIFT_AMP_Y = 1.5;
+      var DRIFT_FREQ_RATIO = 1.3; // ≠ 1.0: equal frequencies read as a mechanical diagonal
+
+      // The ONE writer of cam.style.transform: phase scale + counter-translate + drift,
+      // composed in a single place so nothing else can fight the camera for the property.
+      function writeCamera() {
+        var dx = Math.sin(drift.p) * DRIFT_AMP_X;
+        var dy = Math.sin(drift.p * DRIFT_FREQ_RATIO) * DRIFT_AMP_Y;
+        cam.style.transform =
+          "scale(" + push.scale.toFixed(5) + ") translate(" +
+          dx.toFixed(3) + "px, " + (push.ty + dy).toFixed(3) + "px)";
+      }
+
+      var tl = gsap.timeline({ paused: true });
+
+      // the push + counter-translate, one continuous phase across all five seconds
+      tl.to(push, { scale: 1.09, ty: -40, duration: TOTAL, ease: "power2.out" }, 0);
+      // the drift clock spans the composition and is still travelling at t = TOTAL
+      tl.to(
+        drift,
+        {
+          p: Math.PI * 2 * DRIFT_CYCLES,
+          duration: TOTAL,
+          ease: "none",
+          onUpdate: writeCamera,
+        },
+        0,
+      );
+
+      writeCamera(); // the t = 0 state, so the first frame is never un-transformed
+
+      window.__timelines["02-hero"] = tl;
+      tl.seek(0);
+    })();
+  </script>
+</template>

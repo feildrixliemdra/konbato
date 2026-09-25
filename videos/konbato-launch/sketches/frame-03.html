@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>frame-03 — confirmed sketch</title>
+<!-- CONFIRMED LAYOUT (storyboard.html v2). Dress this layout; do not redraw it. -->
+<!-- 03 · AN IMAGE, ON YOUR DEVICE · frame-03.html · 9–14s -->
+<style>
+
+  @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("../assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2")}
+  @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("../assets/fonts/captured-13971731025ec697-s.p.woff2") format("woff2")}
+  @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("../assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+  @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url("../assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+  :root{
+    --ink:#080C0F; --cream:#FAFCFD; --tile:#EFF2F5; --tile-strong:#E2E7EB;
+    --coral:#0069BD; --navy:#091015; --navy-soft:#111920; --navy-elev:#1A232A;
+    --hairline:color-mix(in srgb, var(--ink) 12%, transparent);
+    --sheet:#f2f3f5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--sheet);color:var(--ink);
+       font-family:Manrope,system-ui,sans-serif;padding:40px 32px 72px}
+  header{max-width:1600px;margin:0 auto 20px}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+  .dek{font-family:"DM Sans",sans-serif;color:#4b5563;font-size:15px;margin:0}
+  .tag{display:inline-block;margin-top:14px;padding:6px 11px;border:1px solid var(--hairline);
+       border-radius:6px;font-family:"JetBrains Mono",monospace;font-size:11px;
+       letter-spacing:.1em;text-transform:uppercase;color:#374151;background:#fff}
+  .rev{max-width:1600px;margin:0 auto 22px;background:#fff;border:1px solid var(--hairline);
+       border-left:3px solid var(--coral);border-radius:8px;padding:12px 16px}
+  .rev h2{margin:0 0 6px;font-size:12px;font-family:"JetBrains Mono",monospace;
+          letter-spacing:.14em;text-transform:uppercase;color:var(--coral)}
+  .rev ul{margin:0;padding-left:18px;font-family:"DM Sans",sans-serif;font-size:13px;
+          line-height:1.65;color:#374151}
+  .rev code{font-family:"JetBrains Mono",monospace;font-size:12px;background:var(--tile);padding:1px 4px;border-radius:3px}
+  .actbar{max-width:1600px;margin:0 auto 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+          font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;
+          text-transform:uppercase;color:#6b7280}
+  .grid{max-width:1600px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+  .card{background:#fff;border:1px solid var(--hairline);border-radius:10px;overflow:hidden;
+        box-shadow:0 1px 3px rgba(8,12,15,.06)}
+  .note{padding:10px 12px 0;font-family:"DM Sans",sans-serif;font-size:12px;line-height:1.5;color:#4b5563}
+  .note b{color:var(--ink)}
+  .lab{display:flex;justify-content:space-between;align-items:baseline;padding:9px 12px 4px;
+       font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+  .lab .n{font-weight:700;color:var(--ink)}
+  .lab .r{color:#8b95a1}
+  .chip{margin:0 12px 12px;display:inline-block;padding:3px 8px;border:1px solid var(--hairline);
+        border-radius:999px;font-family:"JetBrains Mono",monospace;font-size:9.5px;
+        letter-spacing:.12em;text-transform:uppercase;color:#5b6673}
+  /* ---- the cells: real scale, real brand treatment, no motion ---- */
+  .cell{aspect-ratio:16/9;container-type:inline-size;position:relative;overflow:hidden;
+        font-family:Manrope,sans-serif;display:flex;flex-direction:column;justify-content:center}
+  .cell.light{background:var(--cream);color:var(--ink)}
+  .cell.dark{background:var(--navy);color:var(--cream)}
+  .pad{padding:4.4cqw;height:100%;display:flex;flex-direction:column;justify-content:center}
+  .pad.top{display:grid;grid-template-rows:1fr auto}
+  .pad.top > div:first-child{display:flex;flex-direction:column;justify-content:center;align-self:center}
+  .pad.top > div:last-child{align-self:end}
+  .pad.mid{justify-content:center}
+  .kick{font-family:"JetBrains Mono",monospace;font-size:1.45cqw;font-weight:500;
+        letter-spacing:.16em;text-transform:uppercase;color:var(--coral);margin:0 0 2.4cqw;
+        display:flex;align-items:center;gap:.7cqw}
+  .kick .sp{font-size:1.7cqw;line-height:1}
+  .disp{font-size:7.1cqw;font-weight:400;line-height:1.06;letter-spacing:-.022em;margin:0}
+  .disp.sm{font-size:4.7cqw}
+  .disp.xs{font-size:3.4cqw;line-height:1.14;letter-spacing:-.016em}
+  .mono{font-family:"JetBrains Mono",monospace;font-size:1.4cqw;letter-spacing:.02em}
+  .mono.up{letter-spacing:.16em;text-transform:uppercase}
+  .sub{font-family:"DM Sans",sans-serif;font-size:2cqw;line-height:1.5;margin:2.2cqw 0 0;max-width:78cqw}
+  .dim{font-family:"DM Sans",sans-serif;color:color-mix(in srgb,var(--ink) 58%,transparent)}
+  /* plain block standing in for a captured screenshot's VISIBLE CROP */
+  .shot{background:var(--tile-strong);border:1px solid var(--hairline);border-radius:.9cqw;
+        display:flex;flex-direction:column;justify-content:center;gap:1.1cqw;padding:3cqw;
+        position:relative;overflow:hidden}
+  .shot .fn{font-family:"JetBrains Mono",monospace;font-size:1.25cqw;letter-spacing:.04em;
+            color:color-mix(in srgb,var(--ink) 55%,transparent)}
+  .shot .rt{font-size:2.4cqw;font-weight:600;letter-spacing:-.015em}
+  .shot .cr{font-family:"JetBrains Mono",monospace;font-size:1.1cqw;letter-spacing:.16em;
+            text-transform:uppercase;color:color-mix(in srgb,var(--ink) 45%,transparent)}
+  .dark .shot{background:var(--navy-elev);border-color:color-mix(in srgb,var(--cream) 14%,transparent)}
+  .dark .shot .fn{color:color-mix(in srgb,var(--cream) 58%,transparent)}
+  .dark .shot .cr{color:color-mix(in srgb,var(--cream) 45%,transparent)}
+  .btn{display:inline-block;background:var(--coral);color:#fff;border-radius:.7cqw;
+       padding:1.5cqw 3cqw;font-family:"DM Sans",sans-serif;font-size:1.9cqw;font-weight:500}
+  .rule{height:1px;background:var(--hairline);margin:2.6cqw 0}
+  .dark .rule{background:color-mix(in srgb,var(--cream) 14%,transparent)}
+  .row{display:flex;justify-content:space-between;gap:2cqw;font-family:"JetBrains Mono",monospace;
+       font-size:1.4cqw;letter-spacing:.02em}
+  .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:2.4cqw}
+  .cols > div{border-top:1px solid var(--hairline);padding-top:1.6cqw}
+  .dark .cols > div{border-top-color:color-mix(in srgb,var(--cream) 14%,transparent)}
+  .stnum{font-family:"JetBrains Mono",monospace;font-size:1.35cqw;color:var(--coral);letter-spacing:.1em}
+  .stname{font-size:2.3cqw;font-weight:600;margin:.9cqw 0 .6cqw;letter-spacing:-.01em}
+  .sttag{font-family:"JetBrains Mono",monospace;font-size:1.15cqw;letter-spacing:.14em;
+         text-transform:uppercase;color:color-mix(in srgb,var(--ink) 50%,transparent)}
+  .pill{display:inline-block;border:1px solid var(--hairline);border-radius:999px;
+        padding:.5cqw 1.3cqw;font-family:"JetBrains Mono",monospace;font-size:1.2cqw;letter-spacing:.1em}
+  .chipset{display:flex;gap:1.2cqw;margin-top:2cqw;flex-wrap:wrap}
+  /* data path card — v2: minimum type raised, OUTSIDE copy shortened, cross mark neutral */
+  .dp{border:1px solid color-mix(in srgb,var(--cream) 14%,transparent);border-radius:.9cqw;
+      padding:2.2cqw;background:var(--navy-soft)}
+  .dp .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.7cqw}
+  .dp .hdr .b{background:var(--coral);color:#fff;border-radius:999px;padding:.5cqw 1.3cqw;
+      font-family:"JetBrains Mono",monospace;font-size:1.3cqw;letter-spacing:.06em}
+  .dp .zone{border:1px solid color-mix(in srgb,var(--cream) 14%,transparent);border-radius:.6cqw;
+      padding:1.6cqw 1.8cqw}
+  .dp .zl{font-family:"JetBrains Mono",monospace;font-size:1.3cqw;letter-spacing:.18em;
+      color:color-mix(in srgb,var(--cream) 62%,transparent);margin:0 0 .9cqw}
+  .dp .fl{font-family:"JetBrains Mono",monospace;font-size:1.4cqw;margin:0}
+  .dp .cross{text-align:center;font-family:"JetBrains Mono",monospace;font-size:1.3cqw;
+      letter-spacing:.16em;color:var(--cream);padding:1.4cqw 0 .5cqw}
+  .dp .cross .x{color:color-mix(in srgb,var(--cream) 70%,transparent);font-weight:700}
+  .dp .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4cqw;margin-top:1.7cqw;
+      padding-top:1.5cqw;border-top:1px dashed color-mix(in srgb,var(--cream) 20%,transparent)}
+  .dp .stats .k{font-family:"JetBrains Mono",monospace;font-size:1.2cqw;letter-spacing:.13em;
+      color:color-mix(in srgb,var(--cream) 62%,transparent);margin:0}
+  .dp .stats .v{font-family:"JetBrains Mono",monospace;font-size:2.1cqw;margin:.35cqw 0 0}
+  .prog{height:.7cqw;background:color-mix(in srgb,var(--cream) 14%,transparent);border-radius:999px;overflow:hidden;margin:1.1cqw 0}
+  .prog i{display:block;height:100%;width:62%;background:var(--coral)}
+  .dp .outside{font-family:"DM Sans",sans-serif;font-size:1.35cqw;line-height:1.5;margin:0;
+      color:color-mix(in srgb,var(--cream) 74%,transparent)}
+  /* seam map + tokens cells */
+  .filler{display:flex;flex-direction:column;justify-content:center;gap:1.6cqw}
+  .seams{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2cqw}
+  .seam{border:1px solid var(--hairline);border-radius:.5cqw;padding:1.2cqw;
+        font-family:"JetBrains Mono",monospace;font-size:1.1cqw;letter-spacing:.06em;background:var(--tile)}
+  .seam b{display:block;font-size:1.35cqw;margin-bottom:.4cqw;letter-spacing:.1em}
+  .sw{display:flex;gap:1cqw;align-items:center;font-family:"JetBrains Mono",monospace;font-size:1.1cqw;letter-spacing:.06em}
+  .sw i{width:2.2cqw;height:2.2cqw;border-radius:.35cqw;border:1px solid var(--hairline);display:block}
+  .bans{font-family:"DM Sans",sans-serif;font-size:1.3cqw;line-height:1.6;color:color-mix(in srgb,var(--ink) 72%,transparent)}
+
+  html,body{margin:0;padding:0;background:#fff}
+  .cell{width:100vw}
+</style>
+</head>
+<body>
+<div class="cell light" id="frame-03">
+      <div class="pad mid" style="gap:2cqw">
+        <p class="kick" style="margin:0"><span class="sp">✱</span> on this device</p>
+        <div class="shot" style="flex:1;justify-content:center">
+          <span class="fn">assets/tool-image-result.png</span>
+          <span class="cr">visible crop — tool surface</span>
+          <span class="rt">Image Compress — a real run, finished</span>
+          <span class="mono dim" style="font-size:1.3cqw">Files are processed 100% locally on your machine.</span>
+        </div>
+        <div class="row" style="align-items:baseline">
+          <span class="mono up" style="color:var(--coral);font-weight:700">0 bytes uploaded</span>
+          <span class="mono dim">158.53 KB → 87.44 KB</span>
+        </div>
+      </div>
+    </div>
+</body>
+</html>

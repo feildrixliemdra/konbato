@@ -1,0 +1,280 @@
+<template>
+  <!--
+    05-steps — "Three steps, no round trip" (frame 5 of the Konbato launch video)
+    Layout: the confirmed sketch (sketches/frame-05.html) — eyebrow + heading over three
+    numbered stations (01 Open a file · 02 Work on it · 03 Take it back) carrying their
+    real tags. The capture assets/scroll-035.png is the SOURCE of the wording and tags,
+    not a plate: the frame is authored type.
+
+    Beats (4.0s, frame-local):
+      1) 0.00-0.85  eyebrow `HOW IT WORKS` + heading `Three steps, no round trip` land via a
+                    waterfall arrival cascade (waterfall-entry: binary opacity via tl.set,
+                    whip-from-below, shrinking gaps, power4.out). The stations are still
+                    off the right edge — the row is parked out of frame.
+      2) 0.85-2.90  ONE virtual camera pan (viewport-change, single world wrapper, scale 1:
+                    T = W/2 - target) travels the stations left to right, centring 01, then
+                    02, then 03, easing to rest at each (power2.inOut legs + a 0.1s dwell).
+                    This is the frame's motion payload.
+      3) 2.90-4.00  the camera settles back onto the row's own framing (the sketch's grid)
+                    and the three tags bloom left to right, 0.2s apart. `NO UPLOAD` is the
+                    frame's single accent moment; the other two tags stay ink. Still at the end.
+
+    Seek-safe notes: the world transform is owned by GSAP (never written from a callback, and
+    no CSS transform sits on the same element), so a frame-by-frame seek renders it correctly;
+    the pan legs are fromTo tweens with explicit from-states and immediateRender:false.
+  -->
+  <style>
+    /* — frame.md's captured brand faces, project-root relative (assets/…) — */
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-438aa629764e75f3-s.woff2") format("woff2");unicode-range:u+0460-052f,u+1c80-1c8a,u+20b4,u+2de0-2dff,u+a640-a69f,u+fe2e-fe2f}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-875ae681bfde4580-s.woff2") format("woff2");unicode-range:u+0301,u+0400-045f,u+0490-0491,u+04b0-04b1,u+2116}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-51251f8b9793cdb3-s.woff2") format("woff2");unicode-range:u+0370-0377,u+037a-037f,u+0384-038a,u+038c,u+038e-03a1,u+03a3-03ff}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-e857b654a2caa584-s.woff2") format("woff2");unicode-range:u+0102-0103,u+0110-0111,u+0128-0129,u+0168-0169,u+01a0-01a1,u+01af-01b0,u+0300-0301,u+0303-0304,u+0308-0309,u+0323,u+0329,u+1ea0-1ef9,u+20ab}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-cc978ac5ee68c2b6-s.woff2") format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+    @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+    @font-face{font-family:DM Sans;font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-7ab938503e4547a1-s.woff2") format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+    @font-face{font-family:DM Sans;font-style:normal;font-weight:100 1000;font-display:swap;src:url("assets/fonts/captured-13971731025ec697-s.p.woff2") format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+    @font-face{font-family:JetBrains Mono;font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+    @font-face{font-family:JetBrains Mono;font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+    /* — the frame root: styled by #root (never a class), no background here —
+         the cream ground rides on the .clip layer below — */
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      container-type: size;              /* every frame-relative unit below is cqw / cqh */
+      font-family: Manrope, system-ui, sans-serif;
+      color: #080C0F;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* full-bleed ground: cream floor, half a step of warmth, nothing else */
+    .f05-bg {
+      position: absolute;
+      inset: 0;
+      background: #FAFCFD;
+    }
+
+    /* ---- the header (fixed, outside the camera): eyebrow + heading ---- */
+    .f05-header {
+      position: absolute;
+      left: 4.4cqw;
+      right: 4.4cqw;
+      top: 24cqh;
+    }
+    .f05-kick {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: .7cqw;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.46cqw;                /* kicker, 28px @1920 */
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(8, 12, 15, .78);
+    }
+    .f05-spike {
+      display: inline-block;
+      font-size: 1.7cqw;
+      line-height: 1;
+      color: #0069BD;                    /* the ✱ spike mark — always coral */
+    }
+    .f05-kicklabel { display: inline-block; }
+    .f05-heading {
+      margin: 1.1cqw 0 0;
+      font-size: 4.9cqw;
+      font-weight: 400;
+      line-height: 1.06;
+      letter-spacing: -.022em;
+      white-space: nowrap;
+      color: #080C0F;
+    }
+    .f05-w { display: inline-block; }
+
+    /* the waterfall cascade starts hidden; the timeline flips it with tl.set (binary 0→1) */
+    .f05-spike,
+    .f05-kicklabel,
+    .f05-w { opacity: 0; }
+
+    /* ---- the camera: one .world wrapper carries the whole pan ---- */
+    .f05-stage {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;                  /* the pan parks the row outside the frame */
+    }
+    .f05-world {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 50%;         /* no CSS transform here — GSAP owns it */
+      will-change: transform;
+    }
+    .f05-board {
+      position: absolute;
+      left: 4.4cqw;
+      right: 4.4cqw;
+      top: 43.6cqh;
+      display: flex;
+      gap: 2.4cqw;
+    }
+    .f05-col {
+      flex: 1 1 0;
+      min-width: 0;
+      border-top: 1px solid rgba(8, 12, 15, .12);
+      padding-top: 1.6cqw;
+    }
+    .f05-num {
+      margin: 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.3cqw;
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: .1em;
+      color: rgba(8, 12, 15, .55);
+    }
+    .f05-name {
+      margin: .9cqw 0 0;
+      font-size: 2cqw;
+      font-weight: 500;
+      line-height: 1.2;
+      letter-spacing: -.005em;
+      color: #080C0F;
+    }
+    .f05-tag {
+      margin: .75cqw 0 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.3cqw;
+      font-weight: 400;
+      line-height: 1.3;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(8, 12, 15, .5);
+    }
+    /* the one voltage moment: the tag that answers the objection the viewer is carrying */
+    .f05-tag--accent { color: #0069BD; }
+  </style>
+
+  <div data-hf-id="hf-c1gi" id="root" data-composition-id="05-steps" data-start="0" data-duration="4.6" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-dtvb" class="clip f05-bg" data-start="0" data-duration="4.6" data-track-index="0"></div>
+
+    <div data-hf-id="hf-9qgb" class="f05-header">
+      <p data-hf-id="hf-3gyt" class="f05-kick">
+        <span data-hf-id="hf-8nf8" class="f05-spike">✱</span><span data-hf-id="hf-ekre" class="f05-kicklabel">HOW IT WORKS</span>
+      </p>
+      <h2 data-hf-id="hf-qbyn" class="f05-heading"><span data-hf-id="hf-gth8" class="f05-w">Three</span> <span data-hf-id="hf-u6y1" class="f05-w">steps,</span> <span data-hf-id="hf-yrs3" class="f05-w">no</span> <span data-hf-id="hf-5bh0" class="f05-w">round</span> <span data-hf-id="hf-ziyf" class="f05-w">trip</span></h2>
+    </div>
+
+    <div data-hf-id="hf-ef2e" class="f05-stage">
+      <div data-hf-id="hf-3z7s" class="f05-world">
+        <div data-hf-id="hf-f5v8" class="f05-board">
+          <div data-hf-id="hf-otoi" class="f05-col">
+            <p data-hf-id="hf-x8z2" class="f05-num">01</p>
+            <p data-hf-id="hf-iyw9" class="f05-name">Open a file</p>
+            <p data-hf-id="hf-jn2f" class="f05-tag f05-tag--accent">NO UPLOAD</p>
+          </div>
+          <div data-hf-id="hf-3h5y" class="f05-col">
+            <p data-hf-id="hf-xna3" class="f05-num">02</p>
+            <p data-hf-id="hf-701p" class="f05-name">Work on it</p>
+            <p data-hf-id="hf-kg61" class="f05-tag">ON-DEVICE</p>
+          </div>
+          <div data-hf-id="hf-3vgz" class="f05-col">
+            <p data-hf-id="hf-y1l4" class="f05-num">03</p>
+            <p data-hf-id="hf-xyyp" class="f05-name">Take it back</p>
+            <p data-hf-id="hf-p3ke" class="f05-tag">IMMEDIATE</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var ID = "05-steps";
+      var gsap = window.gsap;
+      var root = document.querySelector('#root[data-composition-id="' + ID + '"]');
+      if (!gsap || !root) { return; }
+
+      var world = root.querySelector(".f05-world");
+      var stage = root.querySelector(".f05-stage");
+      var board = root.querySelector(".f05-board");
+      var cols = Array.prototype.slice.call(root.querySelectorAll(".f05-col"));
+      var words = Array.prototype.slice.call(root.querySelectorAll(".f05-w"));
+      var spike = root.querySelector(".f05-spike");
+      var kickLabel = root.querySelector(".f05-kicklabel");
+      var tags = Array.prototype.slice.call(root.querySelectorAll(".f05-tag"));
+
+      /* ------------------------------------------------------------------
+         Camera geometry — measured ONCE, at build time. Seek-safe by
+         construction: no callback drives the transform, GSAP writes it.
+         viewport-change, single wrapper at scale 1 => centre a world-space
+         target at W/2 with translateX = W/2 - targetX.
+         ------------------------------------------------------------------ */
+      var stageRect = stage.getBoundingClientRect();
+      var W = stageRect.width || 1920;
+      var worldRect = world.getBoundingClientRect();
+      var boardRect = board.getBoundingClientRect();
+      var boardLeft = boardRect.left - worldRect.left;
+      var centers = cols.map(function (col) {
+        var r = col.getBoundingClientRect();
+        return (r.left + r.width / 2) - worldRect.left;
+      });
+      var measured = centers.length === 3 && centers.every(function (c) { return isFinite(c) && c > 1; });
+      if (!measured) {
+        // layout not resolvable yet — fall back to the authored cqw grid
+        var pad = 0.044 * W;
+        var gap = 0.024 * W;
+        var cw = (W - 2 * pad - 2 * gap) / 3;
+        boardLeft = pad;
+        centers = [0, 1, 2].map(function (i) { return pad + cw / 2 + i * (cw + gap); });
+      }
+      var stops = centers.map(function (c) { return W / 2 - c; });   // centre 01 / 02 / 03
+      var startX = (W - boardLeft) + 0.012 * W;                     // row parked fully off the right edge
+      var restX = 0;                                                // the sketch's own framing
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* --- camera: start pose, then the three pan legs + the settle --- */
+      gsap.set(world, { x: startX, y: 0, force3D: false });
+
+      tl.fromTo(world, { x: startX },
+        { x: stops[0], duration: 0.71, ease: "power2.inOut", immediateRender: false, force3D: false }, 0.85);
+      tl.fromTo(world, { x: stops[0] },
+        { x: stops[1], duration: 0.60, ease: "power2.inOut", immediateRender: false, force3D: false }, 1.66);
+      tl.fromTo(world, { x: stops[1] },
+        { x: stops[2], duration: 0.54, ease: "power2.inOut", immediateRender: false, force3D: false }, 2.36);
+      tl.fromTo(world, { x: stops[2] },
+        { x: restX, duration: 0.34, ease: "power2.out", immediateRender: false, force3D: false }, 2.90);
+
+      /* --- beat 1: staggered arrival cascade (waterfall-entry: binary opacity, whip-from-below) --- */
+      tl.set(spike, { opacity: 1, y: 34 }, 0.04);
+      tl.to(spike, { y: 0, duration: 0.12, ease: "power4.out" }, 0.04);
+      tl.set(kickLabel, { opacity: 1, y: 30 }, 0.13);
+      tl.to(kickLabel, { y: 0, duration: 0.13, ease: "power4.out" }, 0.13);
+
+      // heading words: anchor travels furthest, gaps shrink across the wave,
+      // each word starts before the previous settles, the last word snaps hardest
+      var W_T = [0.160, 0.320, 0.460, 0.575, 0.675];
+      var W_D = [0.200, 0.160, 0.140, 0.155, 0.150];
+      var W_Y = [76, 50, 44, 50, 72];
+      words.forEach(function (w, i) {
+        tl.set(w, { opacity: 1, y: W_Y[i] }, W_T[i]);
+        tl.to(w, { y: 0, duration: W_D[i], ease: "power4.out" }, W_T[i]);
+      });
+
+      /* --- beat 3: the three tags bloom left to right, 0.2s apart, over the settled row --- */
+      var TAGS_T = [3.12, 3.32, 3.52];
+      tags.forEach(function (tag, i) {
+        tl.fromTo(tag, { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.26, ease: "power2.out", immediateRender: true }, TAGS_T[i]);
+      });
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines[ID] = tl;
+      tl.seek(0);
+    })();
+  </script>
+</template>

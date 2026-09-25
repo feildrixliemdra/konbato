@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { --ink:#1a1d29; --muted:#6b7280; --line:#e5e7eb; --accent:#4f46e5; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--ink); }
+  .page { width: 100%; padding: 56px 64px; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+
+  .top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .brand { font-size: 24px; font-weight: 700; letter-spacing: 0.4px; }
+  .brand small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 4px; }
+  .doc-title { text-align: right; }
+  .doc-title h1 { font-size: 28px; font-weight: 700; }
+  .doc-title span { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .meta { display: flex; justify-content: space-between; margin-top: 44px; font-size: 12.5px; line-height: 1.7; }
+  .meta .label { color: var(--muted); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.6px; margin-bottom: 6px; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 40px; font-size: 12.5px; }
+  th { text-align: left; color: var(--muted); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.6px; padding: 10px 8px; border-bottom: 2px solid var(--line); }
+  td { padding: 12px 8px; border-bottom: 1px solid var(--line); }
+  td.num, th.num { text-align: right; }
+  tr.total td { border-bottom: none; font-size: 14px; }
+
+  .totals { margin-left: auto; margin-top: 20px; width: 300px; font-size: 13px; }
+  .totals .row { display: flex; justify-content: space-between; padding: 6px 0; }
+  .totals .grand { border-top: 2px solid var(--ink); margin-top: 8px; padding-top: 12px; font-size: 17px; font-weight: 700; }
+  .totals .grand .l { color: var(--accent); }
+
+  .note { margin-top: 48px; font-size: 12px; color: var(--muted); line-height: 1.7; }
+  h2.sec { font-size: 15px; margin-bottom: 16px; }
+  .terms { font-size: 12px; line-height: 1.9; color: #374151; }
+  .terms b { color: var(--ink); }
+</style>
+</head>
+<body>
+
+  <div class="page">
+    <div class="top">
+      <div class="brand">Northwind Studio<small>Brand &amp; Digital Design</small></div>
+      <div class="doc-title"><h1>Invoice</h1><span>INV-2024-0118 &middot; Issued 12 Aug 2024</span></div>
+    </div>
+    <div class="meta">
+      <div><div class="label">Billed To</div>Acme Corporation<br/>742 Market Street, Suite 400<br/>San Francisco, CA 94103<br/>billing@acmecorp.com</div>
+      <div style="text-align:right"><div class="label">From</div>Northwind Studio<br/>1080 Pine Avenue<br/>Portland, OR 97205<br/>hello@northwind.studio</div>
+    </div>
+    <table>
+      <thead><tr><th>Description</th><th>Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Brand identity &amp; logo system</td><td>1</td><td class="num">$4,800.00</td><td class="num">$4,800.00</td></tr>
+        <tr><td>Marketing website — design</td><td>1</td><td class="num">$6,200.00</td><td class="num">$6,200.00</td></tr>
+        <tr><td>Marketing website — build</td><td>1</td><td class="num">$7,500.00</td><td class="num">$7,500.00</td></tr>
+        <tr><td>Landing page variants (A/B set)</td><td>4</td><td class="num">$650.00</td><td class="num">$2,600.00</td></tr>
+        <tr><td>Photography art direction</td><td>1</td><td class="num">$1,200.00</td><td class="num">$1,200.00</td></tr>
+        <tr><td>Illustration set</td><td>6</td><td class="num">$180.00</td><td class="num">$1,080.00</td></tr>
+      </tbody>
+    </table>
+    <div class="totals">
+      <div class="row"><span>Subtotal</span><span>$23,380.00</span></div>
+      <div class="row"><span>Discount (10%)</span><span>&minus;$2,338.00</span></div>
+      <div class="row"><span>Sales tax (0%)</span><span>$0.00</span></div>
+      <div class="row grand"><span class="l">Total Due</span><span>$21,042.00</span></div>
+    </div>
+    <div class="note">Payment due within 30 days. Please reference INV-2024-0118 on all transfers.<br/>Bank: First National &middot; Account: 0042 1188 7091 &middot; SWIFT: FNNBUS42</div>
+  </div>
+
+  <div class="page">
+    <h2 class="sec">Project &mdash; Continued Line Items</h2>
+    <table>
+      <thead><tr><th>Description</th><th>Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Design system &amp; component library</td><td>1</td><td class="num">$3,400.00</td><td class="num">$3,400.00</td></tr>
+        <tr><td>Copywriting &amp; content strategy</td><td>1</td><td class="num">$2,150.00</td><td class="num">$2,150.00</td></tr>
+        <tr><td>Motion &amp; interaction prototypes</td><td>1</td><td class="num">$1,950.00</td><td class="num">$1,950.00</td></tr>
+        <tr><td>Accessibility audit &amp; fixes</td><td>1</td><td class="num">$1,600.00</td><td class="num">$1,600.00</td></tr>
+        <tr><td>Launch support &amp; QA (2 weeks)</td><td>1</td><td class="num">$2,800.00</td><td class="num">$2,800.00</td></tr>
+        <tr><td>Retainer &mdash; August (pro-rated)</td><td>1</td><td class="num">$1,000.00</td><td class="num">$1,000.00</td></tr>
+      </tbody>
+    </table>
+    <div class="note">Line items listed above are additional to the summary on page one and roll into the same totals.</div>
+  </div>
+
+  <div class="page">
+    <h2 class="sec">Terms &amp; Conditions</h2>
+    <div class="terms">
+      <p><b>1. Payment.</b> The Total Due is payable within 30 days of the invoice date. Payments received after the due date accrue a late fee of 1.5% per month.</p>
+      <p><b>2. Ownership.</b> All work product is delivered on full payment. Until then, all concepts, comps, and files remain the property of Northwind Studio.</p>
+      <p><b>3. Revisions.</b> Two rounds of revision are included per deliverable. Additional rounds are billed at the standard hourly rate of $140/hour.</p>
+      <p><b>4. Expenses.</b> Third-party costs (stock licensing, hosting, fonts) are billed at cost with receipts on request.</p>
+      <p><b>5. Cancellation.</b> Either party may terminate with 14 days written notice. Work completed to date is billable.</p>
+      <p><b>6. Confidentiality.</b> Both parties agree to keep project materials confidential and to delete shared files on request.</p>
+      <p><b>7. Governing Law.</b> This agreement is governed by the laws of the State of Oregon.</p>
+    </div>
+  </div>
+
+</body>
+</html>

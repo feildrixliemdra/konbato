@@ -1,0 +1,496 @@
+<template>
+  <div data-hf-id="hf-2tzw" id="root" data-composition-id="04-registry" data-width="1920" data-height="1080" data-duration="6.5">
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      /* Brand faces ship as local files — never a network font, never a family
+         without a file (the render machine resolves nothing else). */
+      @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-438aa629764e75f3-s.woff2") format("woff2");unicode-range:u+0460-052f,u+1c80-1c8a,u+20b4,u+2de0-2dff,u+a640-a69f,u+fe2e-fe2f}
+      @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-875ae681bfde4580-s.woff2") format("woff2");unicode-range:u+0301,u+0400-045f,u+0490-0491,u+04b0-04b1,u+2116}
+      @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-51251f8b9793cdb3-s.woff2") format("woff2");unicode-range:u+0370-0377,u+037a-037f,u+0384-038a,u+038c,u+038e-03a1,u+03a3-03ff}
+      @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-e857b654a2caa584-s.woff2") format("woff2");unicode-range:u+0102-0103,u+0110-0111,u+0128-0129,u+0168-0169,u+01a0-01a1,u+01af-01b0,u+0300-0301,u+0303-0304,u+0308-0309,u+0323,u+0329,u+1ea0-1ef9,u+20ab}
+      @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-cc978ac5ee68c2b6-s.woff2") format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+      @font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url("assets/fonts/captured-4c9affa5bc8f420e-s.p.woff2") format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+      @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2")}
+      @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url("assets/fonts/JetBrainsMono-700.woff2") format("woff2")}
+
+      #root {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        container-type: size;
+        isolation: isolate;
+        --f04-ink: #080c0f;
+        --f04-cream: #fafcfd;
+        --f04-tile: #eff2f5;
+        --f04-coral: #0069bd;
+        --f04-hair: color-mix(in srgb, var(--f04-ink) 12%, transparent);
+        font-family: Manrope;
+        color: var(--f04-ink);
+      }
+
+      /* full-bleed ground lives on a clip layer, never on #root */
+      .f04-clip {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: var(--f04-cream);
+      }
+
+      /* kicker-spike: the ✱ coral eyebrow — JetBrains Mono uppercase 0.16em */
+      .f04-kick {
+        position: absolute;
+        top: 7.78cqh;
+        left: 4.1667cqw;
+        display: flex;
+        align-items: center;
+        gap: 0.7cqw;
+        margin: 0;
+        font-family: "JetBrains Mono";
+        font-size: 1.45cqw;
+        font-weight: 500;
+        line-height: 1.2;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--f04-coral);
+      }
+
+      .f04-sp {
+        font-size: 1.7cqw;
+        line-height: 1;
+      }
+
+      .f04-title {
+        position: absolute;
+        top: 11.85cqh;
+        left: 4.1667cqw;
+        margin: 0;
+        font-size: 4.5833cqw;
+        font-weight: 400;
+        line-height: 1.06;
+        letter-spacing: -0.018em;
+        color: var(--f04-ink);
+      }
+
+      .f04-sp,
+      .f04-w {
+        display: inline-block;
+      }
+
+      .f04-meta {
+        position: absolute;
+        top: 23.15cqh;
+        right: 4.1667cqw;
+        left: 4.1667cqw;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 3cqw;
+      }
+
+      /* the frame's ONE coral moment */
+      .f04-count {
+        margin: 0;
+        font-family: "JetBrains Mono";
+        font-size: 1.7cqw;
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--f04-coral);
+      }
+
+      .f04-sub {
+        margin: 0;
+        font-family: "JetBrains Mono";
+        font-size: 1.4cqw;
+        font-weight: 400;
+        line-height: 1;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--f04-ink) 52%, transparent);
+      }
+
+      .f04-rule {
+        position: absolute;
+        top: 28.89cqh;
+        right: 4.1667cqw;
+        left: 4.1667cqw;
+        height: 1px;
+        background: var(--f04-hair);
+        transform-origin: left center;
+      }
+
+      /* the window: the tall real capture travels inside it */
+      .f04-window {
+        position: absolute;
+        top: 32.22cqh;
+        right: 4.1667cqw;
+        left: 4.1667cqw;
+        height: 50.74cqh;
+        overflow: hidden;
+        border: 1px solid var(--f04-hair);
+        border-radius: 12px;
+        background: var(--f04-tile);
+        box-shadow:
+          0 1px 3px color-mix(in srgb, var(--f04-ink) 8%, transparent),
+          0 4px 16px color-mix(in srgb, var(--f04-ink) 4%, transparent);
+      }
+
+      /* depth plane 1 — far: the matting beside the plate, slowest. The whole
+         plane lives in one wrapper so it is a single transform tween, and its
+         ruled matting drifts at 0.34x the surface's rate. */
+      .f04-mat {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: calc(100% + 320px);
+      }
+
+      .f04-far {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2.7083cqw;
+        background: var(--f04-tile);
+      }
+
+      /* The left mat carries the far plane: a ruled matting texture that
+         drifts at its own slower rate under the rail, so the depth is visible
+         without reading as a second, unexplained index rail. */
+      .f04-far-l {
+        left: 0;
+        border-right: 1px solid var(--f04-hair);
+        background-image: linear-gradient(
+          to bottom,
+          transparent 0 21px,
+          color-mix(in srgb, var(--f04-ink) 13%, transparent) 21px 23px,
+          transparent 23px 44px
+        );
+        background-size: 14px 44px;
+        background-position: 50% 0;
+        background-repeat: repeat-y;
+      }
+
+      /* the index rail rides the surface at the page's own rate, each numeral
+         centred on its tool row, so the margin numbers the registry in the
+         page's order: 01–05 the Image tools, 06–15 the PDF ones. */
+      .f04-rail {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 2.7083cqw;
+        height: 100%;
+      }
+
+      .f04-idx {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        font-family: "JetBrains Mono";
+        font-size: 1.25cqw;
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: 0.08em;
+        color: color-mix(in srgb, var(--f04-ink) 55%, transparent);
+      }
+
+      .f04-stage {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 2.7083cqw;
+        right: 0;
+        overflow: hidden;
+      }
+
+      /* depth plane 2 — the surface itself: ONE world wrapper carries the camera */
+      .f04-world {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        will-change: transform;
+      }
+
+      .f04-plate {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      /* the rig — the frame edge the surface passes under (static chrome) */
+      .f04-edge {
+        position: absolute;
+        right: 0;
+        left: 0;
+        height: 4.44cqh;
+        pointer-events: none;
+      }
+
+      .f04-edge-t {
+        top: 0;
+        background: linear-gradient(
+          to bottom,
+          var(--f04-cream),
+          color-mix(in srgb, var(--f04-cream) 0%, transparent)
+        );
+      }
+
+      .f04-edge-b {
+        bottom: 0;
+        background: linear-gradient(
+          to top,
+          var(--f04-cream),
+          color-mix(in srgb, var(--f04-cream) 0%, transparent)
+        );
+      }
+    </style>
+
+    <div data-hf-id="hf-zn3p" class="f04-clip clip" id="registry-ground" data-start="0" data-duration="6.5" data-track-index="0">
+      <p data-hf-id="hf-1fo2" class="f04-kick"><span data-hf-id="hf-0njs" class="f04-sp f04-w">✱</span><span data-hf-id="hf-1gs2" class="f04-w">Registry</span></p>
+
+      <h1 data-hf-id="hf-a4hh" class="f04-title">
+        <span data-hf-id="hf-p8tb" class="f04-w">15</span> <span data-hf-id="hf-iwt0" class="f04-w">tools,</span>
+        <span data-hf-id="hf-l3d1" class="f04-w">two</span> <span data-hf-id="hf-h2lt" class="f04-w">categories</span>
+      </h1>
+
+      <div data-hf-id="hf-kx30" class="f04-meta">
+        <p data-hf-id="hf-zdpp" class="f04-count">
+          <span data-hf-id="hf-w0ak" class="f04-w">5</span> <span data-hf-id="hf-k9o6" class="f04-w">image</span>
+          <span data-hf-id="hf-cahu" class="f04-w">·</span> <span data-hf-id="hf-r8cg" class="f04-w">10</span>
+          <span data-hf-id="hf-ndo9" class="f04-w">pdf</span>
+        </p>
+        <p data-hf-id="hf-pxf3" class="f04-sub">No sign-in and no upload step</p>
+      </div>
+
+      <div data-hf-id="hf-qmgd" class="f04-rule"></div>
+
+      <div data-hf-id="hf-9bvn" class="f04-window">
+        <div data-hf-id="hf-kz0o" class="f04-mat" aria-hidden="true">
+          <div data-hf-id="hf-32zv" class="f04-far f04-far-l"></div>
+        </div>
+
+        <div data-hf-id="hf-3whu" class="f04-rail" aria-hidden="true">
+          <i data-hf-id="hf-gwsb" class="f04-idx">01</i>
+          <i data-hf-id="hf-giha" class="f04-idx">02</i>
+          <i data-hf-id="hf-g469" class="f04-idx">03</i>
+          <i data-hf-id="hf-fpv8" class="f04-idx">04</i>
+          <i data-hf-id="hf-fbk7" class="f04-idx">05</i>
+          <i data-hf-id="hf-ex96" class="f04-idx">06</i>
+          <i data-hf-id="hf-eiy5" class="f04-idx">07</i>
+          <i data-hf-id="hf-khjk" class="f04-idx">08</i>
+          <i data-hf-id="hf-k38j" class="f04-idx">09</i>
+          <i data-hf-id="hf-i2r5" class="f04-idx">10</i>
+          <i data-hf-id="hf-ih26" class="f04-idx">11</i>
+          <i data-hf-id="hf-ivd7" class="f04-idx">12</i>
+          <i data-hf-id="hf-j9o8" class="f04-idx">13</i>
+          <i data-hf-id="hf-ghj1" class="f04-idx">14</i>
+          <i data-hf-id="hf-gvu2" class="f04-idx">15</i>
+        </div>
+
+        <div data-hf-id="hf-51oz" class="f04-stage">
+          <div data-hf-id="hf-j0og" class="f04-world" data-layout-allow-overflow="">
+            <img data-hf-id="hf-ac78" class="f04-plate" src="assets/full-page.png" alt="Konbato registry page" width="1920" height="7505">
+          </div>
+        </div>
+
+        <div data-hf-id="hf-xa2w" class="f04-edge f04-edge-t" aria-hidden="true"></div>
+        <div data-hf-id="hf-891y" class="f04-edge f04-edge-b" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var root =
+          (document.currentScript && document.currentScript.closest
+            ? document.currentScript.closest("#root")
+            : null) || document.getElementById("root");
+        if (!root) return;
+
+        var winEl = root.querySelector(".f04-window");
+        var world = root.querySelector(".f04-world");
+        var plate = root.querySelector(".f04-plate");
+        var mat = root.querySelector(".f04-mat");
+        var rail = root.querySelector(".f04-rail");
+        var rule = root.querySelector(".f04-rule");
+        var sub = root.querySelector(".f04-sub");
+        var kick = root.querySelector(".f04-kick");
+        var title = root.querySelector(".f04-title");
+        var count = root.querySelector(".f04-count");
+        var idxItems = Array.prototype.slice.call(
+          root.querySelectorAll(".f04-idx"),
+        );
+
+        /* Landmarks live in the capture's OWN pixel space (the plate is a
+           1920 x 7505 capture of the live registry page): 880 px is the
+           registry heading block, 1650 px is the PDF half resting below it.
+           Measuring the pass in the page's own pixels keeps it honest to the
+           real surface instead of inventing a scroll distance. */
+        var PLATE_W = 1920;
+        var FROM_Y = 880;
+        var TO_Y = 1650;
+
+        /* The registry's own row geometry, measured off the capture: the
+           centre of each row's title/icon line, not the midpoint between row
+           separators (the page sits its icon a few pixels above that
+           midpoint). The margin numbers ride these rows in the page's order,
+           01–05 the Image tools and 06–15 the PDF ones. */
+        var ROW_Y = [
+          1243, 1331, 1421, 1511, 1599, 1766, 1854, 1943, 2031, 2121, 2211,
+          2298, 2389, 2477, 2566,
+        ];
+
+        var plateW = plate.getBoundingClientRect().width || PLATE_W;
+        var scale = plateW / PLATE_W;
+        var baseY = FROM_Y * scale;
+        var travel = (TO_Y - FROM_Y) * scale;
+        var winH = winEl.clientHeight || 548;
+        var camEnd = baseY + travel;
+
+        idxItems.forEach(function (el, i) {
+          var h = el.offsetHeight || 24;
+          el.style.top = (ROW_Y[i] * scale - h / 2).toFixed(2) + "px";
+        });
+
+        /* Depth planes. Each plane covers the same camera distance in the same
+           window, so its net rate is a fixed fraction of the surface's: the
+           matting drifts at 0.34x (far) while the plate travels at 1.0x, with
+           the window's own edge treatment as the static rig. Every plane is a
+           plain transform tween — nothing depends on a callback firing during a
+           seek. */
+        var RATE_FAR = 0.34;
+        var farY = -travel * RATE_FAR;
+
+        var tl = gsap.timeline({ paused: true });
+
+        /* Scene 1 — the count lands. Per-word staggered reveal with
+           content-aware pacing: each word's window is derived from its own
+           length (longer words earn more screen time), and the flat schedule
+           is computed once here, never per frame. The counts are authored
+           type, not readouts — nothing counts up. */
+        var BASE_DURATION = 0.26;
+        var SEC_PER_CHAR = 0.028;
+
+        function revealLine(el, cue, stagger) {
+          if (!el) return;
+          var words = Array.prototype.slice.call(el.querySelectorAll(".f04-w"));
+          words.forEach(function (wordEl, index) {
+            var chars = (wordEl.textContent || "").trim().length;
+            var dur = Math.min(
+              0.62,
+              Math.max(0.22, BASE_DURATION + chars * SEC_PER_CHAR),
+            );
+            tl.fromTo(
+              wordEl,
+              { opacity: 0, yPercent: 48 },
+              { opacity: 1, yPercent: 0, duration: dur, ease: "power3.out" },
+              cue + index * stagger,
+            );
+          });
+        }
+
+        tl.fromTo(
+          winEl,
+          { opacity: 0, y: 18, scale: 0.988 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.62, ease: "power3.out" },
+          0.06,
+        );
+        tl.fromTo(
+          plate,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.5, ease: "power2.out" },
+          0.34,
+        );
+
+        revealLine(kick, 0.12, 0.08);
+        revealLine(title, 0.34, 0.17);
+        revealLine(count, 1.44, 0.1);
+
+        tl.fromTo(
+          rule,
+          { scaleX: 0 },
+          { scaleX: 1, duration: 0.55, ease: "power2.inOut" },
+          1.2,
+        );
+        tl.fromTo(
+          sub,
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.42, ease: "power3.out" },
+          1.98,
+        );
+
+        /* Scene 2 + 3 — the forced-scroll pass. ONE continuous move down the
+           real plate: it starts on the registry heading and ends 101 plate px
+           above the PDF half, decelerating into the held final section (a
+           slow-fast-slow tail, so it never reads as a scrollbar being
+           released). The depth planes ride the same 3.6s window at their own
+           fixed rates, so the parallax is a pure function of the playhead. */
+        tl.fromTo(
+          world,
+          { y: -baseY },
+          { y: -(baseY + travel), duration: 3.6, ease: "power2.inOut" },
+          2.4,
+        );
+        tl.fromTo(
+          mat,
+          { y: 0 },
+          { y: farY, duration: 3.6, ease: "power2.inOut" },
+          2.4,
+        );
+        // the rail rides the surface at the page's own rate, so its numbers
+        // stay glued to their rows all the way down
+        tl.fromTo(
+          rail,
+          { y: -baseY },
+          { y: -(baseY + travel), duration: 3.6, ease: "power2.inOut" },
+          2.4,
+        );
+
+        /* Each row's number rises as the camera reaches that row. The cue is
+           derived, not guessed: invert the pass's own ease to find the moment
+           the row sits LEAD px below the frame, so the number lands with its
+           row however the pass is retimed. */
+        var CAM_START = 2.4;
+        var CAM_DUR = 3.6;
+        var LEAD = winH * 0.13;
+
+        function invertEase(p) {
+          return p < 0.5 ? Math.sqrt(p / 2) : 1 - Math.sqrt((1 - p) / 2);
+        }
+
+        idxItems.forEach(function (el, i) {
+          var rowY = ROW_Y[i] * scale;
+          if (rowY - camEnd > winH) return; // this row never reaches the frame
+          var target = rowY - winH - LEAD;
+          var p = Math.min(1, Math.max(0, (target - baseY) / travel));
+          var cue = Math.max(
+            CAM_START + 0.05 + i * 0.06,
+            CAM_START + CAM_DUR * invertEase(p),
+          );
+          tl.fromTo(
+            el,
+            { opacity: 0, yPercent: 34 },
+            { opacity: 1, yPercent: 0, duration: 0.55, ease: "power3.out" },
+            cue,
+          );
+        });
+
+        tl.seek(0);
+        window.__timelines = window.__timelines || {};
+        window.__timelines["04-registry"] = tl;
+      })();
+    </script>
+  </div>
+</template>
