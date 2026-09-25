@@ -54,7 +54,7 @@ The full product reasoning — problem statement, competitive landscape, scope, 
 | Tool | What it does |
 | --- | --- |
 | [Image Compress](https://konbato.vercel.app/tools/image-compress) | Optimize file size without losing visual quality |
-| [Image Converter](https://konbato.vercel.app/tools/image-convert) | Convert between JPG, PNG, WebP, GIF, and TIFF |
+| [Image Converter](https://konbato.vercel.app/tools/image-convert) | Convert between JPG, PNG, WebP, GIF, and TIFF — with HEIC input and AVIF output |
 | [Image Resize & Crop](https://konbato.vercel.app/tools/image-resize-crop) | Crop by preset or numeric bounds, then resize into PNG, JPG, or WebP |
 | [Remove Background](https://konbato.vercel.app/tools/image-remove-bg) | Isolate subjects at full resolution with a local segmentation model |
 | [Image Metadata Remover](https://konbato.vercel.app/tools/image-metadata-remove) | Strip EXIF, geolocation, and camera details by re-encoding |
@@ -148,10 +148,11 @@ Konbato needs a browser with WebAssembly, Web Workers, and (for some tools) `Off
 ## Roadmap
 
 - [x] Prove the privacy claim with an automated no-egress test
+- [x] Tune multi-page rendering under memory pressure (streamed PDF→image output)
+- [x] AVIF output with capability detection, and HEIC input decoding
 - [ ] Improve memory management for very large files
-- [ ] Tune multi-page rendering under memory pressure
 - [ ] Offline/PWA mode via a service worker
-- [ ] Dark/light theming polish and broader a11y coverage
+- [x] Dark/light theming polish and broader a11y coverage (axe scan in CI)
 
 ## License
 

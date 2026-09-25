@@ -477,7 +477,6 @@ self.onmessage = async (e: MessageEvent) => {
         const numPages = doc.countPages();
         const tooMany = tooManyPages(numPages);
         if (tooMany) throw tooMany;
-        const results = [];
         const isJpeg = format === 'image/jpeg';
         
         for (let i = 0; i < numPages; i++) {
@@ -494,30 +493,29 @@ self.onmessage = async (e: MessageEvent) => {
             page = doc.loadPage(i);
             pixmap = page.toPixmap((mupdf as any).Matrix.scale(scale, scale), (mupdf as any).ColorSpace.DeviceRGB, false, true);
             let imgBytes = pixmap.asPNG();
+            let mimeType = 'image/png';
 
             if (isJpeg) {
               const jpegBuffer = await pngToJpeg(imgBytes, quality);
               imgBytes = new Uint8Array(jpegBuffer);
+              mimeType = 'image/jpeg';
             }
 
-            // Slice the Uint8Array buffer to prevent keeping references
+            // Slice the Uint8Array buffer to prevent keeping references.
+            // Transfer the page immediately so the worker heap never holds more
+            // than one page's worth of pixels at a time.
             const singleBuffer = imgBytes.buffer.slice(imgBytes.byteOffset, imgBytes.byteOffset + imgBytes.byteLength);
-            results.push({
-              pageIndex: i,
-              buffer: singleBuffer
-            });
+            (self as any).postMessage(
+              { id, type: 'PAGE', payload: { pageIndex: i, buffer: singleBuffer, mimeType } },
+              [singleBuffer]
+            );
           } finally {
             safeDestroy(page);
             safeDestroy(pixmap);
           }
         }
         
-        const transferBuffers = results.map(r => r.buffer);
-        (self as any).postMessage({
-          id,
-          type: 'SUCCESS',
-          payload: { images: results }
-        }, transferBuffers);
+        self.postMessage({ id, type: 'SUCCESS', payload: { pageCount: numPages } });
       } finally {
         safeDestroy(doc);
       }

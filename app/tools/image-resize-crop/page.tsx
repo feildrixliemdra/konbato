@@ -24,6 +24,7 @@ import { useToolTask } from '@/lib/hooks/useToolTask';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Download01Icon } from '@hugeicons/core-free-icons';
 import { ACCENTS, requireTool } from '@/lib/tools';
+import { canEncodeAvif } from '@/lib/image-capabilities';
 
 const tool = requireTool('image-resize-crop');
 
@@ -52,6 +53,7 @@ const outputExtensions: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/webp': 'webp',
+  'image/avif': 'avif',
 };
 
 function getBaseName(fileName: string) {
@@ -102,6 +104,7 @@ export default function ImageResizeCropPage() {
   const [targetWidth, setTargetWidth] = useState('');
   const [targetHeight, setTargetHeight] = useState('');
   const [targetFormat, setTargetFormat] = useState('image/png');
+  const [avifSupported, setAvifSupported] = useState(false);
   const [result, setResult] = useState<{
     url: string;
     name: string;
@@ -115,6 +118,16 @@ export default function ImageResizeCropPage() {
       if (result?.url) URL.revokeObjectURL(result.url);
     };
   }, [sourceUrl, result]);
+
+  useEffect(() => {
+    let cancelled = false;
+    canEncodeAvif().then((ok) => {
+      if (!cancelled) setAvifSupported(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const outputName = useMemo(() => {
     if (!file) return 'resized-image.png';
@@ -494,6 +507,13 @@ export default function ImageResizeCropPage() {
                   <SelectItem value="image/png">PNG</SelectItem>
                   <SelectItem value="image/jpeg">JPG</SelectItem>
                   <SelectItem value="image/webp">WEBP</SelectItem>
+                  {avifSupported ? (
+                    <SelectItem value="image/avif">AVIF</SelectItem>
+                  ) : (
+                    <span className="px-1.5 pb-1 text-xs text-muted-foreground">
+                      AVIF output is not supported in this browser.
+                    </span>
+                  )}
                 </SelectContent>
               </Select>
             </div>

@@ -156,18 +156,20 @@ export function Hero() {
               <span className="text-sm text-muted-foreground font-dm-sans">smaller</span>
             </dd>
             {/* The bar is data, not ornament: its width is the figure stated
-                beside it, read from the same source. */}
-            <dd
-              className="mt-3 h-1 w-full overflow-hidden rounded-full bg-border/70"
-              role="img"
-              aria-label={`File size reduced by ${receipt.reduction}`}
-            >
+                beside it, read from the same source. The progressbar role lives
+                on the fill so the <dd> keeps its definition-list semantics. */}
+            <dd className="mt-3 h-1 w-full overflow-hidden rounded-full bg-border/70">
               <motion.span
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 0.9, delay: 0.8, ease: EASE.out }}
                 style={{ width: `${receipt.reductionPercent}%` }}
                 className="block h-full origin-left rounded-full bg-gradient-to-r from-category-image to-success"
+                role="progressbar"
+                aria-label={`File size reduced by ${receipt.reduction}`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={receipt.reductionPercent}
               />
             </dd>
             <dd className="mt-3 text-xs text-muted-foreground font-dm-sans">

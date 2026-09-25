@@ -40,13 +40,6 @@ interface ConvertedImage {
   fileName: string;
 }
 
-interface PDFImageResult {
-  images: {
-    pageIndex: number;
-    buffer: ArrayBuffer;
-  }[];
-}
-
 export default function PDFToImagePage() {
   const createWorker = useCallback(() => {
     if (typeof window === 'undefined') return null;
@@ -91,6 +84,11 @@ export default function PDFToImagePage() {
   const handleConvert = async () => {
     if (!file) return;
 
+    // Object URLs are created as pages stream back; if the task fails part-way,
+    // the ones already created never reach `results`, so they are revoked below
+    // on the failure path rather than leaking until the next full reload.
+    const pages: ConvertedImage[] = [];
+
     const converted = await task.runTask(
       async (report) => {
         const scaleNum = parseFloat(scale);
@@ -107,21 +105,22 @@ export default function PDFToImagePage() {
 
         report(0, 'Initializing page conversion…');
 
-        const response = await postTask<typeof payload, PDFImageResult>(
+        await postTask<typeof payload, { pageCount: number }>(
           'PDF_TO_IMAGE',
           payload,
-          (pct, msg) => report(pct, msg)
+          (pct, msg) => report(pct, msg),
+          (page) => {
+            const blob = new Blob([page.buffer], { type: page.mimeType });
+            const url = URL.createObjectURL(blob);
+            pages.push({
+              pageIndex: page.pageIndex,
+              url,
+              fileName: `${baseName}_page_${page.pageIndex + 1}.${ext}`,
+            });
+          }
         );
 
-        return response.images.map((img) => {
-          const blob = new Blob([img.buffer], { type: format });
-          const url = URL.createObjectURL(blob);
-          return {
-            pageIndex: img.pageIndex,
-            url,
-            fileName: `${baseName}_page_${img.pageIndex + 1}.${ext}`,
-          };
-        });
+        return pages;
       },
       {
         initialMessage: 'Initializing page conversion…',
@@ -130,6 +129,7 @@ export default function PDFToImagePage() {
     );
 
     if (converted.ok) setResults(converted.value);
+    else pages.forEach((page) => URL.revokeObjectURL(page.url));
   };
 
   const handleDownloadAll = () => {

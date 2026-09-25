@@ -26,6 +26,8 @@ import { motion } from 'framer-motion';
 import { DURATION, EASE } from '@/lib/motion';
 import { requireTool } from '@/lib/tools';
 import { downloadResults } from '@/lib/download';
+import { canEncodeAvif } from '@/lib/image-capabilities';
+import { isHeicFile, decodeHeicToPngBuffer } from '@/lib/heic-decode';
 
 const tool = requireTool('image-convert');
 
@@ -48,6 +50,7 @@ const extensionByMimeType: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/webp': 'webp',
+  'image/avif': 'avif',
 };
 
 export default function ImageConvertPage() {
@@ -61,6 +64,17 @@ export default function ImageConvertPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [targetFormat, setTargetFormat] = useState<string>('image/png');
   const [results, setResults] = useState<ProcessedFile[]>([]);
+  const [avifSupported, setAvifSupported] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    canEncodeAvif().then((ok) => {
+      if (!cancelled) setAvifSupported(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -92,9 +106,10 @@ export default function ImageConvertPage() {
 
           report(Math.round((i / files.length) * 100), `Converting ${file.name}…`);
 
+          const isHeic = isHeicFile(file);
           const payload = {
-            buffer: await file.arrayBuffer(),
-            fileName: file.name,
+            buffer: isHeic ? await decodeHeicToPngBuffer(file) : await file.arrayBuffer(),
+            fileName: isHeic ? file.name.replace(/\.(heic|heif)$/i, '.png') : file.name,
             targetMimeType: targetFormat,
           };
 
@@ -117,7 +132,9 @@ export default function ImageConvertPage() {
             ctx.drawImage(result.bitmap, 0, 0);
             outBlob = await new Promise<Blob>((resolve, reject) => {
               const hasQuality =
-                targetFormat === 'image/jpeg' || targetFormat === 'image/webp';
+                targetFormat === 'image/jpeg' ||
+                targetFormat === 'image/webp' ||
+                targetFormat === 'image/avif';
               canvas.toBlob(
                 (blob) => {
                   if (blob) resolve(blob);
@@ -179,10 +196,10 @@ export default function ImageConvertPage() {
             {/* Upload Area */}
             <div className="md:col-span-2">
               <FileUploadZone
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 multiple={true}
                 onFilesSelected={handleFilesSelected}
-                description="Upload images to convert (JPG, PNG, WEBP, GIF, TIFF)"
+                description="Upload images to convert (JPG, PNG, WEBP, GIF, TIFF, HEIC)"
               />
             </div>
 
@@ -209,6 +226,13 @@ export default function ImageConvertPage() {
                       <SelectItem value="image/png">PNG (Lossless)</SelectItem>
                       <SelectItem value="image/jpeg">JPG / JPEG (Lossy)</SelectItem>
                       <SelectItem value="image/webp">WEBP (Modern / Small)</SelectItem>
+                      {avifSupported ? (
+                        <SelectItem value="image/avif">AVIF (Next-gen / Smallest)</SelectItem>
+                      ) : (
+                        <span className="px-1.5 pb-1 text-xs text-muted-foreground">
+                          AVIF output is not supported in this browser.
+                        </span>
+                      )}
                     </SelectContent>
                   </Select>
                   <span className="text-xs leading-relaxed text-muted-foreground font-dm-sans">

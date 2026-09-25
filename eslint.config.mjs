@@ -15,6 +15,10 @@ const eslintConfig = defineConfig([
     "public/pdf.worker.min.mjs",
     "tests/create-test-images.js",
     "tests/create-test-pdf.js",
+    // Agent tooling and repo-pinned skills are not app code: vendored minified
+    // bundles (gsap.min.js) and CommonJS skill scripts fail the app's rules
+    // without telling us anything about the product. Keep lint on app source.
+    ".agents/**",
   ]),
 ]);
 

@@ -8,6 +8,7 @@ const TEST_IMAGES = {
   gif: path.join(__dirname, 'images', 'test-pixel.gif'),
   bmp: path.join(__dirname, 'images', 'test-pixel.bmp'),
   tiff: path.join(__dirname, 'images', 'test-pixel.tiff'),
+  heic: path.join(__dirname, 'images', 'test-pixel.heic'),
 };
 
 const TEST_FILES = {
@@ -170,7 +171,7 @@ test.describe('Tools app coverage', () => {
     await page.goto('/tools/image-convert');
 
     await expect(page.getByRole('heading', { name: 'Image Converter', exact: true })).toBeVisible();
-    await expect(page.getByText('Upload images to convert (JPG, PNG, WEBP, GIF, TIFF)')).toBeVisible();
+    await expect(page.getByText('Upload images to convert (JPG, PNG, WEBP, GIF, TIFF, HEIC)')).toBeVisible();
 
     // Upload multiple legacy converter inputs; default target format is PNG.
     const fileInput = page.locator('input[type="file"]');
@@ -188,6 +189,49 @@ test.describe('Tools app coverage', () => {
     // Verify both legacy input formats convert through the unified Image Converter route.
     await expect(page.getByText('test-pixel.png')).toHaveCount(2);
     await expect(page.getByRole('link', { name: 'Download' })).toHaveCount(2);
+  });
+
+  test('Image Converter encodes AVIF when the browser supports it', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'AVIF encode is Chromium-only');
+    await page.goto('/tools/image-convert');
+
+    await page.getByRole('combobox', { name: /Convert To/i }).click();
+
+    // The capability probe resolves shortly after mount; the AVIF option only
+    // appears once it reports support. Wait for it rather than reading the
+    // pre-probe fallback note, which is visible before the probe settles.
+    const avifOption = page.getByRole('option', { name: /AVIF/ });
+    const supports = await avifOption
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
+
+    test.skip(!supports, 'this Chromium build cannot encode AVIF');
+    await avifOption.click();
+
+    await page.locator('input[type="file"]').setInputFiles(TEST_IMAGES.png);
+    await expect(page.getByText('Selected Files (1)')).toBeVisible();
+    await page.getByRole('button', { name: 'Convert Images' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Conversion Complete' })).toBeVisible({
+      timeout: 60000,
+    });
+    await expect(page.getByText('test-pixel.avif')).toBeVisible();
+  });
+
+  test('Image Converter decodes a HEIC input', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Skip worker-based tests on Webkit');
+    await page.goto('/tools/image-convert');
+
+    await page.locator('input[type="file"]').setInputFiles(TEST_IMAGES.heic);
+    await expect(page.getByText('Selected Files (1)')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Convert Images' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Conversion Complete' })).toBeVisible({
+      timeout: 60000,
+    });
+    await expect(page.getByText('test-pixel.png')).toBeVisible();
   });
 
   test('Remove Background Tool upload flow', async ({ page }) => {

@@ -36,14 +36,17 @@ function tiffToBitmap(buffer: ArrayBuffer): ImageBitmap {
 }
 
 function getOutputMime(mimeType?: string): string {
-  return mimeType === 'image/png' || mimeType === 'image/webp' || mimeType === 'image/jpeg'
+  return mimeType === 'image/png' ||
+    mimeType === 'image/webp' ||
+    mimeType === 'image/jpeg' ||
+    mimeType === 'image/avif'
     ? mimeType
     : 'image/jpeg';
 }
 
 async function encodeCanvas(canvas: OffscreenCanvas, mimeType: string, quality = 0.9): Promise<ArrayBuffer> {
   const options: ImageEncodeOptions = { type: mimeType };
-  if (mimeType === 'image/jpeg' || mimeType === 'image/webp') {
+  if (mimeType === 'image/jpeg' || mimeType === 'image/webp' || mimeType === 'image/avif') {
     options.quality = quality;
   }
   const blob = await canvas.convertToBlob(options);
@@ -89,7 +92,7 @@ self.onmessage = async (e: MessageEvent) => {
       
       if (typeof canvas.convertToBlob === 'function') {
         const options: any = { type: targetMimeType };
-        if (targetMimeType === 'image/jpeg' || targetMimeType === 'image/webp') {
+        if (targetMimeType === 'image/jpeg' || targetMimeType === 'image/webp' || targetMimeType === 'image/avif') {
           options.quality = 0.85;
         }
         const outBlob = await canvas.convertToBlob(options);

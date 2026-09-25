@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 
 export interface WorkerMessage<T = unknown> {
   id: string;
-  type: 'READY' | 'PROGRESS' | 'SUCCESS' | 'ERROR';
+  type: 'READY' | 'PROGRESS' | 'SUCCESS' | 'ERROR' | 'PAGE';
   payload: T;
 }
 
@@ -10,6 +10,13 @@ export interface WorkerRequest<T = unknown> {
   id: string;
   type: string;
   payload: T;
+}
+
+/** A single page of a streamed multi-page result (see `PDF_TO_IMAGE`). */
+export interface WorkerPagePayload {
+  pageIndex: number;
+  buffer: ArrayBuffer;
+  mimeType: string;
 }
 
 interface WorkerStatusPayload {
@@ -21,6 +28,7 @@ interface PendingTask {
   onSuccess: (data: unknown) => void;
   onError: (error: Error) => void;
   onProgress?: (progress: number, message?: string) => void;
+  onPage?: (page: WorkerPagePayload) => void;
 }
 
 function toWorkerError(message: string, event?: ErrorEvent | MessageEvent) {
@@ -91,6 +99,8 @@ export function useWorker(createWorker: () => Worker | null) {
         if (activeCallbacks.onProgress && typeof status.progress === 'number') {
           activeCallbacks.onProgress(status.progress, status.message);
         }
+      } else if (type === 'PAGE') {
+        if (activeCallbacks.onPage) activeCallbacks.onPage(payload as WorkerPagePayload);
       }
     };
 
@@ -113,7 +123,8 @@ export function useWorker(createWorker: () => Worker | null) {
     <Req = unknown, Res = unknown>(
       type: string,
       payload: Req,
-      onProgress?: (progress: number, message?: string) => void
+      onProgress?: (progress: number, message?: string) => void,
+      onPage?: (page: WorkerPagePayload) => void
     ): Promise<Res> => {
       return new Promise<Res>((resolve, reject) => {
         if (!workerRef.current) {
@@ -126,6 +137,7 @@ export function useWorker(createWorker: () => Worker | null) {
           onSuccess: (data) => resolve(data as Res),
           onError: reject,
           onProgress,
+          onPage,
         });
 
         const request = { id, type, payload } as WorkerRequest;
