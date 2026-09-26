@@ -299,6 +299,31 @@ async function watermarkPagePixmap(
   }
 }
 
+async function stampPageNumberPng(
+  pngBytes: Uint8Array,
+  text: string,
+  color: string
+): Promise<ArrayBuffer> {
+  const blob = new Blob([pngBytes as any], { type: 'image/png' });
+  const bitmap = await createImageBitmap(blob);
+  try {
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get 2D OffscreenCanvas context');
+    ctx.drawImage(bitmap, 0, 0);
+    const fontSize = Math.max(10, Math.round(canvas.width / 60));
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, canvas.width / 2, canvas.height - fontSize * 1.5);
+    const jpegBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.92 });
+    return await jpegBlob.arrayBuffer();
+  } finally {
+    bitmap.close();
+  }
+}
+
 self.onmessage = async (e: MessageEvent) => {
   const { id, type, payload } = e.data;
 
@@ -697,6 +722,126 @@ self.onmessage = async (e: MessageEvent) => {
         if (imageBitmap) imageBitmap.close();
       }
 
+    } else if (type === 'UNLOCK_PDF') {
+      const { buffer, password } = payload as { buffer: ArrayBuffer; password?: string };
+      const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf');
+      try {
+        if (doc.needsPassword()) {
+          // authenticatePassword returns 0 on failure, non-zero on success.
+          if (!password || doc.authenticatePassword(password) === 0) {
+            throw new Error('Incorrect password — this PDF cannot be unlocked.');
+          }
+        }
+        // `encrypt=none` writes the document back without its encryption.
+        const outBuffer = doc.saveToBuffer('compress,compress-images,garbage=2,encrypt=none');
+        const transferBuffer = copyPdfBuffer(outBuffer);
+        (self as any).postMessage({ id, type: 'SUCCESS', payload: { buffer: transferBuffer } }, [transferBuffer]);
+      } finally {
+        safeDestroy(doc);
+      }
+    } else if (type === 'PROTECT_PDF') {
+      const { buffer, userPassword, ownerPassword } = payload as {
+        buffer: ArrayBuffer; userPassword: string; ownerPassword?: string;
+      };
+      const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf');
+      try {
+        const owner = ownerPassword || userPassword;
+        // The option string is comma-separated, so passwords must not contain ',' '=' ':'.
+        // The page also guards this, but the worker re-checks so a malformed
+        // message can't corrupt the save-option string.
+        if (/[,=:]/.test(userPassword) || /[,=:]/.test(owner)) {
+          throw new Error('Password cannot contain , = or :');
+        }
+        const outBuffer = doc.saveToBuffer(
+          `compress,compress-images,garbage=2,encrypt=aes-256,user-password=${userPassword},owner-password=${owner}`
+        );
+        const transferBuffer = copyPdfBuffer(outBuffer);
+        (self as any).postMessage({ id, type: 'SUCCESS', payload: { buffer: transferBuffer } }, [transferBuffer]);
+      } finally {
+        safeDestroy(doc);
+      }
+    } else if (type === 'CROP_PDF') {
+      const { buffer, margins } = payload as {
+        buffer: ArrayBuffer;
+        margins: { top: number; right: number; bottom: number; left: number };
+      };
+      const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf');
+      try {
+        for (let i = 0; i < doc.countPages(); i++) {
+          const page = doc.loadPage(i);
+          const b = page.getBounds('CropBox'); // [x0, y0, x1, y1]
+          const cropped = [
+            b[0] + margins.left,
+            b[1] + margins.bottom,
+            b[2] - margins.right,
+            b[3] - margins.top,
+          ];
+          // Reject margins that would invert the box and produce a corrupt page.
+          if (cropped[2] <= cropped[0] || cropped[3] <= cropped[1]) {
+            throw new Error('Crop margins exceed the page size.');
+          }
+          page.setPageBox('CropBox', cropped);
+          safeDestroy(page);
+        }
+        const outBuffer = doc.saveToBuffer('compress,compress-images,garbage=2');
+        const transferBuffer = copyPdfBuffer(outBuffer);
+        (self as any).postMessage({ id, type: 'SUCCESS', payload: { buffer: transferBuffer } }, [transferBuffer]);
+      } finally {
+        safeDestroy(doc);
+      }
+    } else if (type === 'PAGE_NUMBER_PDF') {
+      const { buffer, color } = payload as { buffer: ArrayBuffer; color?: string };
+      const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf');
+      const outDoc = new (mupdf as any).PDFDocument();
+      try {
+        const numPages = doc.countPages();
+        const tooMany = tooManyPages(numPages);
+        if (tooMany) throw tooMany;
+        const scale = 150 / 72;
+
+        for (let i = 0; i < numPages; i++) {
+          const pagePct = Math.round((i / numPages) * 80);
+          self.postMessage({
+            id,
+            type: 'PROGRESS',
+            payload: { progress: 10 + pagePct, message: `Numbering page ${i + 1} of ${numPages}…` },
+          });
+
+          let page: any;
+          let pixmap: any;
+          try {
+            page = doc.loadPage(i);
+            const bounds = page.getBounds();
+            const width = bounds[2] - bounds[0];
+            const height = bounds[3] - bounds[1];
+
+            pixmap = page.toPixmap(
+              (mupdf as any).Matrix.scale(scale, scale),
+              (mupdf as any).ColorSpace.DeviceRGB,
+              false,
+              true
+            );
+            const pngBytes = pixmap.asPNG();
+            const jpegBuffer = await stampPageNumberPng(
+              pngBytes,
+              `Page ${i + 1} of ${numPages}`,
+              color || '#000000'
+            );
+            insertPageWithImage(outDoc, i, jpegBuffer, width, height);
+          } finally {
+            safeDestroy(page);
+            safeDestroy(pixmap);
+          }
+        }
+
+        self.postMessage({ id, type: 'PROGRESS', payload: { progress: 90, message: 'Compiling numbered PDF…' } });
+        const outBuffer = outDoc.saveToBuffer('compress,compress-images,garbage=2');
+        const transferBuffer = copyPdfBuffer(outBuffer);
+        (self as any).postMessage({ id, type: 'SUCCESS', payload: { buffer: transferBuffer } }, [transferBuffer]);
+      } finally {
+        safeDestroy(doc);
+        safeDestroy(outDoc);
+      }
     } else {
       throw new Error(`Unsupported message type: ${type}`);
     }

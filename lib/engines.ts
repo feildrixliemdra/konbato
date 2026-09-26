@@ -60,6 +60,10 @@ export const ENGINES: Engine[] = [
       'pdf-to-image',
       'image-to-pdf',
       'pdf-watermark',
+      'pdf-unlock',
+      'pdf-protect',
+      'pdf-crop',
+      'pdf-page-number',
     ],
   },
   {
@@ -86,7 +90,7 @@ export const ENGINES: Engine[] = [
     lane: 'Main thread',
     workers: null,
     role: 'Rasterises page thumbnails for the previews and page pickers.',
-    tools: ['pdf-organizer', 'pdf-merge', 'pdf-split', 'pdf-rotate', 'pdf-reorder'],
+    tools: ['pdf-organizer', 'pdf-merge', 'pdf-split', 'pdf-rotate', 'pdf-reorder', 'pdf-to-markdown', 'pdf-to-word'],
   },
   {
     name: '@imgly/background-removal',
