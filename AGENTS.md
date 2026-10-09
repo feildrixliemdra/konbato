@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Konbato is a Next.js 16 (App Router) app of 14 image/PDF tools that run **entirely in the browser** — no route handlers, no uploads, no server-side processing. Every route is statically prerendered; heavy work happens in Web Workers (`app/workers/`) over WASM (mupdf) and Canvas/OffscreenCanvas APIs. Product scope lives in `docs/PRD.md`; user-facing copy in `README.md`.
+Konbato is a Next.js 16 (App Router) app of 21 image/PDF tools that run **entirely in the browser** — no route handlers, no uploads, no server-side processing. Every route is statically prerendered; heavy work happens in Web Workers (`app/workers/`) over WASM (mupdf) and Canvas/OffscreenCanvas APIs. Product scope lives in `docs/PRD.md`; user-facing copy in `README.md`.
 
 ## Commands
 

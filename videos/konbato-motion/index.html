@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "Instrument Serif";
+        src: url("assets/fonts/InstrumentSerif-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Instrument Serif";
+        src: url("assets/fonts/InstrumentSerif-Italic.ttf") format("truetype");
+        font-weight: 400;
+        font-style: italic;
+      }
+      @font-face {
+        font-family: "Geist";
+        src: url("assets/fonts/Geist.ttf") format("truetype");
+        font-weight: 100 900;
+        font-style: normal;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #ffffff;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #ffffff;
+        color: #0a0a0f;
+        font-family: "Geist", sans-serif;
+      }
+      /* faint dot grid so the white feels like paper, not a void */
+      #dots {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(#d9dce3 2px, transparent 2px);
+        background-size: 48px 48px;
+        opacity: 0.55;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+      }
+      .serif {
+        font-family: "Instrument Serif", serif;
+        font-weight: 400;
+        letter-spacing: -0.02em;
+      }
+      .blue {
+        color: #2563eb;
+      }
+      .kicker {
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-bottom: 40px;
+      }
+
+      /* scene 1 */
+      .h1 {
+        font-size: 230px;
+        line-height: 1.12;
+        text-align: center;
+      }
+      .h1 .ln {
+        display: block;
+        overflow: hidden;
+        padding: 0 20px;
+      }
+      .h1 .ln span {
+        display: block;
+      }
+      #ul {
+        width: 640px;
+        height: 36px;
+        margin-top: -18px;
+        overflow: visible;
+      }
+
+      /* scene 2: product demo */
+      #s2 {
+        justify-content: flex-start;
+      }
+      #stage {
+        margin-top: 70px;
+        position: relative;
+      }
+      #win {
+        width: 1440px;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow:
+          0 0 0 1.5px #e4e7ec,
+          0 40px 90px -20px rgba(16, 24, 40, 0.28),
+          0 12px 24px -8px rgba(16, 24, 40, 0.12);
+        overflow: hidden;
+      }
+      #chrome {
+        height: 52px;
+        background: #f3f4f6;
+        border-bottom: 1.5px solid #e4e7ec;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        gap: 10px;
+        position: relative;
+      }
+      .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+      }
+      #tab {
+        position: absolute;
+        left: 50%;
+        margin-left: -170px;
+        width: 340px;
+        height: 32px;
+        border-radius: 16px;
+        background: #ffffff;
+        color: #6b7280;
+        font-size: 17px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #screen {
+        position: relative;
+        width: 1440px;
+        height: 640px;
+        overflow: hidden;
+        background: #fafbfd;
+      }
+      #screen img.shot {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1440px;
+        height: 900px;
+      }
+      #loaded,
+      #result {
+        opacity: 0;
+      }
+      #mask {
+        position: absolute;
+        left: 0;
+        top: 462px;
+        width: 1440px;
+        height: 200px;
+        background: #fafbfd;
+        opacity: 0;
+      }
+      #cursor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 38px;
+        height: 38px;
+        opacity: 0;
+      }
+      #card {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 210px;
+        height: 150px;
+        border-radius: 14px;
+        background: #ffffff;
+        padding: 8px;
+        box-shadow:
+          0 0 0 1.5px #e4e7ec,
+          0 18px 34px -10px rgba(16, 24, 40, 0.35);
+        opacity: 0;
+      }
+      #card img {
+        display: block;
+        width: 194px;
+        height: 134px;
+        border-radius: 8px;
+        object-fit: cover;
+      }
+      #ripple {
+        position: absolute;
+        left: 1093px;
+        top: 530px;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 4px solid #2563eb;
+        opacity: 0;
+      }
+      #ring {
+        position: absolute;
+        left: 1108px;
+        top: 361px;
+        width: 116px;
+        height: 40px;
+        border-radius: 20px;
+        border: 3px solid #2563eb;
+        opacity: 0;
+      }
+      #callout {
+        position: absolute;
+        left: 260px;
+        top: 468px;
+        width: 920px;
+        height: 150px;
+        border-radius: 24px;
+        background: #0a0a0f;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 34px;
+        opacity: 0;
+      }
+      #callout .was {
+        font-size: 64px;
+        font-weight: 500;
+        color: #9aa1af;
+        text-decoration: line-through;
+        text-decoration-thickness: 4px;
+      }
+      #callout .arrow {
+        font-size: 56px;
+        color: #9aa1af;
+      }
+      #callout .now {
+        font-size: 96px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: #ffffff;
+      }
+      #callout .pct {
+        font-size: 44px;
+        font-weight: 700;
+        padding: 10px 24px;
+        border-radius: 999px;
+        background: #2563eb;
+      }
+      #zero {
+        position: absolute;
+        left: 1020px;
+        top: 345px;
+        height: 54px;
+        padding: 0 22px;
+        border-radius: 27px;
+        background: #ecfdf3;
+        color: #067647;
+        font-size: 26px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        opacity: 0;
+      }
+      #zero i {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #12b76a;
+        display: block;
+      }
+      #caps {
+        position: relative;
+        width: 1500px;
+        height: 150px;
+        margin-top: 44px;
+      }
+      .cap {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        opacity: 0;
+      }
+      .cap b {
+        font-family: "Geist", sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #2563eb;
+        border: 2.5px solid #2563eb;
+        border-radius: 999px;
+        padding: 6px 18px;
+      }
+      .cap span {
+        font-size: 92px;
+        line-height: 1.25;
+      }
+
+      /* scene 3 */
+      .h3 {
+        font-size: 190px;
+        line-height: 1.15;
+        text-align: center;
+      }
+      .rows {
+        margin-top: 70px;
+        width: 100%;
+      }
+      .row {
+        display: flex;
+        gap: 22px;
+        margin-bottom: 22px;
+        width: max-content;
+      }
+      .pill {
+        font-size: 34px;
+        font-weight: 600;
+        padding: 18px 34px;
+        border-radius: 999px;
+        border: 2.5px solid #d0d5dd;
+        background: #ffffff;
+        white-space: nowrap;
+      }
+      .pill.pdf {
+        border-color: #f1b27a;
+        color: #b4540a;
+      }
+      .pill.img {
+        border-color: #9db8f5;
+        color: #1d4ed8;
+      }
+
+      /* scene 4 */
+      #lock {
+        display: flex;
+        align-items: center;
+        gap: 36px;
+      }
+      #lock svg {
+        width: 170px;
+        height: 170px;
+        display: block;
+      }
+      #word {
+        font-size: 220px;
+        line-height: 1.2;
+      }
+      #tag {
+        margin-top: 24px;
+        font-size: 44px;
+        font-weight: 500;
+        color: #6b7280;
+        letter-spacing: -0.01em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="16.5" data-width="1920" data-height="1080">
+      <div id="dots"></div>
+
+      <!-- 1: promise -->
+      <div class="scene" id="s1">
+        <div class="kicker" id="k1">Konbato &middot; 14 free tools</div>
+        <div class="h1 serif">
+          <div class="ln"><span class="l1">Your files</span></div>
+          <div class="ln"><span class="l1">stay <em class="blue">yours.</em></span></div>
+        </div>
+        <svg id="ul" viewBox="0 0 640 36" data-layout-allow-overflow>
+          <path id="ulp" d="M6 22 C120 6, 220 34, 330 18 S 560 8, 634 20" fill="none" stroke="#2563eb" stroke-width="7" stroke-linecap="round" pathLength="1" />
+        </svg>
+      </div>
+
+      <!-- 2: real product, real flow -->
+      <div class="scene" id="s2">
+        <div id="stage">
+          <div id="win">
+            <div id="chrome">
+              <i class="dot" style="background: #ff5f57"></i>
+              <i class="dot" style="background: #febc2e"></i>
+              <i class="dot" style="background: #28c840"></i>
+              <div id="tab">Image Compress &mdash; Konbato</div>
+            </div>
+            <div id="screen">
+              <img class="shot" data-layout-allow-overflow id="empty" src="assets/02-empty.png" alt="" />
+              <img class="shot" data-layout-allow-overflow id="loaded" src="assets/03-loaded.png" alt="" />
+              <img class="shot" data-layout-allow-overflow id="result" src="assets/05-result-full.png" alt="" />
+              <div id="mask" data-layout-allow-overflow></div>
+              <div id="ring"></div>
+              <div id="ripple"></div>
+              <div id="zero"><i></i>0 bytes uploaded</div>
+              <div id="callout" data-layout-allow-overlap>
+                <span class="was">5.9 MB</span>
+                <span class="arrow">&rarr;</span>
+                <span class="now"><span id="cnt">5.9</span> MB</span>
+                <span class="pct">&minus;81%</span>
+              </div>
+              <div id="card"><img src="assets/sunset-thumb.jpg" alt="" /></div>
+              <svg id="cursor" viewBox="0 0 24 24">
+                <path d="M3 2 L3 19 L8 14.5 L11.5 22 L14.5 20.6 L11 13.2 L18 13 Z" fill="#0a0a0f" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div id="caps">
+          <div class="cap" id="c1"><b>01</b><span class="serif">Drop in a photo.</span></div>
+          <div class="cap" id="c2"><b>02</b><span class="serif">Hit compress.</span></div>
+          <div class="cap" id="c3"><b>03</b><span class="serif">Done. <em class="blue">81% smaller.</em></span></div>
+          <div class="cap" id="c4"><b>&#10003;</b><span class="serif">All inside your <em class="blue">browser tab.</em></span></div>
+        </div>
+      </div>
+
+      <!-- 3: breadth -->
+      <div class="scene" id="s3">
+        <div class="h3 serif">
+          <div class="ln3 a">14 tools.</div>
+          <div class="ln3 b"><em class="blue">Zero</em> uploads.</div>
+        </div>
+        <div class="rows" data-layout-allow-overflow>
+          <div class="row" id="r1" data-layout-allow-overflow>
+            <div class="pill img">Image Compress</div>
+            <div class="pill img">Image Converter</div>
+            <div class="pill img">Resize &amp; Crop</div>
+            <div class="pill img">Remove Background</div>
+            <div class="pill img">Metadata Remover</div>
+            <div class="pill pdf">PDF Organizer</div>
+            <div class="pill pdf">Merge PDF</div>
+            <div class="pill pdf">Split PDF</div>
+          </div>
+          <div class="row" id="r2" data-layout-allow-overflow>
+            <div class="pill pdf">Compress PDF</div>
+            <div class="pill pdf">Rotate PDF</div>
+            <div class="pill pdf">Page Reorder</div>
+            <div class="pill pdf">PDF Metadata Remover</div>
+            <div class="pill pdf">PDF to Image</div>
+            <div class="pill img">Image Compress</div>
+            <div class="pill img">Image Converter</div>
+            <div class="pill img">Resize &amp; Crop</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4: sign-off -->
+      <div class="scene" id="s4">
+        <div id="lock">
+          <svg viewBox="0 0 64 64" role="img" aria-label="Konbato">
+            <rect width="64" height="64" rx="16" fill="#2563eb" />
+            <g transform="translate(12 12) scale(1.6667)" fill="none" stroke="#ffffff" stroke-linejoin="round" stroke-width="2">
+              <path d="M15 9V15H9V9H15Z" />
+              <path d="M15 15H18C19.6569 15 21 16.3431 21 18C21 19.6569 19.6569 21 18 21C16.3431 21 15 19.6569 15 18V15Z" />
+              <path d="M9 15.002H6C4.34315 15.002 3 16.3451 3 18.002C3 19.6588 4.34315 21.002 6 21.002C7.65685 21.002 9 19.6588 9 18.002V15.002Z" />
+              <path d="M15 9L15 6C15 4.34315 16.3431 3 18 3C19.6569 3 21 4.34315 21 6C21 7.65685 19.6569 9 18 9H15Z" />
+              <path d="M9 9V6C9 4.34315 7.65685 3 6 3C4.34315 3 3 4.34315 3 6C3 7.65685 4.34315 9 6 9H9Z" />
+            </g>
+          </svg>
+          <div id="word" class="serif">Konbato</div>
+        </div>
+        <div id="tag">Free. Private. In your browser.</div>
+      </div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      /* ---------- 1: promise (0 - 3.2) ---------- */
+      tl.set("#s1", { opacity: 1 }, 0);
+      tl.fromTo("#k1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0.1);
+      tl.fromTo(".l1", { yPercent: 110 }, { yPercent: 0, duration: 0.8, stagger: 0.14, ease: "expo.out" }, 0.25);
+      tl.fromTo("#ulp", { strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "power2.inOut" }, 1.0);
+      tl.to("#s1", { opacity: 0, y: -30, duration: 0.45, ease: "power2.in" }, 2.75);
+
+      /* ---------- 2: demo (3.0 - 11.2) ---------- */
+      tl.set("#s2", { opacity: 1 }, 3.0);
+      tl.fromTo("#stage", { y: 160, scale: 0.9, opacity: 0 }, { y: 0, scale: 1.15, opacity: 1, duration: 0.9, ease: "expo.out" }, 3.0);
+
+      // caption helper: in/out of one caption
+      const cap = (id, a, b) => {
+        tl.fromTo(id, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, a);
+        tl.to(id, { opacity: 0, y: -18, duration: 0.3, ease: "power2.in" }, b);
+      };
+
+      // 01 drag the photo into the drop zone
+      cap("#c1", 3.6, 4.8);
+      tl.set("#cursor", { x: 1330, y: 40 }, 0);
+      tl.set("#card", { x: 1290, y: 20, rotation: 6 }, 0);
+      tl.to(["#cursor", "#card"], { opacity: 1, duration: 0.3 }, 3.9);
+      tl.to("#cursor", { x: 520, y: 330, duration: 1.1, ease: "power2.inOut" }, 4.0);
+      tl.to("#card", { x: 480, y: 300, rotation: -3, duration: 1.1, ease: "power2.inOut" }, 4.0);
+      // drop: card shrinks into the zone, real "file selected" state appears
+      tl.to("#card", { scale: 0.55, opacity: 0, duration: 0.3, ease: "power2.in" }, 5.1);
+      tl.to("#loaded", { opacity: 1, duration: 0.25 }, 5.2);
+
+      // 02 hit compress
+      cap("#c2", 5.4, 6.7);
+      tl.to("#cursor", { x: 1140, y: 572, duration: 1.1, ease: "power2.inOut" }, 5.5);
+      tl.to("#cursor", { scale: 0.82, duration: 0.1, transformOrigin: "3px 2px" }, 6.65);
+      tl.to("#cursor", { scale: 1, duration: 0.15 }, 6.75);
+      tl.fromTo("#ripple", { scale: 0.3, opacity: 0.9 }, { scale: 2.4, opacity: 0, duration: 0.6, ease: "power2.out", immediateRender: false }, 6.65);
+
+      // 03 result swaps in, real numbers highlighted
+      tl.to("#result", { opacity: 1, duration: 0.2 }, 6.95);
+      tl.to("#mask", { opacity: 1, duration: 0.01 }, 6.95);
+      tl.to("#cursor", { x: 1180, y: 400, duration: 0.7, ease: "power2.out" }, 7.1);
+      cap("#c3", 7.1, 8.8);
+      tl.fromTo("#ring", { scale: 1.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(1.8)" }, 7.6);
+      tl.fromTo("#callout", { y: 40, opacity: 0, scale: 0.92 }, { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: "expo.out" }, 8.0);
+      const counter = { v: 5.9 };
+      tl.to(counter, {
+        v: 1.1,
+        duration: 0.9,
+        ease: "power3.out",
+        onUpdate: () => {
+          document.getElementById("cnt").textContent = counter.v.toFixed(1);
+        },
+      }, 8.3);
+
+      // 04 nothing left the machine
+      cap("#c4", 9.1, 11.0);
+      tl.fromTo("#zero", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 9.4);
+      tl.to("#cursor", { opacity: 0, duration: 0.3 }, 8.9);
+
+      tl.to("#s2", { opacity: 0, y: -40, duration: 0.45, ease: "power2.in" }, 10.8);
+
+      /* ---------- 3: breadth (11.1 - 14) ---------- */
+      tl.set("#s3", { opacity: 1 }, 11.2);
+      tl.fromTo(".ln3", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.18, ease: "expo.out" }, 11.2);
+      tl.fromTo("#r1", { x: 0 }, { x: -520, duration: 2.8, ease: "none" }, 11.2);
+      tl.fromTo("#r2", { x: -700 }, { x: -140, duration: 2.8, ease: "none" }, 11.2);
+      tl.fromTo(".rows", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 11.3);
+      tl.to("#s3", { opacity: 0, duration: 0.4, ease: "power2.in" }, 13.7);
+
+      /* ---------- 4: sign-off (14 - 16.5) ---------- */
+      tl.fromTo("#s4", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 14.0);
+      tl.fromTo("#lock svg", { scale: 0.5, rotation: -12, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.8, ease: "back.out(1.7)" }, 14.1);
+      tl.fromTo("#word", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.7, ease: "expo.out" }, 14.3);
+      tl.fromTo("#tag", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 14.9);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
