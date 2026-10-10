@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import {
-  CommandIcon,
   GithubIcon,
   Image01Icon,
   Pdf01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { IMAGE_TOOLS, PDF_TOOLS } from '@/lib/tools';
+import { BrandMark } from '@/components/brand-mark';
 
 const githubUrl = 'https://github.com/feildrixliemdra/konbato';
 
@@ -17,9 +17,7 @@ export function SiteFooter() {
         <div className="grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <Link href="/" className="mb-4 inline-flex items-center space-x-2 group [@media(pointer:coarse)]:min-h-11">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-[color,background-color,scale] group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
-                <HugeiconsIcon icon={CommandIcon} className="h-6 w-6" aria-hidden />
-              </div>
+              <BrandMark className="h-10 w-10 text-primary transition-[scale] group-hover:scale-110" />
               <span className="text-xl font-bold font-manrope">Konbato</span>
             </Link>
             <p className="mb-6 max-w-sm text-sm leading-relaxed text-muted-foreground font-dm-sans">

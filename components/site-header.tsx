@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { BrandMark } from '@/components/brand-mark';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,7 +14,6 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
 import {
-  CommandIcon,
   MenuIcon,
   Cancel01Icon,
 } from '@hugeicons/core-free-icons';
@@ -99,9 +99,7 @@ export function SiteHeader() {
       <div className="container relative flex h-16 items-center justify-between">
         {/* Brand Logo - visible everywhere */}
         <Link href="/" className="flex items-center space-x-2 group shrink-0 [@media(pointer:coarse)]:min-h-11">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-[color,background-color,scale] group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
-            <HugeiconsIcon icon={CommandIcon} className="h-5 w-5" aria-hidden />
-          </div>
+          <BrandMark small className="h-8 w-8 text-primary transition-[scale] group-hover:scale-110" />
           <span className="font-bold text-lg font-manrope transition-colors group-hover:text-primary">
             Konbato
           </span>
