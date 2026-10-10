@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Upload01Icon,
@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner';
 import { DeviceWarning } from './device-warning';
 import { formatSize } from '@/lib/format';
+import { takeStagedFiles } from '@/lib/file-handoff';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface FileUploadZoneProps {
@@ -25,6 +26,24 @@ interface FileUploadZoneProps {
 interface RejectedFile {
   name: string;
   reason: string;
+}
+
+/** Whether a file satisfies an `accept` attribute value (extensions, `type/*`, or exact types). */
+function matchesAccept(file: File, accept: string): boolean {
+  const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+  return accept
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .some((acceptType) => {
+      if (acceptType.startsWith('.')) {
+        return fileExtension === acceptType;
+      }
+      if (acceptType.endsWith('/*')) {
+        const category = acceptType.replace('/*', '');
+        return file.type.startsWith(category);
+      }
+      return file.type === acceptType;
+    });
 }
 
 export function FileUploadZone({
@@ -52,28 +71,15 @@ export function FileUploadZone({
   }, []);
 
   const processFiles = useCallback(
-    (files: FileList) => {
+    (files: ArrayLike<File>) => {
       const validFiles: File[] = [];
       const rejected: RejectedFile[] = [];
       let sizeSum = 0;
 
-      const acceptTypes = accept.split(',').map((t) => t.trim().toLowerCase());
-
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-        const matchesMime = acceptTypes.some((acceptType) => {
-          if (acceptType.startsWith('.')) {
-            return fileExtension === acceptType;
-          }
-          if (acceptType.endsWith('/*')) {
-            const category = acceptType.replace('/*', '');
-            return file.type.startsWith(category);
-          }
-          return file.type === acceptType;
-        });
 
-        if (!matchesMime) {
+        if (!matchesAccept(file, accept)) {
           rejected.push({ name: file.name, reason: 'Unsupported file type' });
           continue;
         }
@@ -114,6 +120,21 @@ export function FileUploadZone({
     },
     [accept, multiple, maxSizeMB, selectedFiles, totalSize, onFilesSelected]
   );
+
+  /*
+   * A file dropped on the homepage arrives here. Only a zone that accepts it
+   * takes it, so a page with more than one zone routes it to the right one
+   * whatever order they mount in. It then goes through the same validation
+   * as a direct drop, so a size limit still applies with the usual notice.
+   * The store empties itself on the take, which is what makes this safe
+   * under React's development double-mount.
+   */
+  useEffect(() => {
+    const staged = takeStagedFiles((file) => matchesAccept(file, accept));
+    if (staged) processFiles(staged);
+    // Mount only: a handoff is consumed once, not on every re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {

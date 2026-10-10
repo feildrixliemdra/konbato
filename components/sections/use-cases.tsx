@@ -1,46 +1,40 @@
-'use client';
-
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { motion } from 'framer-motion';
-import { stagger } from '@/lib/motion';
 import Link from 'next/link';
-import { SECTION_KICKER } from '@/components/section-header';
 import { requireTool } from '@/lib/tools';
 
 /*
- * Who it is for.
+ * The jobs people arrive with.
  *
- * The heading is pinned to the left rail and the four jobs scroll past it. That
- * gives this section a shape nothing else on the page has: a standing label
- * with a list running beside it, rather than a header stacked over a grid. It
- * also means the section is still labelled after the reader has scrolled into
- * the middle of the rows.
+ * This was a persona list: Designers, Students, Office teams, each with a
+ * sentence about who they are. Nobody arrives at a file tool as a persona;
+ * they arrive with a file and a problem. So each row is now the problem in
+ * the words someone would say it, what the tool does about it, and the tool.
+ * The first three are the same three the hero names, so the page keeps one
+ * set of examples rather than inventing new ones per section.
  *
- * This used to be four gradient cards, each paying off with a usage count
- * (10K+ designers, 50K+ students) that nothing in the product corroborates. A
- * number is not evidence. The rows name the audience, name the job, and link to
- * the tool that does it.
+ * The heading is pinned to the left rail and the rows scroll past it, which
+ * gives the section a shape nothing else on the page has.
  */
-const audiences = [
+const jobs = [
   {
-    who: 'Designers',
-    job: 'Convert and optimize images for the web without visible quality loss.',
+    problem: 'A HEIC that nothing else will open',
+    how: 'Convert it to JPG, PNG or WebP. The photo keeps its full size.',
     tool: requireTool('image-convert'),
   },
   {
-    who: 'Students',
-    job: 'Merge and split lecture PDFs between classes without re-downloading them.',
-    tool: requireTool('pdf-merge'),
-  },
-  {
-    who: 'Office teams',
-    job: 'Shrink a document until it clears an email attachment limit.',
+    problem: 'A PDF too big to email',
+    how: 'Shrink it in place. Keep the text selectable, or rasterize every page for the smallest file.',
     tool: requireTool('pdf-compress'),
   },
   {
-    who: 'Confidential work',
-    job: 'Scrub embedded metadata from a file before it leaves your hands.',
+    problem: 'A scan that needs a signature',
+    how: 'Draw or type one, place it on the page, save. The original bytes stay valid.',
+    tool: requireTool('pdf-sign'),
+  },
+  {
+    problem: 'A photo to share without its location in it',
+    how: 'Camera, location and timestamp fields are rewritten out of the file.',
     tool: requireTool('image-metadata-remove'),
   },
 ];
@@ -50,48 +44,36 @@ export function UseCases() {
     <section className="container py-14 md:py-24">
       <div className="grid gap-10 border-t border-border pt-6 md:pt-8 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:gap-20">
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <p className={SECTION_KICKER}>Who it is for</p>
-          <h2 className="mt-4 text-3xl font-bold font-manrope tracking-tight sm:text-4xl">
-            Four jobs, one constraint
+          <h2 className="text-3xl font-bold font-manrope tracking-tight sm:text-4xl">
+            Four jobs, one rule
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground font-dm-sans">
-            Every tool here runs under the same rule: the file is read, changed
-            and written back on your machine. Who you are only changes which
-            tool you reach for.
+            Whatever you arrive with, the file is read, changed and written
+            back on your machine. The only thing that changes is which tool
+            you open.
           </p>
         </div>
 
         <div className="flex flex-col">
-          {audiences.map((audience, index) => (
-            <motion.div
-              key={audience.who}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: stagger(index, 0.08) }}
+          {jobs.map((job) => (
+            <Link
+              key={job.problem}
+              href={job.tool.href}
+              className="group flex items-start justify-between gap-6 border-b border-border py-6 transition-colors first:border-t hover:bg-muted/30 focus-visible:bg-muted/30 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
             >
-              <Link
-                href={audience.tool.href}
-                className="group flex items-start justify-between gap-6 border-b border-border py-6 transition-colors first:border-t hover:bg-muted/30 focus-visible:bg-muted/30 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
-              >
-                <div>
-                  <h3 className="text-base font-bold font-manrope transition-colors group-hover:text-primary">
-                    {audience.who}
-                  </h3>
-                  <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground font-dm-sans">
-                    {audience.job}
-                  </p>
-                </div>
-                <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-xs font-semibold font-manrope text-muted-foreground transition-colors group-hover:text-primary">
-                  {audience.tool.shortLabel ?? audience.tool.title}
-                  <HugeiconsIcon
-                    icon={ArrowRight01Icon}
-                    className="h-3 w-3 transition-transform group-hover:translate-x-0.5"
-                    aria-hidden
-                  />
-                </span>
-              </Link>
-            </motion.div>
+              <div>
+                <h3 className="text-base font-bold font-manrope transition-colors group-hover:text-primary">
+                  {job.problem}
+                </h3>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground font-dm-sans">
+                  {job.how}
+                </p>
+              </div>
+              <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-xs font-semibold font-manrope text-muted-foreground transition-colors group-hover:text-primary">
+                {job.tool.shortLabel ?? job.tool.title}
+                <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" aria-hidden />
+              </span>
+            </Link>
           ))}
         </div>
       </div>

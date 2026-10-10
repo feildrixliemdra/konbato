@@ -12,16 +12,16 @@ const faqs = [
   {
     question: 'Are my files uploaded to your server?',
     answer:
-      'No. Files are processed entirely in your browser using WebAssembly technology. They never leave your device.',
+      'No. Files are processed entirely in your browser using WebAssembly. They never leave your device.',
   },
   {
     question: 'Is this tool free?',
-    answer: 'Yes, Konbato is currently 100% free to use with no hidden fees.',
+    answer: 'Yes. Konbato is free to use, with no account and no hidden fees.',
   },
   {
     question: 'Is there a file size limit?',
     answer:
-      'Because processing happens on your device, the practical limit depends on your browser and available memory (RAM). Most files under a few hundred megabytes process comfortably. Very large files may be slow or run out of memory, so we warn you before starting when a file looks risky for your device.',
+      'Because processing happens on your device, the practical limit depends on your browser and available memory. Most files under a few hundred megabytes process comfortably. Very large files may be slow or run out of memory, so you get a warning before starting when a file looks risky for your device.',
   },
   {
     question: 'Does it work offline?',
@@ -31,23 +31,18 @@ const faqs = [
   {
     question: 'Is it safe for confidential documents?',
     answer:
-      'Absolutely. Because no file uploading occurs, your confidential data remains strictly on your machine.',
+      'Yes. Because no file is uploaded, your confidential data stays on your machine.',
   },
 ];
 
 /*
- * The format matrix.
- *
- * This was its own thin centred strip between the audience rows and the
- * questions. It did not carry enough weight to be a section, and centring it
- * made it the only centred block left on the page. It is reference material, so
- * it now sits inside the reference section, under the accordion it belongs
- * beside.
+ * The format matrix is reference material, so it sits inside the reference
+ * section, under the questions it belongs beside.
  */
 const formats = [
-  { label: 'Image input', values: ['JPG', 'PNG', 'WEBP', 'GIF', 'TIFF'] },
-  { label: 'Image output', values: ['JPG', 'PNG', 'WEBP'] },
-  { label: 'Documents', values: ['PDF'] },
+  { label: 'Image input', values: 'JPG, PNG, WebP, GIF, TIFF and BMP. HEIC through Image Converter.' },
+  { label: 'Image output', values: 'JPG, PNG and WebP' },
+  { label: 'Documents', values: 'PDF in; PDF, Word, Markdown, PNG and JPG out' },
 ];
 
 export function FAQ() {
@@ -56,9 +51,8 @@ export function FAQ() {
       <div className="mx-auto max-w-3xl">
         <SectionHeader
           variant="stack"
-          kicker="Questions"
-          title="Frequently asked questions"
-          lede="The things people ask before they trust a browser tool with a real file."
+          title="Before you trust it with a real file"
+          lede="The things people ask first."
         />
 
         <Accordion type="single" collapsible className="w-full">
@@ -78,26 +72,17 @@ export function FAQ() {
       {/* Reference band. Full width again, so the section steps from a narrow
           reading column out to a three-up matrix. */}
       <div className="mt-14 border-t border-border pt-8">
-        <h3 className="text-xs font-semibold font-manrope uppercase tracking-[0.18em] text-muted-foreground">
-          Supported formats
-        </h3>
-        <div className="mt-5 grid gap-6 sm:grid-cols-3">
+        <h3 className="text-sm font-bold font-manrope">Supported formats</h3>
+        <dl className="mt-5 grid gap-6 sm:grid-cols-3">
           {formats.map((group) => (
             <div key={group.label}>
-              <p className="text-sm font-semibold font-dm-sans">{group.label}</p>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {group.values.map((format) => (
-                  <li
-                    key={format}
-                    className="rounded-md bg-muted/50 px-2 py-1 font-mono text-xs font-medium text-muted-foreground"
-                  >
-                    {format}
-                  </li>
-                ))}
-              </ul>
+              <dt className="text-sm font-semibold font-dm-sans">{group.label}</dt>
+              <dd className="mt-1.5 text-sm leading-relaxed text-muted-foreground font-dm-sans">
+                {group.values}
+              </dd>
             </div>
           ))}
-        </div>
+        </dl>
       </div>
     </section>
   );

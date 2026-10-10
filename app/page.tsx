@@ -8,24 +8,25 @@ import { FAQ } from '@/components/sections/faq';
 import { CTABottom } from '@/components/sections/cta-bottom';
 
 /*
- * Section order and density.
+ * Section order and weight.
  *
- * The page used to be ten flat modules, each one a header stacked over a grid
- * of equal items, so nothing was louder or quieter than anything else and the
- * scroll had no rhythm. The order below alternates deliberately, and the
- * width, weight and density of each section is part of the composition:
+ * One raised surface, one tinted band, everything else flat on the canvas. The
+ * boldness is spent in the hero, where the drop zone is the product itself,
+ * and the rest of the page is kept quiet so that surface stays the thing the
+ * eye lands on:
  *
- *   hero        full-width statement over a conversion strip   loud
- *   registry    full width, dense rows                          loud
- *   how         narrow, airy rail                               quiet
- *   privacy     full-bleed dark chamber, the one heavy band     heavy
- *   performance full width, one merged spec panel               medium
- *   use cases   sticky rail, open rows                          medium
- *   faq         narrow column, then wide matrix                 quiet
- *   cta         centred terminal statement                      quiet
+ *   hero        statement beside a working drop surface      raised
+ *   index       every tool, grouped by job, in columns       flat, dense
+ *   how         narrow, numbered rail                        flat, airy
+ *   privacy     full-bleed tinted band, prose and a ledger   tinted
+ *   engines     one ledger on a card                         flat
+ *   use cases   sticky rail, open rows                       flat
+ *   faq         narrow column, then a wide reference band    flat
+ *   cta         centred closing statement                    flat
  *
- * The two tool sections were also merged. They sat back to back listing every
- * tool twice, once as a card grid and again as a category grid.
+ * There is no eyebrow label, no monospace label and no scroll-in cascade
+ * anywhere on the page. The only motion is the hero's entrance and what
+ * answers a pointer.
  */
 export default function Page() {
   return (

@@ -1,134 +1,84 @@
-'use client';
-
 import Link from 'next/link';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
-import { motion } from 'framer-motion';
-import { stagger } from '@/lib/motion';
 import { SectionHeader } from '@/components/section-header';
-import {
-  ACCENTS,
-  IMAGE_TOOLS,
-  PDF_TOOLS,
-  TOOLS,
-  accentTile,
-  type Tool,
-  type ToolCategory,
-} from '@/lib/tools';
+import { ACCENTS, TOOL_GROUPS, TOOLS, accentTile, type ToolGroup } from '@/lib/tools';
+import { cn } from '@/lib/utils';
 
 /*
- * The registry.
+ * The index.
  *
- * This replaces two sections that sat back to back and listed every tool
- * twice: a "top rated" card grid carrying a handful of them, then a category
- * grid carrying all of them. Two card grids of equal weight also said nothing
- * about which tool mattered, because every card was the same size.
+ * Twenty-two tools in one column was the longest and flattest stretch of the
+ * page: a wall of identical rows that took three screens to scroll. The same
+ * tools are now grouped by the job you came to do, in the task groups the
+ * header menu already uses, and laid out in columns so the whole index fits
+ * in about one screen on a laptop.
  *
- * A registry is the honest shape for a directory. One dense scan, grouped by
- * the category axis the directory itself filters on, with the popular entries
- * hoisted to the top of their group and tagged. It is also the only section on
- * the page built this way, which is what gives the page its rhythm.
+ * CSS columns rather than a grid: the groups are different heights (three to
+ * six tools), and a grid would leave holes where a short group sits beside a
+ * tall one. Columns pack them top to bottom and `break-inside-avoid` keeps a
+ * heading with its list.
  */
-
-/** Featured first inside a group, so the tag has something to mean. */
-function byProminence(a: Tool, b: Tool): number {
-  return Number(Boolean(b.featured)) - Number(Boolean(a.featured));
+function groupTitle(group: ToolGroup): string {
+  return group.category === 'PDF' ? `${group.label} PDFs` : group.label;
 }
 
-const groups: { category: ToolCategory; label: string; note: string; tools: Tool[] }[] = [
-  {
-    category: 'Image',
-    label: 'Image',
-    note: 'Read and rewrite pixels.',
-    tools: [...IMAGE_TOOLS].sort(byProminence),
-  },
-  {
-    category: 'PDF',
-    label: 'PDF',
-    note: 'Read and rewrite pages.',
-    tools: [...PDF_TOOLS].sort(byProminence),
-  },
-];
-
-function RegistryRow({ tool, index }: { tool: Tool; index: number }) {
+function Group({ group }: { group: ToolGroup }) {
+  const headingId = `index-${group.id}`;
   return (
-    <motion.li
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.3, delay: stagger(index, 0.03) }}
-    >
-      <Link
-        href={tool.href}
-        className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-border/50 py-4 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring md:grid-cols-[auto_minmax(0,14rem)_minmax(0,1fr)_auto] md:gap-x-6 md:py-3.5"
+    <section aria-labelledby={headingId} className="mb-10 break-inside-avoid">
+      <h3
+        id={headingId}
+        className="flex items-center gap-2 border-b border-border pb-3 text-sm font-bold font-manrope"
       >
+        {/* Category is the one axis where hue carries information, and the
+            dot is always paired with the written heading. */}
         <span
-          className={`col-start-1 row-span-2 flex h-10 w-10 items-center justify-center rounded-xl md:row-span-1 ${accentTile(tool.category)}`}
-        >
-          <HugeiconsIcon icon={tool.icon} className="h-5 w-5" aria-hidden />
-        </span>
-
-        <span className="col-start-2 flex min-w-0 items-center gap-2">
-          <span className="truncate text-sm font-semibold font-manrope transition-colors group-hover:text-primary">
-            {tool.title}
-          </span>
-          {tool.featured ? (
-            <span className="shrink-0 rounded border border-border px-1.5 text-xs text-muted-foreground font-dm-sans">
-              popular
-            </span>
-          ) : null}
-        </span>
-
-        <p className="col-start-2 min-w-0 text-xs leading-relaxed text-muted-foreground font-dm-sans md:col-start-3 md:text-sm">
-          {tool.description}
-        </p>
-
-        <HugeiconsIcon
-          icon={ArrowRight01Icon}
-          className="col-start-3 row-span-2 h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 md:row-span-1"
+          className={cn('h-2 w-2 shrink-0 rounded-full', ACCENTS[group.category].bar)}
           aria-hidden
         />
-      </Link>
-    </motion.li>
+        {groupTitle(group)}
+      </h3>
+      <ul className="mt-2 flex flex-col">
+        {group.tools.map((tool) => (
+          <li key={tool.slug}>
+            <Link
+              href={tool.href}
+              className="group -mx-2 flex items-start gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+            >
+              <span
+                className={cn(
+                  'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                  accentTile(tool.category)
+                )}
+              >
+                <HugeiconsIcon icon={tool.icon} className="h-4 w-4" aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold font-manrope transition-colors group-hover:text-primary">
+                  {tool.title}
+                </span>
+                <span className="mt-0.5 line-clamp-2 block text-xs leading-relaxed text-muted-foreground font-dm-sans">
+                  {tool.description}
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
 export function ToolRegistry() {
   return (
-    <section id="tools" className="container py-14 md:py-28">
+    <section id="tools" className="container pb-16 pt-10 md:pb-24 md:pt-14">
       <SectionHeader
-        kicker="Registry"
-        title={`${TOOLS.length} tools, two categories`}
-        lede="Everything Konbato can do. Each entry opens straight into the workspace, with no sign-in and no upload step. Popular entries are marked and listed first."
+        title={`${TOOLS.length} tools, sorted by the job`}
+        lede="Open any of them and the workspace is ready. Nothing to sign in to, nothing to install, and no upload step on the way in."
       />
-
-      <div className="flex flex-col gap-12">
-        {groups.map((group) => (
-          <div key={group.category}>
-            <div className="flex items-baseline justify-between gap-4 border-b border-border pb-3">
-              <h3 className="flex items-center gap-2.5 text-xs font-semibold font-manrope uppercase tracking-[0.18em]">
-                {/* Category is the one axis where hue carries information, and
-                    it is always paired with this label. */}
-                <span
-                  className={`h-2 w-2 shrink-0 rounded-full ${ACCENTS[group.category].bar}`}
-                  aria-hidden
-                />
-                {group.label}
-                <span className="font-normal normal-case tracking-normal text-muted-foreground font-dm-sans">
-                  {group.note}
-                </span>
-              </h3>
-              <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
-                {group.tools.length} tools
-              </span>
-            </div>
-
-            <ul className="flex flex-col">
-              {group.tools.map((tool, index) => (
-                <RegistryRow key={tool.slug} tool={tool} index={index} />
-              ))}
-            </ul>
-          </div>
+      <div className="gap-x-10 sm:columns-2 lg:columns-3">
+        {TOOL_GROUPS.map((group) => (
+          <Group key={group.id} group={group} />
         ))}
       </div>
     </section>

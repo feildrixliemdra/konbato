@@ -41,13 +41,6 @@
   --color-category-doc-strong: var(--category-doc-strong);
   --color-success: var(--success);
   --color-warning: var(--warning);
-  --color-chamber: var(--chamber);
-  --color-chamber-foreground: var(--chamber-foreground);
-  --color-chamber-muted: var(--chamber-muted);
-  --color-chamber-border: var(--chamber-border);
-  --color-chamber-panel: var(--chamber-panel);
-  --color-chamber-accent: var(--chamber-accent);
-  --color-chamber-success: var(--chamber-success);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -224,29 +217,11 @@
   );
 
   /*
-   * The chamber.
-   *
-   * One band per page is allowed to be heavy, and it is the privacy section:
-   * the inside of the tab drawn as a dark room the file never leaves. These
-   * tokens are defined once in :root and deliberately never overridden in
-   * .dark. The chamber is dark in both appearances, because the room is dark
-   * regardless of the canvas around it. In dark mode the panel reads as a
-   * raised floor over the near-black canvas; in light mode it is the single
-   * high-mass moment that breaks the page's run of light surfaces.
-   *
-   * Accent and success are the lifted values, because small text and icons sit
-   * on the ink in either appearance. `--success-lifted` is declared once so the
-   * chamber and dark mode's `--success` read the same green instead of keeping
-   * two copies of it in step.
+   * `--success-lifted` is the green for success text on a dark surface. Today
+   * that is dark mode's own `--success`; it is declared once so any future
+   * dark context reuses it rather than keeping a second copy in step.
    */
   --success-lifted: oklch(0.75 0.13 162);
-  --chamber: oklch(0.17 0.015 240);
-  --chamber-foreground: oklch(0.95 0.005 240);
-  --chamber-muted: oklch(0.68 0.02 240);
-  --chamber-border: oklch(0.95 0.005 240 / 14%);
-  --chamber-panel: oklch(0.21 0.018 240);
-  --chamber-accent: oklch(0.68 0.15 240);
-  --chamber-success: var(--success-lifted);
 }
 
 .dark {
