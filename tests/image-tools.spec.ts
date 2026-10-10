@@ -62,6 +62,11 @@ const PDF_TOOL_ROUTES = [
     heading: 'Image to PDF',
     uploadText: 'Upload images to compile (PNG, JPEG, WebP, GIF, TIFF, BMP)',
   },
+  {
+    path: '/tools/pdf-sign',
+    heading: 'Sign PDF',
+    uploadText: 'Upload PDF document to sign',
+  },
 ];
 
 const NEW_IMAGE_TOOL_ROUTES = [

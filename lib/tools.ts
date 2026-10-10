@@ -12,6 +12,7 @@ import {
   ArrangeIcon,
   DashboardSquare01Icon,
   Stamp01Icon,
+  SignatureIcon,
 } from '@hugeicons/core-free-icons';
 
 export type ToolCategory = 'Image' | 'PDF';
@@ -257,6 +258,14 @@ export const TOOLS: Tool[] = [
     category: 'PDF',
     icon: Stamp01Icon,
   },
+  {
+    slug: 'pdf-sign',
+    href: '/tools/pdf-sign',
+    title: 'Sign PDF',
+    description: 'Draw, type, or upload a signature and place it on any page — locally.',
+    category: 'PDF',
+    icon: SignatureIcon,
+  },
 ];
 
 export const IMAGE_TOOLS = TOOLS.filter((tool) => tool.category === 'Image');
@@ -273,3 +282,62 @@ export function requireTool(slug: string): Tool {
   if (!tool) throw new Error(`Unknown tool slug: ${slug}`);
   return tool;
 }
+
+export interface ToolGroup {
+  id: string;
+  label: string;
+  category: ToolCategory;
+  tools: Tool[];
+}
+
+/**
+ * Task groups for navigation. A flat list of every PDF tool had grown taller
+ * than the viewport, and a long alphabet-free column is slow to scan; grouping
+ * by what the user is trying to do lets the menu lay out in short columns.
+ */
+const GROUP_SLUGS: { id: string; label: string; category: ToolCategory; slugs: string[] }[] = [
+  {
+    id: 'image',
+    label: 'Image tools',
+    category: 'Image',
+    slugs: ['image-compress', 'image-convert', 'image-resize-crop', 'image-remove-bg', 'image-metadata-remove'],
+  },
+  {
+    id: 'pdf-organize',
+    label: 'Organize',
+    category: 'PDF',
+    slugs: ['pdf-organizer', 'pdf-merge', 'pdf-split', 'pdf-reorder', 'pdf-rotate', 'pdf-crop'],
+  },
+  {
+    id: 'pdf-edit',
+    label: 'Edit & sign',
+    category: 'PDF',
+    slugs: ['pdf-sign', 'pdf-watermark', 'pdf-page-number'],
+  },
+  {
+    id: 'pdf-convert',
+    label: 'Convert',
+    category: 'PDF',
+    slugs: ['pdf-to-image', 'image-to-pdf', 'pdf-to-word', 'pdf-to-markdown'],
+  },
+  {
+    id: 'pdf-secure',
+    label: 'Optimize & secure',
+    category: 'PDF',
+    slugs: ['pdf-compress', 'pdf-protect', 'pdf-unlock', 'pdf-metadata-remove'],
+  },
+];
+
+function buildGroups(): ToolGroup[] {
+  const groups = GROUP_SLUGS.map(({ slugs, ...group }) => ({ ...group, tools: slugs.map(requireTool) }));
+  // A tool added to TOOLS but not to a group still has to be reachable from
+  // the menu, so it lands in a catch-all instead of silently disappearing.
+  const grouped = new Set(GROUP_SLUGS.flatMap((group) => group.slugs));
+  for (const category of ['Image', 'PDF'] as const) {
+    const rest = TOOLS.filter((tool) => tool.category === category && !grouped.has(tool.slug));
+    if (rest.length) groups.push({ id: `${category.toLowerCase()}-more`, label: 'More', category, tools: rest });
+  }
+  return groups;
+}
+
+export const TOOL_GROUPS: ToolGroup[] = buildGroups();

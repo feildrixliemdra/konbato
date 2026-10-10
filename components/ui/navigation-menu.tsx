@@ -10,9 +10,12 @@ function NavigationMenu({
   className,
   children,
   viewport = true,
+  viewportClassName,
   ...props
 }: React.ComponentProps<typeof NavigationMenuPrimitive.Root> & {
   viewport?: boolean
+  /** Positions the panel's wrapper, e.g. to center a panel wider than the trigger. */
+  viewportClassName?: string
 }) {
   return (
     <NavigationMenuPrimitive.Root
@@ -25,7 +28,7 @@ function NavigationMenu({
       {...props}
     >
       {children}
-      {viewport && <NavigationMenuViewport />}
+      {viewport && <NavigationMenuViewport wrapperClassName={viewportClassName} />}
     </NavigationMenuPrimitive.Root>
   )
 }
@@ -98,12 +101,16 @@ function NavigationMenuContent({
 
 function NavigationMenuViewport({
   className,
+  wrapperClassName,
   ...props
-}: React.ComponentProps<typeof NavigationMenuPrimitive.Viewport>) {
+}: React.ComponentProps<typeof NavigationMenuPrimitive.Viewport> & {
+  wrapperClassName?: string
+}) {
   return (
     <div
       className={cn(
-        "absolute top-full left-0 isolate z-50 flex justify-center"
+        "absolute top-full left-0 isolate z-50 flex justify-center",
+        wrapperClassName
       )}
     >
       <NavigationMenuPrimitive.Viewport

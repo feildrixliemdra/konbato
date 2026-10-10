@@ -19,6 +19,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Download01Icon, Upload02Icon } from '@hugeicons/core-free-icons';
 import { ACCENTS, requireTool } from '@/lib/tools';
 import { cn } from '@/lib/utils';
+import { SegmentedControl } from '@/components/tools/segmented-control';
 
 const tool = requireTool('pdf-watermark');
 
@@ -198,22 +199,6 @@ export default function PDFWatermarkPage() {
 
   const canApply = kind === 'text' ? text.trim().length > 0 : logo !== null;
 
-  const kindButton = (value: 'text' | 'image', label: string) => (
-    <button
-      type="button"
-      onClick={() => setKind(value)}
-      aria-pressed={kind === value}
-      className={cn(
-        'flex-1 rounded-lg py-2.5 text-xs font-semibold transition-[color,background-color,box-shadow] [@media(pointer:coarse)]:min-h-11',
-        kind === value
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'
-      )}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <ToolPageShell
       title={tool.title}
@@ -245,14 +230,15 @@ export default function PDFWatermarkPage() {
 
             <div className="flex flex-col gap-4 border-b border-border/40 pb-5">
               <h2 className="text-sm font-bold font-manrope">Watermark</h2>
-              <div
-                role="group"
-                aria-label="Watermark type"
-                className="flex gap-1.5 rounded-xl border border-border/40 bg-muted/40 p-1"
-              >
-                {kindButton('text', 'Text')}
-                {kindButton('image', 'Image')}
-              </div>
+              <SegmentedControl
+                label="Watermark type"
+                value={kind}
+                onChange={setKind}
+                options={[
+                  { value: 'text', label: 'Text' },
+                  { value: 'image', label: 'Image' },
+                ]}
+              />
             </div>
 
             {kind === 'text' ? (

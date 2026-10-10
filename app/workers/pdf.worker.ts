@@ -262,6 +262,72 @@ function insertImagePage(
   doc.insertPage(atIndex, pageObj);
 }
 
+/**
+ * A signature box in displayed page space: points, top-left origin, after
+ * /Rotate — the same space pdfjs renders the preview in, so the page can send
+ * what the user sees without knowing about MediaBox offsets or rotation.
+ */
+interface SignPlacement {
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface SignPdfPayload {
+  buffer: ArrayBuffer;
+  signature: ArrayBuffer;
+  placements: SignPlacement[];
+}
+
+/**
+ * Draws the signature XObject onto an existing page without touching the
+ * page's own content, so text stays selectable (unlike the watermark path,
+ * which rasterises). The original streams are wrapped in q/Q so any graphics
+ * state they leave behind can't skew or recolour the signature.
+ */
+function stampSignatureOnPage(doc: any, page: any, imgObj: any, placements: SignPlacement[]) {
+  const M = (mupdf as any).Matrix;
+  const pageObj = page.getObject();
+
+  // Resources may be inherited from the page tree; adding a name to a shared
+  // dictionary is harmless because only this page's content references it.
+  let resources = pageObj.getInheritable('Resources');
+  if (resources.isNull()) {
+    resources = doc.newDictionary();
+    pageObj.put('Resources', resources);
+  }
+  let xobjects = resources.get('XObject');
+  if (xobjects.isNull()) {
+    xobjects = doc.newDictionary();
+    resources.put('XObject', xobjects);
+  }
+  let name = 'KonbatoSig';
+  for (let n = 1; !xobjects.get(name).isNull(); n++) name = `KonbatoSig${n}`;
+  xobjects.put(name, imgObj);
+
+  // getTransform maps PDF user space to displayed space; inverting it carries
+  // MediaBox offset, the y-flip and /Rotate in one matrix.
+  const toUser = M.invert(page.getTransform());
+  const ops = placements
+    .map((p) => {
+      // Unit square → displayed rect; images draw bottom-up, hence -height.
+      const place = [p.width, 0, 0, -p.height, p.x, p.y + p.height];
+      const m = M.concat(place, toUser).map((v: number) => +v.toFixed(4));
+      return `q ${m.join(' ')} cm /${name} Do Q`;
+    })
+    .join('\n');
+
+  const contents = pageObj.get('Contents');
+  const wrapped = doc.newArray();
+  wrapped.push(doc.addStream('q\n', null));
+  if (contents.isArray()) contents.forEach((stream: any) => wrapped.push(stream));
+  else if (!contents.isNull()) wrapped.push(contents);
+  wrapped.push(doc.addStream(`\nQ\n${ops}\n`, null));
+  pageObj.put('Contents', wrapped);
+}
+
 interface WatermarkPayloadSpec {
   kind: 'text' | 'image';
   text: string;
@@ -841,6 +907,67 @@ self.onmessage = async (e: MessageEvent) => {
       } finally {
         safeDestroy(doc);
         safeDestroy(outDoc);
+      }
+    } else if (type === 'SIGN_PDF') {
+      const { buffer, signature, placements } = payload as SignPdfPayload;
+      if (!placements.length) throw new Error('Place the signature on at least one page.');
+      const doc = (mupdf as any).Document.openDocument(buffer, 'application/pdf').asPDF();
+      if (!doc) throw new Error('This file is not a PDF document.');
+      try {
+        if (doc.needsPassword()) {
+          throw new Error('This PDF is password-protected. Unlock it with the Unlock PDF tool first.');
+        }
+        const numPages = doc.countPages();
+        // The image is added once and referenced from every page that carries it,
+        // so signing many pages doesn't duplicate the bytes.
+        const img = new (mupdf as any).Image(signature);
+        let imgObj: any;
+        try {
+          imgObj = doc.addImage(img);
+        } finally {
+          safeDestroy(img);
+        }
+
+        const byPage = new Map<number, SignPlacement[]>();
+        for (const p of placements) {
+          if (p.page < 0 || p.page >= numPages) throw new Error(`Page ${p.page + 1} does not exist in this document.`);
+          byPage.set(p.page, [...(byPage.get(p.page) ?? []), p]);
+        }
+
+        let done = 0;
+        for (const [pageIndex, pagePlacements] of byPage) {
+          self.postMessage({
+            id,
+            type: 'PROGRESS',
+            payload: {
+              progress: 10 + Math.round((done / byPage.size) * 80),
+              message: `Signing page ${pageIndex + 1}…`,
+            },
+          });
+          const page = doc.loadPage(pageIndex);
+          try {
+            stampSignatureOnPage(doc, page, imgObj, pagePlacements);
+          } finally {
+            safeDestroy(page);
+          }
+          done++;
+        }
+
+        self.postMessage({ id, type: 'PROGRESS', payload: { progress: 92, message: 'Saving signed PDF…' } });
+        // Incremental: the original bytes stay intact and the signature is
+        // appended as a new revision, so any certificate-based signatures the
+        // document already carries keep validating. MuPDF refuses incremental
+        // writes on a file it had to repair; only then fall back to a rewrite.
+        let outBuffer: any;
+        try {
+          outBuffer = doc.saveToBuffer('incremental,compress');
+        } catch {
+          outBuffer = doc.saveToBuffer('compress,garbage=2');
+        }
+        const transferBuffer = copyPdfBuffer(outBuffer);
+        (self as any).postMessage({ id, type: 'SUCCESS', payload: { buffer: transferBuffer } }, [transferBuffer]);
+      } finally {
+        safeDestroy(doc);
       }
     } else {
       throw new Error(`Unsupported message type: ${type}`);

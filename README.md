@@ -48,6 +48,13 @@ The full product reasoning — problem statement, competitive landscape, scope, 
 | [PDF to Image](https://konbato.vercel.app/tools/pdf-to-image) | Rasterize pages to PNG or JPEG |
 | [Image to PDF](https://konbato.vercel.app/tools/image-to-pdf) | Compile PNG, JPEG, WebP, GIF, TIFF, and BMP images into a PDF, with the original image size or an A4/Letter page, portrait or landscape |
 | [Add Watermark](https://konbato.vercel.app/tools/pdf-watermark) | Stamp text or image watermarks across pages with a live preview — flattened so they can't be removed |
+| [Sign PDF](https://konbato.vercel.app/tools/pdf-sign) | Draw, type, or upload a signature and drag it onto any page; text stays selectable. A visual signature, not a certificate-based digital one |
+| [Add Page Numbers](https://konbato.vercel.app/tools/pdf-page-number) | Stamp "Page N of M" onto every page |
+| [Crop PDF](https://konbato.vercel.app/tools/pdf-crop) | Trim margins from every page |
+| [Unlock PDF](https://konbato.vercel.app/tools/pdf-unlock) | Remove a password from a PDF you can open |
+| [Protect PDF](https://konbato.vercel.app/tools/pdf-protect) | Add a password and AES-256 encryption |
+| [PDF to Markdown](https://konbato.vercel.app/tools/pdf-to-markdown) | Extract a PDF's text as Markdown |
+| [PDF to Word](https://konbato.vercel.app/tools/pdf-to-word) | Extract a PDF's text as an editable .docx |
 
 ### Image tools
 
@@ -106,7 +113,7 @@ Every route is statically prerendered — there are no route handlers, no API en
 ```
 app/tools/<slug>/page.tsx   One route per tool; drives its worker via useToolTask
 app/workers/               image.worker.ts and pdf.worker.ts (WASM + Canvas work)
-lib/tools.ts               Registry of the 15 tools (slug, copy, category)
+lib/tools.ts               Registry of every tool (slug, copy, category)
 lib/engines.ts             Which engine each tool uses, and where it runs
 components/tools/          Tool surfaces: shell, panels, upload zone, error banner
 docs/PRD.md                Product scope and reasoning

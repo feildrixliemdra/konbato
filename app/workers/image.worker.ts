@@ -2,6 +2,7 @@
 // @ts-ignore
 import * as UTIF from 'utif';
 import { isTiffFileName, resolveInputMime, readImageMetadata } from '../../lib/image-format';
+import { clearPaper, inkBounds } from '../../lib/signature-ink';
 
 // Convert ArrayBuffer to ImageBitmap for standard formats
 async function bufferToBitmap(buffer: ArrayBuffer, mimeType: string): Promise<ImageBitmap> {
@@ -265,6 +266,37 @@ self.onmessage = async (e: MessageEvent) => {
           height: outHeight,
         }
       }, [outBuffer]);
+    } else if (type === 'PREPARE_SIGNATURE') {
+      const { buffer, removePaper, maxPx } = payload as { buffer: ArrayBuffer; removePaper: boolean; maxPx: number };
+      const bitmap = await createImageBitmap(new Blob([buffer]));
+      try {
+        // A phone photo of a signature doesn't need to become a 4 MB stamp.
+        const scale = Math.min(1, maxPx / Math.max(bitmap.width, bitmap.height));
+        const width = Math.max(1, Math.round(bitmap.width * scale));
+        const height = Math.max(1, Math.round(bitmap.height * scale));
+        const canvas = new OffscreenCanvas(width, height);
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) throw new Error('Could not get OffscreenCanvas 2D context');
+        ctx.drawImage(bitmap, 0, 0, width, height);
+        const image = ctx.getImageData(0, 0, width, height);
+        if (removePaper) {
+          // A photographed or scanned signature sits on near-white paper; dropping
+          // those pixels lets the ink sit on the document like real ink would.
+          clearPaper(image.data);
+          ctx.putImageData(image, 0, 0);
+        }
+        const bounds = inkBounds(image.data, width, height);
+        if (!bounds) throw new Error('No signature found in this image.');
+        const cropped = new OffscreenCanvas(bounds.width, bounds.height);
+        cropped.getContext('2d')?.drawImage(canvas, bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, bounds.width, bounds.height);
+        const png = await encodeCanvas(cropped, 'image/png');
+        (self as any).postMessage(
+          { id, type: 'SUCCESS', payload: { buffer: png, aspect: bounds.width / bounds.height } },
+          [png]
+        );
+      } finally {
+        bitmap.close();
+      }
     } else if (type === 'READ_IMAGE_METADATA') {
       const { buffer, fileName, mimeType } = payload;
       self.postMessage({

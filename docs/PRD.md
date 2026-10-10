@@ -88,7 +88,7 @@ graph TD
 
 ### Epic 4: PDF Document Tools
 
-**Story**: As a user handling confidential documents, I want to organize, merge, split, reorder, compress, rotate, scrub metadata, and convert PDFs locally.
+**Story**: As a user handling confidential documents, I want to organize, merge, split, reorder, compress, rotate, scrub metadata, sign, protect, and convert PDFs locally.
 
 **Acceptance Criteria**
 
@@ -103,6 +103,11 @@ graph TD
 - PDF to image exports page images.
 - Image to PDF compiles uploaded images into a readable PDF.
 - PDF watermark stamps a configurable text or image watermark (9 positions or tiled, with size, color, opacity, and rotation) onto every page, with a live preview, flattened so it cannot be removed.
+- PDF sign lets the user draw, type, or upload a signature, then drag, resize, and keyboard-nudge it onto one or more pages in a live preview. The signature is added as an image on top of the existing page content, so text stays selectable and untouched pages are not rewritten. It is a visual signature only, and the UI says so.
+- PDF page numbers stamp "Page N of M" onto every page.
+- PDF crop trims equal-unit margins from every page's CropBox.
+- PDF unlock removes the password from a PDF the user can open; PDF protect adds a password with AES-256 encryption.
+- PDF to Markdown and PDF to Word extract a PDF's text into an editable format (text only; layout and images are not preserved).
 
 ### Non-Goals
 
@@ -111,6 +116,7 @@ graph TD
 - **User accounts**: No profile, login, or account database will be developed.
 - **Offline PWA mode**: Service worker installation and offline caching are deferred.
 - **OCR**: Text extraction from scanned PDFs/images is deferred.
+- **Certificate-based digital signatures (PAdES)**: Sign PDF places a visual signature. Cryptographic signing needs a certificate and key management, and usually a trusted timestamp server, which conflicts with the no-network model.
 - **Video processing**: Video trimming, compression, conversion, and audio extraction are deferred to a future plan.
 
 ---

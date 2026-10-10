@@ -19,14 +19,49 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IMAGE_TOOLS, PDF_TOOLS, ACCENTS, accentTile, type Tool } from '@/lib/tools';
+import { TOOLS, TOOL_GROUPS, ACCENTS, accentTile, type Tool, type ToolGroup } from '@/lib/tools';
+
+/**
+ * Which groups stack in which desktop column. Balanced by row count (8 / 6 / 8)
+ * so the panel is short and even; a group missing here (e.g. the catch-all for
+ * a newly added tool) goes in the last column rather than being dropped.
+ */
+const DESKTOP_COLUMNS = [['image', 'pdf-edit'], ['pdf-organize'], ['pdf-convert', 'pdf-secure']];
+
+function desktopColumns(): ToolGroup[][] {
+  const placed = new Set(DESKTOP_COLUMNS.flat());
+  const columns = DESKTOP_COLUMNS.map((ids) =>
+    ids.map((id) => TOOL_GROUPS.find((group) => group.id === id)).filter((g): g is ToolGroup => !!g)
+  );
+  columns[columns.length - 1].push(...TOOL_GROUPS.filter((group) => !placed.has(group.id)));
+  return columns;
+}
+
+const COLUMNS = desktopColumns();
+
+function groupHeading(group: ToolGroup) {
+  return group.category === 'PDF' ? `PDF · ${group.label}` : group.label;
+}
+
+function GroupHeading({ group, id, className }: { group: ToolGroup; id: string; className?: string }) {
+  return (
+    <h3
+      id={id}
+      className={`flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-muted-foreground/70 font-manrope ${className ?? ''}`}
+    >
+      {/* The dot carries the category hue, so Image and PDF groups read apart at a glance. */}
+      <span aria-hidden className={`size-1.5 rounded-full bg-current ${ACCENTS[group.category].icon}`} />
+      {groupHeading(group)}
+    </h3>
+  );
+}
 
 function ToolMenuLink({ tool }: { tool: Tool }) {
   return (
     <NavigationMenuLink asChild>
       <Link
         href={tool.href}
-        className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/65 transition-colors text-xs font-semibold font-dm-sans group/link"
+        className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/65 focus-visible:bg-muted/65 transition-colors text-xs font-semibold font-dm-sans group/link"
       >
         <HugeiconsIcon
           icon={tool.icon}
@@ -44,14 +79,14 @@ function MobileToolLink({ tool, onNavigate }: { tool: Tool; onNavigate: () => vo
     <Link
       href={tool.href}
       onClick={onNavigate}
-      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/65 transition-colors text-xs font-semibold font-dm-sans"
+      className="flex min-h-11 items-center gap-2.5 rounded-xl p-2 hover:bg-muted/65 transition-colors text-xs font-semibold leading-tight font-dm-sans"
     >
       <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${accentTile(tool.category)}`}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${accentTile(tool.category)}`}
       >
-        <HugeiconsIcon icon={tool.icon} className="size-4" aria-hidden />
+        <HugeiconsIcon icon={tool.icon} className="size-3.5" aria-hidden />
       </div>
-      {tool.title}
+      <span className="min-w-0">{tool.title}</span>
     </Link>
   );
 }
@@ -61,7 +96,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container relative flex h-16 items-center justify-between">
         {/* Brand Logo - visible everywhere */}
         <Link href="/" className="flex items-center space-x-2 group shrink-0 [@media(pointer:coarse)]:min-h-11">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-[color,background-color,scale] group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
@@ -72,36 +107,44 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        {/* Desktop Navigation Menu - hidden on mobile */}
-        <div className="hidden md:flex items-center gap-6">
-          <NavigationMenu>
+        {/* Desktop Navigation Menu - hidden on mobile. Absolutely centered so
+            the panel, centered under it, stays on screen at every md+ width. */}
+        <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-6">
+          <NavigationMenu viewportClassName="left-1/2 -translate-x-1/2">
             <NavigationMenuList className="gap-2">
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="font-dm-sans font-medium text-foreground/70 hover:text-foreground bg-transparent hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
                   Tools
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="grid gap-6 p-6 w-[560px] md:grid-cols-2">
-                    <div className="flex flex-col gap-3">
-                      <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase font-manrope">
-                        Image Tools
-                      </h4>
-                      <div className="flex flex-col gap-1">
-                        {IMAGE_TOOLS.map((tool) => (
-                          <ToolMenuLink key={tool.slug} tool={tool} />
-                        ))}
-                      </div>
+                  <div className="w-[min(760px,calc(100vw-2rem))]">
+                    <div className="grid grid-cols-3 gap-x-4 p-5">
+                      {COLUMNS.map((column, index) => (
+                        <div key={index} className="flex flex-col gap-5">
+                          {column.map((group) => (
+                            <section key={group.id} aria-labelledby={`menu-${group.id}`} className="flex flex-col gap-1.5">
+                              <GroupHeading group={group} id={`menu-${group.id}`} className="px-2" />
+                              <ul className="flex flex-col gap-0.5">
+                                {group.tools.map((tool) => (
+                                  <li key={tool.slug}>
+                                    <ToolMenuLink tool={tool} />
+                                  </li>
+                                ))}
+                              </ul>
+                            </section>
+                          ))}
+                        </div>
+                      ))}
                     </div>
-
-                    <div className="flex flex-col gap-3">
-                      <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase font-manrope">
-                        PDF Tools
-                      </h4>
-                      <div className="flex flex-col gap-1">
-                        {PDF_TOOLS.map((tool) => (
-                          <ToolMenuLink key={tool.slug} tool={tool} />
-                        ))}
-                      </div>
+                    <div className="flex items-center justify-between gap-4 border-t border-border/40 bg-muted/40 px-5 py-3 text-xs font-dm-sans">
+                      <span className="text-muted-foreground">
+                        {TOOLS.length} tools, all running in your browser
+                      </span>
+                      <NavigationMenuLink asChild>
+                        <Link href="/tools" className="rounded-md font-semibold text-primary hover:underline underline-offset-4">
+                          Browse all tools &rarr;
+                        </Link>
+                      </NavigationMenuLink>
                     </div>
                   </div>
                 </NavigationMenuContent>
@@ -152,37 +195,23 @@ export function SiteHeader() {
           >
             <nav
               aria-label="Mobile navigation"
-              className="container py-6 flex flex-col gap-6 max-h-[calc(100vh-4rem)] overflow-y-auto"
+              className="container py-5 flex flex-col gap-5 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain"
             >
-              <div className="flex flex-col gap-2">
-                <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase font-manrope px-2">
-                  Image Tools
-                </h4>
-                <div className="grid grid-cols-1 gap-1">
-                  {IMAGE_TOOLS.map((tool) => (
-                    <MobileToolLink
-                      key={tool.slug}
-                      tool={tool}
-                      onNavigate={() => setIsMobileMenuOpen(false)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase font-manrope px-2">
-                  PDF Tools
-                </h4>
-                <div className="grid grid-cols-1 gap-1">
-                  {PDF_TOOLS.map((tool) => (
-                    <MobileToolLink
-                      key={tool.slug}
-                      tool={tool}
-                      onNavigate={() => setIsMobileMenuOpen(false)}
-                    />
-                  ))}
-                </div>
-              </div>
+              {TOOL_GROUPS.map((group) => (
+                <section key={group.id} aria-labelledby={`mobile-${group.id}`} className="flex flex-col gap-1.5">
+                  <GroupHeading group={group} id={`mobile-${group.id}`} className="px-2" />
+                  {/* Two columns halve the drawer's height; titles wrap rather than truncate. */}
+                  <div className="grid grid-cols-2 gap-1">
+                    {group.tools.map((tool) => (
+                      <MobileToolLink
+                        key={tool.slug}
+                        tool={tool}
+                        onNavigate={() => setIsMobileMenuOpen(false)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
 
               <div className="pt-4 border-t border-border/40">
                 <Button

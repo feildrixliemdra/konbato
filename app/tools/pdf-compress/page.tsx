@@ -16,7 +16,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Download01Icon } from '@hugeicons/core-free-icons';
 import { ACCENTS, requireTool } from '@/lib/tools';
 import { formatSize } from '@/lib/format';
-import { cn } from '@/lib/utils';
+import { SegmentedControl } from '@/components/tools/segmented-control';
 
 const tool = requireTool('pdf-compress');
 
@@ -131,22 +131,6 @@ export default function PDFCompressPage() {
     : 0;
   const didShrink = reductionPct > 0;
 
-  const modeButton = (mode: 'light' | 'deep', label: string) => (
-    <button
-      type="button"
-      onClick={() => setCompressionMode(mode)}
-      aria-pressed={compressionMode === mode}
-      className={cn(
-        'flex-1 rounded-lg py-2.5 text-xs font-semibold transition-[color,background-color,box-shadow] [@media(pointer:coarse)]:min-h-11',
-        compressionMode === mode
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'
-      )}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <ToolPageShell
       title={tool.title}
@@ -171,14 +155,15 @@ export default function PDFCompressPage() {
             <div className="flex flex-col gap-4 border-b border-border/40 pb-5">
               <h2 className="text-sm font-bold font-manrope">Compression Mode</h2>
 
-              <div
-                role="group"
-                aria-label="Compression mode"
-                className="flex gap-1.5 rounded-xl border border-border/40 bg-muted/40 p-1"
-              >
-                {modeButton('light', 'Light (Lossless)')}
-                {modeButton('deep', 'Deep (Rasterize)')}
-              </div>
+              <SegmentedControl
+                label="Compression mode"
+                value={compressionMode}
+                onChange={setCompressionMode}
+                options={[
+                  { value: 'light', label: 'Light (Lossless)' },
+                  { value: 'deep', label: 'Deep (Rasterize)' },
+                ]}
+              />
             </div>
 
             {compressionMode === 'light' ? (
