@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BrandMark } from '@/components/brand-mark';
@@ -93,12 +94,26 @@ function MobileToolLink({ tool, onNavigate }: { tool: Tool; onNavigate: () => vo
 
 export function SiteHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  // A Link to the page you're already on is a no-op, so on the homepage the
+  // logo would look broken. Scroll back to the top instead, and honour
+  // reduced motion.
+  const handleBrandClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    setIsMobileMenuOpen(false);
+    if (pathname !== '/') return;
+    // Leave modified clicks (new tab/window) to the browser.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container relative flex h-16 items-center justify-between">
         {/* Brand Logo - visible everywhere */}
-        <Link href="/" className="flex items-center space-x-2 group shrink-0 [@media(pointer:coarse)]:min-h-11">
+        <Link href="/" onClick={handleBrandClick} className="flex items-center space-x-2 group shrink-0 [@media(pointer:coarse)]:min-h-11">
           <BrandMark small className="h-8 w-8 text-primary transition-[scale] group-hover:scale-110" />
           <span className="font-bold text-lg font-manrope transition-colors group-hover:text-primary">
             Konbato
